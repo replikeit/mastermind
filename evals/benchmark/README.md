@@ -39,7 +39,7 @@ flowchart LR
 | `runtime` | Executable pins and private environments |
 | `artifacts` | Bounded reads, hashes and immutable publication |
 | `adapters.bundle`, `adapters.claude`, `adapters.codex`, `tools`, `mcp` | Frozen client runtimes and read-only tool transport |
-| `corpus` | Public task/private-key source bindings |
+| `corpus` | Calibration and qualification task/key source bindings |
 | `review`, `review_io`, `review_contracts` | Blinded packets and offline artifact validation |
 | `assessment` | Reviewer evidence and receipt validation |
 | `analysis` | Paired outcomes, uncertainty and all-attempt resource totals |
@@ -184,6 +184,30 @@ The pinned history must be available locally. The checker never fetches it.
 tree bytes. Unrelated commits are allowed; changed research source requires
 reviewing the task and key again. A corpus-wide campaign always requires this
 check before preparation.
+
+### Qualification corpus
+
+A qualification corpus decides on a frozen candidate with tasks it was not tuned
+on. It uses the same registry, task and key schemas with `role: qualification`.
+
+| Contract | Rule |
+|---|---|
+| Roles | One role per registry: every case is `calibration` or every case is `qualification` |
+| Key | `status: qualification_key_source_reviewed` and request-bound `acceptance_criteria` |
+| Location | Registry, tasks, keys and output stay outside `--source-repo` and `--tool-repo`; otherwise preparation fails with `corpus_private_location` before any trial |
+| Selection | A qualification key is prepared only with `--case` from its corpus; `--task`/`--rubric` fails with `invalid_selection` |
+| Comparison | `scope: sealed_current_source_qualification`; a key whose status differs from the corpus role fails with `campaign_changed`. `comparison_accepted` stays false and `quality_uplift` null |
+
+```sh
+python3 -m evals.benchmark.corpus --corpus /absolute/private/path/corpus.json \
+  --source-repo /absolute/private/path/snapshot-repo --require-current
+```
+
+The location check covers preparation and the two repositories given to the
+command. Review exports and copies still contain the keys, so write them to the
+same private storage. Keep qualification files out of every directory a tuning
+agent can read, including `.mastermind/`, and publish the decision rather than
+per-case reports.
 
 ## Prepare an experiment
 
@@ -544,6 +568,7 @@ python3 -m evals.benchmark.campaign compare /absolute/path/to/new-review-set \
 | Runtime | Native mmcg is copied and pinned before trial preparation; later Cargo builds cannot replace it |
 | Order | Rotates within each case; 3 repetitions balance positions across the 3 default arms |
 | Resume | Completed and failed attempts are retained; unfinished attempts cannot be retried selectively |
+| Pause | `run --stop-file PATH` stops before the next unstarted case while `PATH` exists; remove it and run again. A started case always finishes |
 | Invalid runtime/input | Abort; remaining slots stay `not_run` |
 | Unavailable tool requested by the model | Failed attempt; continue only after rechecking unchanged prepared inputs and runtime |
 | Changed settings or failed preparation | Retain the old campaign and prepare a new complete one |

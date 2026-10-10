@@ -14,7 +14,8 @@ full-key semantics and cannot be pooled with user-acceptance outcomes.
 See [product objectives](../PRODUCT.md) for the acceptance and resource gates.
 
 Review supports the structured research keys in the
-[calibration corpus](README.md#calibration-corpus). Custom keys with only
+[calibration](README.md#calibration-corpus) and [qualification](README.md#qualification-corpus)
+corpora. Qualification keys always carry acceptance criteria. Custom keys with only
 task/revision fields and decision-task grading are outside this path.
 
 ## Export

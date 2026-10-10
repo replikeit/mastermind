@@ -294,7 +294,8 @@ def collect_batch(root):
     if "corpus_case" in batch:
         case = batch["corpus_case"]
         review_contracts.require(isinstance(case, dict) and case.get("id") == context["task"]["id"]
-                and case.get("role") == "calibration" and case.get("source_revision") == context["task"]["revision"]
+                and isinstance(case.get("role"), str) and corpus.KEY_STATUS.get(case["role"]) == context["rubric"].get("status")
+                and case.get("source_revision") == context["task"]["revision"]
                 and case.get("task_sha256") == artifact_io.digest(context["task"])
                 and case.get("rubric_sha256") == artifact_io.digest(context["rubric"]), "corpus binding differs from the batch", "review_identity")
         records = file_records(case.get("source_files"), context["task"], lines=True)

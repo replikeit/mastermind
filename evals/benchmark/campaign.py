@@ -16,9 +16,13 @@ from .review_io import Root
 
 ATTEMPT_LIMIT = 240
 
+SCOPE = {"calibration": "public_current_source_calibrations",
+         "qualification": "sealed_current_source_qualification"}
+
 
 def prepare(*, corpus_path, config, source_repo, tool_repo, output, repetitions=3):
     checked = corpus.check_corpus(corpus_path, source_repo, require_current=True)
+    corpus.require_private(checked["cases"][0]["role"], corpus_path, output, [source_repo, tool_repo])
     names = conditions.condition_names({"schema_version": 3, "conditions": config["conditions"]}) if "conditions" in config else conditions.CONDITIONS
     if "calibration" in config:
         conditions.validate_calibration(config["calibration"], config.get("conditions"))
@@ -97,7 +101,7 @@ def load(path):
     return plan, batches
 
 
-def run(path, *, progress=print, credentials=None):
+def run(path, *, progress=print, credentials=None, stop_file=None):
     plan, batches = load(path)
     if any(item["status"] != "prepared" for _, _, value in batches for item in value["trials"]):
         raise artifact_io.BenchmarkError("campaign_setup_failed", "retain this failed preparation and create a corrected complete campaign before inference")
@@ -106,6 +110,10 @@ def run(path, *, progress=print, credentials=None):
         with Root(batch) as root:
             _, slots, _, _, _, _, _ = review.collect_batch(root)
         states = {slot["trial_id"]: slot["status"] for slot in slots}
+        # Pause only before an unstarted case, so a pause never splits its rotated order.
+        if stop_file is not None and stop_file.exists() and set(states.values()) == {"not_run"}:
+            progress(f"Stopped before {identifier}; remove {stop_file} and run again to continue", flush=True)
+            return {"planned_attempts": plan["planned_attempts"], "attempts": statuses, "stopped": True}
         for item in value["trials"]:
             trial = batch / item["directory"]
             if states[item["directory"]] == "not_run":
@@ -126,7 +134,7 @@ def run(path, *, progress=print, credentials=None):
                 continue
             if result["run_status"]["state"] in ("input_changed", "identity_mismatch", "setup_error"):
                 raise artifact_io.BenchmarkError("campaign_runtime_invalid", "runtime or prepared input changed; remaining attempts stay not_run")
-    return {"planned_attempts": plan["planned_attempts"], "attempts": statuses}
+    return {"planned_attempts": plan["planned_attempts"], "attempts": statuses, "stopped": False}
 
 
 def export(path, output):
@@ -152,6 +160,10 @@ def compare(path, baseline, candidate):
             or {row["id"] for row in value["cases"]} != {row["id"] for row in plan["cases"]}):
         raise artifact_io.BenchmarkError("campaign_inventory", "review set omits or replaces a planned case")
     check_matrix(plan, [case["batch"] for case in value["cases"]])
+    roles = {row["role"] for row in plan["corpus"]["cases"] if isinstance(row.get("role"), str)}
+    if len(roles) != 1 or not roles <= set(SCOPE):
+        raise artifact_io.BenchmarkError("campaign_inventory", "a campaign compares one calibration or qualification corpus")
+    role = roles.pop()
     reports, unreviewed = [], []
     expected = {row["id"]: row for row in plan["cases"]}
     keys = {row["id"]: row for row in plan["corpus"]["cases"]}
@@ -164,6 +176,7 @@ def compare(path, baseline, candidate):
             if (artifact_io.digest(case["batch"]) != expected[case["id"]]["batch_sha256"]
                     or coordinator["batch_sha256"] != hashlib.sha256(artifact_io.canonical(case["batch"]) + b"\n").hexdigest()
                     or packet["rubric_sha256"] != keys[case["id"]]["rubric_sha256"]
+                    or packet["rubric"].get("status") != corpus.KEY_STATUS[role]
                     or artifact_io.digest(packet["task"]) != keys[case["id"]]["task_sha256"]):
                 raise artifact_io.BenchmarkError("campaign_changed", "review batch, task or key differs from the planned case")
             report = review.compare_review(directory, baseline, candidate)
@@ -188,7 +201,7 @@ def compare(path, baseline, candidate):
         "independent_task_count": len(reports), "planned_attempts": plan["planned_attempts"],
         "balanced_positions": plan["balanced_positions"], "cases": reports,
         "comparison_accepted": False, "quality_uplift": None,
-        "scope": "public_current_source_calibrations", "population_generalization": "not_established"}
+        "scope": SCOPE[role], "population_generalization": "not_established"}
 
 
 def main(argv=None):
@@ -204,6 +217,7 @@ def main(argv=None):
     execute = commands.add_parser("run")
     execute.add_argument("campaign", type=Path)
     execute.add_argument("--credential-env", action="append", choices=sorted(runtime_identity.CREDENTIAL_NAMES), default=[])
+    execute.add_argument("--stop-file", type=Path, help="stop before the next unstarted case while this file exists")
     packet = commands.add_parser("export")
     packet.add_argument("campaign", type=Path)
     packet.add_argument("--output", type=Path, required=True)
@@ -221,7 +235,7 @@ def main(argv=None):
             credentials = {name: os.environ[name] for name in args.credential_env if name in os.environ}
             if len(credentials) != len(set(args.credential_env)):
                 raise artifact_io.BenchmarkError("credentials_missing", "a requested credential variable is absent")
-            result = run(args.campaign, credentials=credentials)
+            result = run(args.campaign, credentials=credentials, stop_file=args.stop_file)
         elif args.command == "export":
             result = export(args.campaign, args.output.resolve())
         else:

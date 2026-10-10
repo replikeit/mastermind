@@ -9,7 +9,7 @@ import shutil
 import unittest
 from unittest.mock import patch
 
-from evals.benchmark import artifacts, campaign, review
+from evals.benchmark import artifacts, campaign, review, trials
 from tests.evals.support.corpus import CorpusFixture
 
 
@@ -146,6 +146,65 @@ class CampaignTests(unittest.TestCase):
             campaign.run(self.output)
         self.assertEqual(raised.exception.code, "campaign_inventory")
         self.assertFalse(list(self.output.rglob("adapter-called")))
+
+    def test_qualification_keys_and_output_stay_outside_source_and_tool_repositories(self):
+        self.case.qualify()
+        tool = self.fixture.root / "tool"
+        tool.mkdir()
+        inside = self.fixture.repo / "private-corpus"
+        alias = self.fixture.repo.with_name(self.fixture.repo.name.upper())
+        attempts = [("corpus_in_source", inside / "corpus.json", self.fixture.repo, self.output),
+                    ("output_in_source", self.case.path, tool, self.fixture.repo / "campaign"),
+                    ("output_in_tool", self.case.path, tool, tool / "campaign")]
+        if alias.exists():
+            attempts.append(("output_in_case_alias", self.case.path, self.fixture.repo, alias / "campaign"))
+        for name, corpus_path, tool_repo, output in attempts:
+            with self.subTest(name=name):
+                if name == "corpus_in_source":
+                    shutil.copytree(self.case.root, inside)
+                with self.assertRaises(artifacts.BenchmarkError) as raised:
+                    campaign.prepare(corpus_path=corpus_path, config=self.fixture.config,
+                        source_repo=self.fixture.repo, tool_repo=tool_repo, output=output, repetitions=1)
+                self.assertEqual(raised.exception.code, "corpus_private_location")
+                self.assertFalse(output.exists())
+                shutil.rmtree(inside, ignore_errors=True)
+        self.prepare()
+        campaign.run(self.output, progress=lambda *args, **kwargs: None)
+        exported = self.fixture.root / "review-set"
+        campaign.export(self.output, exported)
+        self.assertEqual(campaign.compare(exported, "source", "portable_mmcg")["scope"],
+                         "sealed_current_source_qualification")
+        value = artifacts.load_json(exported / "review-set.json")
+        for row in value["campaign"]["corpus"]["cases"]:
+            row["role"] = "calibration"
+        value["campaign_sha256"] = artifacts.digest(value["campaign"])
+        (exported / "review-set.json").write_bytes(artifacts.canonical(value))
+        with self.assertRaises(artifacts.BenchmarkError) as raised:
+            campaign.compare(exported, "source", "portable_mmcg")
+        self.assertEqual(raised.exception.code, "campaign_changed")
+
+    def test_stop_file_pauses_only_before_an_unstarted_case_and_run_resumes(self):
+        self.prepare()
+        _, batches = campaign.load(self.output)
+        _, batch, plan = batches[0]
+        trials.run_trial(batch / plan["trials"][0]["directory"])
+        stop = self.fixture.root / "stop"
+        stop.touch()
+        quiet = lambda *args, **kwargs: None
+        with redirect_stdout(io.StringIO()) as output:
+            self.assertEqual(campaign.main(["run", str(self.output), "--stop-file", str(stop)]), 0)
+        self.assertIn('"stopped":true', output.getvalue())
+        self.assertEqual(len(list(self.output.rglob("adapter-called"))), 3)
+        paused = campaign.run(self.output, progress=quiet, stop_file=stop)
+        self.assertTrue(paused["stopped"])
+        self.assertEqual([row["case"] for row in paused["attempts"]], ["service-01"] * 3)
+        self.assertEqual(len(list(self.output.rglob("adapter-called"))), 3)
+        stop.unlink()
+        resumed = campaign.run(self.output, progress=quiet, stop_file=stop)
+        self.assertFalse(resumed["stopped"])
+        self.assertEqual([row["status"] for row in resumed["attempts"]], ["completed"] * 6)
+        stop.touch()
+        self.assertFalse(campaign.run(self.output, progress=quiet, stop_file=stop)["stopped"])
 
     def test_tool_violation_preserves_failed_attempt_and_continues_only_unchanged_inputs(self):
         self.fixture.adapter('''

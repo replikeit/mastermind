@@ -109,6 +109,64 @@ class CorpusTests(unittest.TestCase):
                     self.case.check()
 
 
+    def test_qualification_corpus_needs_one_role_matching_keys_and_acceptance(self):
+        registry, key = copy.deepcopy(self.case.registry), copy.deepcopy(self.case.key)
+        other = dict(self.case.entry, id="other-01", task="tasks/other-01.json", rubric="rubrics/other-01.json")
+        artifact_io.write_new(self.case.root / other["task"], dict(self.case.task, id="other-01"))
+        for mode, code in (("qualified", None), ("mixed_roles", "corpus_role"), ("role_not_text", "corpus_schema"),
+                           ("calibration_key", "corpus_key_schema"), ("calibration_role", "corpus_key_schema"),
+                           ("no_acceptance", "corpus_acceptance")):
+            with self.subTest(mode=mode):
+                self.case.registry, self.case.key = copy.deepcopy(registry), copy.deepcopy(key)
+                self.case.entry = self.case.registry["cases"][0]
+                self.case.save()
+                self.case.qualify()
+                cases, rubric = self.case.registry["cases"], copy.deepcopy(self.case.key)
+                if mode == "mixed_roles":
+                    cases.append(other)
+                elif mode == "role_not_text":
+                    cases[0]["role"] = ["qualification"]
+                elif mode == "calibration_key":
+                    rubric["status"] = "calibration_key_source_reviewed"
+                elif mode == "calibration_role":
+                    cases[0]["role"] = "calibration"
+                elif mode == "no_acceptance":
+                    rubric.pop("acceptance_criteria")
+                self.case.path.write_bytes(artifact_io.canonical(self.case.registry))
+                (self.case.root / self.case.entry["rubric"]).write_bytes(artifact_io.canonical(rubric))
+                if code is None:
+                    self.assertEqual(self.case.check()["cases"][0]["role"], "qualification")
+                    continue
+                with self.assertRaises(artifact_io.BenchmarkError) as raised:
+                    self.case.check()
+                self.assertEqual(raised.exception.code, code)
+
+
+    def test_qualification_key_is_prepared_only_from_a_private_corpus(self):
+        self.case.qualify()
+        tool = self.fixture.root / "tool"
+        tool.mkdir()
+        inside = self.fixture.repo / "private-corpus"
+        shutil.copytree(self.case.root, inside)
+        selected = ["--case", "service-01", "--corpus", str(self.case.path)]
+        for name, selection, options in (
+                ("corpus_in_source", ["--case", "service-01", "--corpus", str(inside / "corpus.json")], {}),
+                ("output_in_source", selected, {"tool_repo": tool, "output": self.fixture.repo / "selected"}),
+                ("output_in_tool", selected, {"tool_repo": tool, "output": tool / "selected"}),
+                ("task_selection", ["--task", str(self.case.root / self.case.entry["task"]),
+                                    "--rubric", str(self.case.root / self.case.entry["rubric"])], {})):
+            with self.subTest(name=name):
+                result = self.case.prepare_cli(selection, **options)
+                self.assertEqual(result.returncode, 2, result.stderr)
+                code = "invalid_selection:" if name == "task_selection" else "corpus_private_location:"
+                self.assertTrue(result.stderr.startswith(code), result.stderr)
+                self.assertFalse(options.get("output", self.fixture.root / "selected").exists())
+        result = self.case.prepare_cli(selected)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        value = artifact_io.load_json(Path(result.stdout.strip()) / "batch.json")
+        self.assertEqual(value["corpus_case"]["role"], "qualification")
+
+
     def test_selected_case_prepares_all_conditions_with_its_index_scope(self):
         config = copy.deepcopy(self.fixture.config)
         config["mmcg"].pop("indexed_files")

@@ -453,6 +453,18 @@ final('Observed src/service.py:2. value() returns 7. Caller reliance is unknown.
             review.export_review(batch, self.root / "conflicting-corpus")
         self.assertEqual(raised.exception.code, "review_identity")
 
+    def test_corpus_role_must_match_the_retained_key_status(self):
+        self.case.qualify()
+        case = corpus.select_case(self.case.path, self.case.task["id"], self.fixture.repo)
+        batch, _ = self.batch(corpus_case=case["summary"])
+        review.export_review(batch, self.output)
+        value = artifact_io.load_json(batch / "batch.json")
+        value["corpus_case"]["role"] = "calibration"
+        (batch / "batch.json").write_bytes(artifact_io.canonical(value))
+        with self.assertRaises(artifact_io.BenchmarkError) as raised:
+            review.export_review(batch, self.root / "relabeled-corpus")
+        self.assertEqual(raised.exception.code, "review_identity")
+
     def test_duplicate_reviewer_cannot_replace_evidence_and_disagreement_is_retained(self):
         batch, _ = self.batch()
         review.export_review(batch, self.output)

@@ -15,6 +15,7 @@ import uuid
 from . import artifacts as artifact_io
 from . import batch as batch_execution
 from . import conditions as condition_contract
+from . import corpus as benchmark_corpus
 from . import protocol as model_protocol
 from . import runtime as runtime_identity
 from . import source as source_snapshot
@@ -343,6 +344,9 @@ def run_trial(trial: Path, credentials: dict[str, str] | None = None) -> dict:
 def prepare_batch(*, repetitions: int = 3, corpus_case: dict | None = None, **kwargs) -> Path:
     if type(repetitions) is not int or not 1 <= repetitions <= 20:
         raise artifact_io.BenchmarkError("invalid_repetitions", "use 1..20 repetitions")
+    rubric = kwargs["rubric"]
+    if corpus_case is None and isinstance(rubric, dict) and rubric.get("status") == benchmark_corpus.KEY_STATUS["qualification"]:
+        raise artifact_io.BenchmarkError("invalid_selection", "select a qualification key with --case from its private corpus")
     config = kwargs["config"]
     conditions = condition_contract.validate_conditions(config["conditions"]) if "conditions" in config else None
     calibration = condition_contract.validate_calibration(config["calibration"], conditions) if "calibration" in config else None
@@ -401,7 +405,7 @@ def main(argv: list[str] | None = None) -> int:
         prepare.add_argument("--" + name, type=Path, required=True)
     selection = prepare.add_mutually_exclusive_group(required=True)
     selection.add_argument("--task", type=Path)
-    selection.add_argument("--case", help="select a checked calibration from the corpus")
+    selection.add_argument("--case", help="select a checked calibration or qualification case from the corpus")
     prepare.add_argument("--rubric", type=Path)
     prepare.add_argument("--corpus", type=Path, help="corpus registry for --case; defaults to the bundled corpus")
     prepare.add_argument("--repetitions", type=int, default=3)
@@ -416,8 +420,10 @@ def main(argv: list[str] | None = None) -> int:
             if args.case is not None:
                 if args.rubric is not None:
                     raise artifact_io.BenchmarkError("invalid_selection", "--case uses its bound corpus rubric")
-                from . import corpus as benchmark_corpus
-                selected = benchmark_corpus.select_case(args.corpus or benchmark_corpus.DEFAULT_CORPUS, args.case, args.source_repo)
+                corpus_path = args.corpus or benchmark_corpus.DEFAULT_CORPUS
+                selected = benchmark_corpus.select_case(corpus_path, args.case, args.source_repo)
+                benchmark_corpus.require_private(selected["summary"]["role"], corpus_path, args.output,
+                    [args.source_repo, args.tool_repo])
                 config = benchmark_corpus.configure_case(selected, config)
                 task, rubric, corpus_case = selected["task"], selected["rubric"], selected["summary"]
             else:

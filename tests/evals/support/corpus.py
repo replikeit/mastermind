@@ -40,17 +40,31 @@ class CorpusFixture:
             path.write_bytes(artifact_io.canonical(value))
 
 
+    def qualify(self):
+        """Turn every case into a sealed qualification case with request-bound acceptance."""
+        for entry in self.registry["cases"]:
+            entry["role"] = "qualification"
+            path = self.root / entry["rubric"]
+            key = artifact_io.load_json(path)
+            key.update(status="qualification_key_source_reviewed", acceptance_criteria=[
+                {"id": "value", "request_excerpt": "What does value return?",
+                 "criterion": "Name the fixed return value with a path:line citation."}])
+            path.write_bytes(artifact_io.canonical(key))
+        self.path.write_bytes(artifact_io.canonical(self.registry))
+        self.key = artifact_io.load_json(self.root / self.entry["rubric"])
+
+
     def check(self):
         return corpus.check_corpus(self.path, self.fixture.repo)
 
 
-    def prepare_cli(self, selection, config=None, module=True):
+    def prepare_cli(self, selection, config=None, module=True, tool_repo=None, output=None):
         config_path = self.fixture.root / "config.json"
         config_path.write_bytes(artifact_io.canonical(self.fixture.config if config is None else config))
         command = [sys.executable, "-m", "evals.benchmark"] if module else [sys.executable, "-m", "evals.benchmark.trials"]
         return subprocess.run([*command, "prepare", *selection, "--config", str(config_path),
-            "--source-repo", str(self.fixture.repo), "--tool-repo", str(self.fixture.repo),
-            "--output", str(self.fixture.root / "selected"), "--repetitions", "1"],
+            "--source-repo", str(self.fixture.repo), "--tool-repo", str(tool_repo or self.fixture.repo),
+            "--output", str(output or self.fixture.root / "selected"), "--repetitions", "1"],
             capture_output=True, text=True, timeout=20)
 
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate published research calibrations without invoking models or indexers.
+"""Validate research calibration and qualification corpora without invoking models or indexers.
 
 Checks structure and evidence reachability, not whether a claim follows from its
 citations. Source review remains a separate, declared property of each key.
@@ -24,6 +24,11 @@ from evals.benchmark import intent
 
 
 DEFAULT_CORPUS = Path(__file__).resolve().parent / "corpus.json"
+
+# Calibration cases are published development examples. Qualification keys stay
+# outside the source and tool repositories, so tuning sessions there cannot fit to them.
+KEY_STATUS = {"calibration": "calibration_key_source_reviewed",
+              "qualification": "qualification_key_source_reviewed"}
 
 DIMENSIONS = ("claim_to_source_support", "critical_evidence_coverage", "material_false_conclusions", "appropriate_unknowns")
 
@@ -65,8 +70,8 @@ def load_corpus(path: Path) -> tuple[Path, dict]:
         if not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", identifier) or identifier in seen:
             raise artifact_io.BenchmarkError("corpus_case_id", "case IDs must be unique lowercase slugs")
         seen.add(identifier)
-        if entry["role"] != "calibration":
-            raise artifact_io.BenchmarkError("corpus_role", "published cases are calibration, not held-out evidence")
+        if _text(entry["role"], 32) not in KEY_STATUS or entry["role"] != value["cases"][0]["role"]:
+            raise artifact_io.BenchmarkError("corpus_role", "a corpus holds only calibration or only qualification cases")
         _texts(entry["coverage"], maximum=8)
         _texts(entry["indexed_files"], maximum=condition_contract.SOURCE_FILE_LIMIT)
         for field, folder in (("task", "tasks"), ("rubric", "rubrics")):
@@ -85,10 +90,12 @@ def validate_key(task: dict, key: dict) -> list[str]:
     model_protocol.validate_rubric(task, key)
     if "acceptance_criteria" in key:
         intent.validate_criteria(task, key["acceptance_criteria"])
-    if (task["kind"] != "research" or key["status"] != "calibration_key_source_reviewed"
+    if (task["kind"] != "research" or key["status"] not in KEY_STATUS.values()
             or key["automatic_quality_score"] is not None
             or key["decision_quality"] != "not_applicable_to_facts_only_research_task"):
-        raise artifact_io.BenchmarkError("corpus_key_schema", "expected a source-reviewed research calibration without a score")
+        raise artifact_io.BenchmarkError("corpus_key_schema", "expected a source-reviewed research key without a score")
+    if key["status"] == KEY_STATUS["qualification"] and "acceptance_criteria" not in key:
+        raise artifact_io.BenchmarkError("corpus_acceptance", "qualification measures original-request acceptance")
     if set(_texts(key["review_dimensions"])) != set(DIMENSIONS):
         raise artifact_io.BenchmarkError("corpus_key_schema", "quality dimensions must assess evidence, not tool order")
     _texts(key["expected_unknowns"])
@@ -170,6 +177,8 @@ def _case(root: Path, registry: dict, entry: dict, source_repo: Path, registry_n
             raise artifact_io.BenchmarkError("corpus_source_control", "corpus registry, tasks and keys cannot be research source files")
     key = artifact_io.load_json(root / entry["rubric"])
     anchors = validate_key(task, key)
+    if key["status"] != KEY_STATUS[entry["role"]]:
+        raise artifact_io.BenchmarkError("corpus_key_schema", "key status differs from its case role")
     indexed = entry["indexed_files"]
     if any(path not in task["source_allowlist"] for path in indexed):
         raise artifact_io.BenchmarkError("corpus_index_scope", "indexed files must be an explicit source subset")
@@ -190,6 +199,17 @@ def select_case(path: Path, identifier: str, source_repo: Path) -> dict:
         if entry["id"] == identifier:
             return _case(root, registry, entry, source_repo, path.name)
     raise artifact_io.BenchmarkError("corpus_case_missing", f"unknown corpus case: {identifier}")
+
+
+def require_private(role: str, corpus_path: Path, output: Path, repos: list[Path]) -> None:
+    if role != "qualification":
+        return
+    places = (corpus_path.parent.resolve(strict=True), output.resolve())
+    for repo in repos:
+        repo = repo.resolve(strict=True)
+        # File identity, not path text, so a case-insensitive alias cannot pass.
+        if any(parent.exists() and parent.samefile(repo) for place in places for parent in (place, *place.parents)):
+            raise artifact_io.BenchmarkError("corpus_private_location", "qualification keys and trial output must stay outside the source and tool repositories")
 
 
 def configure_case(case: dict, config: dict) -> dict:
