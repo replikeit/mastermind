@@ -39,6 +39,9 @@ PROMPT = (b"Assess the retained answer in the current directory. packet.json hol
 
 STDOUT_LIMIT = 64 * 1024 * 1024
 
+TYPOGRAPHY = str.maketrans({"\u2018": "'", "\u2019": "'", "\u201c": '"', "\u201d": '"',
+                            "\u2013": "-", "\u2014": "-", "\u2011": "-", "\u00a0": " "})
+
 
 def load_config(path: Path) -> dict:
     value = artifact_io.load_json(path)
@@ -132,6 +135,29 @@ def reply_reviews(text: str) -> list:
     return reply["reviews"]
 
 
+def repair_quotes(review: dict, answer: str) -> int:
+    """Replace passages that differ from the answer only in typography with the unique exact span.
+
+    Models often retype curly quotes and dashes as ASCII. Every mapping keeps one
+    character, so the stored passage is still an exact substring of the answer.
+    """
+    plain = answer.translate(TYPOGRAPHY)
+    targets = [(claim, "quote") for claim in review.get("claims", []) if isinstance(claim, dict)]
+    targets += [(row, "answer_excerpt") for name in ("knowns", "unknowns", "acceptance")
+                for row in review.get(name, []) if isinstance(row, dict)]
+    repaired = 0
+    for row, field in targets:
+        text = row.get(field)
+        if not isinstance(text, str) or not text or text in answer:
+            continue
+        needle = text.translate(TYPOGRAPHY)
+        start = plain.find(needle)
+        if start >= 0 and plain.find(needle, start + 1) < 0:
+            row[field] = answer[start:start + len(needle)]
+            repaired += 1
+    return repaired
+
+
 def attempt(root: Root, config: dict, key: str, output: Path, name: str, template: dict, item: dict,
             check) -> tuple[dict, dict | None]:
     with tempfile.TemporaryDirectory(prefix="mastermind-judge-") as temporary:
@@ -150,14 +176,14 @@ def attempt(root: Root, config: dict, key: str, output: Path, name: str, templat
     artifact_io.write_new_bytes(output / f"{name}.stderr", bytes(result.stderr))
     record = {"name": name, "review_id": item["review_id"], "stop_reason": result.stop_reason,
               "returncode": result.returncode, "stdout_sha256": sha(stdout), "observed": None, "usage": None,
-              "status": "invalid", "error": None}
+              "quotes_repaired": 0, "status": "invalid", "error": None}
     reviewed = None
     try:
         review_contracts.require(not result.stop_reason and result.returncode == 0,
                                  "CLI did not exit cleanly", "judge_cli_error")
         init, outcome = observe(stdout, record)
         check_runtime(init, outcome, config, workspace)
-        reviewed = check(item, reply_reviews(outcome["result"]))
+        reviewed, record["quotes_repaired"] = check(item, reply_reviews(outcome["result"]))
         record["status"] = "valid"
     except artifact_io.BenchmarkError as error:
         record["error"] = {"code": error.code, "message": str(error)}
@@ -181,11 +207,12 @@ def run(export: Path, config: dict, output: Path, key: str) -> dict:
         check_version(config, key)
 
         def check(item, reviews):
-            review_contracts.require(isinstance(reviews, list) and len(reviews) == 1, "reply must hold one review",
-                                     "judge_output_invalid")
+            review_contracts.require(isinstance(reviews, list) and len(reviews) == 1 and isinstance(reviews[0], dict),
+                                     "reply must hold one review", "judge_output_invalid")
+            repaired = repair_quotes(reviews[0], answers[item["review_id"]])
             value = dict(template, reviewer=config["reviewer"], reviews=reviews)
             check_assessment(value, seal, packet, {item["review_id"]: answers[item["review_id"]]}, sources)
-            return reviews[0]
+            return reviews[0], repaired
 
         output.mkdir(mode=0o700)
         artifact_io.write_new(output / "judge.json", {"kind": "mastermind-judge-config", "schema_version": 2,

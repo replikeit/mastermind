@@ -62,6 +62,7 @@ class JudgeTests(unittest.TestCase):
         self.fixture = self.case.fixture
         self.root = self.fixture.root
         self.case.qualify()
+        self.fixture.adapter("init()\nfinal(answer='Observed src/service.py:2. It\\u2019s fixed. It\\u2018s set.')\n")
         selected = corpus.select_case(self.case.path, self.case.task["id"], self.fixture.repo)
         self.export = self.make_export("review-export", selected["rubric"], selected["summary"])
         self.template = artifact_io.load_json(self.export / "reviewer/assessment-template.json")
@@ -96,6 +97,13 @@ class JudgeTests(unittest.TestCase):
         row = completed_assessment(self.export, "judge")["reviews"][position - 1]
         row["claims"][0].update(change)
         return json.dumps({"reviews": [row]})
+
+    def review_with_quote(self, position, quote):
+        reply = json.loads(self.review(position))
+        reply["reviews"][0]["claims"].append({"quote": quote, "support": "unknown", "anchors": [],
+                                              "material_error": False, "rationale": "Not checkable from source."})
+        reply["reviews"][0]["knowns"][0]["answer_excerpt"] = quote
+        return json.dumps(reply)
 
     def respond_valid(self, first_call, positions):
         for offset, position in enumerate(positions):
@@ -169,6 +177,20 @@ class JudgeTests(unittest.TestCase):
             for option, value in (("--tools", "Read"), ("--permission-mode", "dontAsk"), ("--setting-sources", ""),
                                   ("--output-format", "stream-json"), ("--system-prompt", "Assess the answers.\n")):
                 self.assertEqual(argv[argv.index(option) + 1], value)
+
+    def test_typographic_retyping_is_repaired_only_to_a_unique_exact_span(self):
+        self.respond(1, self.review_with_quote(1, "It's "))
+        self.respond(2, self.review_with_quote(1, "It's fixed."))
+        self.respond_valid(3, (2, 3))
+        code, out, err = self.main()
+        self.assertEqual(code, 0, err)
+        summary = json.loads(out)
+        self.assertEqual([(row["status"], row["quotes_repaired"]) for row in summary["attempts"][:2]],
+                         [("invalid", 0), ("valid", 2)])
+        self.assertEqual(summary["attempts"][0]["error"]["code"], "review_quote")
+        stored = artifact_io.load_json(Path(summary["receipt"]))["assessment"]["reviews"][0]
+        self.assertEqual(stored["claims"][-1]["quote"], "It\u2019s fixed.")
+        self.assertEqual(stored["knowns"][0]["answer_excerpt"], "It\u2019s fixed.")
 
     def test_an_answer_without_a_valid_review_stops_the_run_unresolved(self):
         self.respond(1, "I could not finish the review.")

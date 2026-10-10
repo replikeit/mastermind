@@ -154,6 +154,7 @@ model name, so the served model remains unverified.
 | Runtime | `--bare`, only the `Read` tool and no allow rule, so `dontAsk` denies reads outside the copy. No MCP servers or user, project and local settings; private `HOME` |
 | Observed runtime | The stream's init event must report `Read` only, no MCP servers, the copy as cwd, `dontAsk`, the pinned CLI version and the requested model. Plugins and permission denials are recorded |
 | Attempts | Same prompt each time, at most 3 per answer; an answer stops at its first review that passes the import checks for that answer |
+| Quote repair | A quote or excerpt that matches the answer only after mapping curly quotes, dashes and non-breaking spaces to ASCII is replaced by the unique exact answer span before validation; `quotes_repaired` records the count. Ambiguous or paraphrased passages stay rejected |
 | Rejected attempt | Unclean exit, timeout, output cap, runtime mismatch, error result, another model, no JSON, not exactly one review or a rejected review; retained with its error code |
 | Output | `judge.json`, `answer-K-attempt-N.{stdout,stderr,json}`, `assessment.json` when every answer is reviewed, and `judge-run.json` on every path, with `error` when the run stopped early. Exit 0 only after import |
 | Answer without a valid review | The run stops, no receipt is written and the export's outcomes stay unresolved |
