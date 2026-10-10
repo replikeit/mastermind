@@ -18,6 +18,7 @@ from evals.benchmark import review_io
 from evals.benchmark import trials as trial_runner
 from evals.benchmark.review_io import Root
 from tests.evals.support.corpus import CorpusFixture
+from tests.evals.support.review import completed_assessment
 
 
 @unittest.skipUnless(os.name == "posix" and shutil.which("git"), "requires POSIX and Git")
@@ -57,19 +58,7 @@ final(model_error=mode == 'partial')
 ''')
 
     def assessment(self, reviewer="alice"):
-        value = artifact_io.load_json(self.output / "reviewer/assessment-template.json")
-        value["reviewer"] = reviewer
-        for item in value["reviews"]:
-            item["outcome"] = {"status": "unsatisfied", "rationale": "The required value and uncertainty are omitted."}
-            item["claims"] = [{"quote": "Observed src/service.py:2.", "support": "supported",
-                               "anchors": ["src/service.py:2"], "material_error": False,
-                               "rationale": "The cited function returns the fixed value."}]
-            item["knowns"] = [{"known_index": 0, "coverage": "partial",
-                               "answer_excerpt": "Observed src/service.py:2.",
-                               "rationale": "It cites the source but does not state the value."}]
-            item["unknowns"] = [{"unknown_index": 0, "handling": "omitted", "answer_excerpt": None,
-                                 "rationale": "Caller reliance is not discussed."}]
-        return value
+        return completed_assessment(self.output, reviewer)
 
     def submit(self, value):
         path = self.root / "assessment.json"

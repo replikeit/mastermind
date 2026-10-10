@@ -120,6 +120,45 @@ For a corpus-wide campaign, repeat import in every case directory under the
 review set. Use the same reviewer label only for the same reviewer. The campaign
 comparison checks each export against its original batch, task and key.
 
+## Assess with a model judge
+
+A model judge fills the same assessment form and is admitted through the same
+import checks. Its labels are model declarations: calibrate it against blind human
+review before using it as a primary reviewer.
+
+Prerequisites: a review export whose key has acceptance criteria, a pinned Claude
+Code CLI, `ANTHROPIC_API_KEY` (the CLI runs in `--bare` mode and never reads OAuth
+or the keychain) and a frozen instruction. [judge-instruction.md](judge-instruction.md)
+is a starting instruction, not a calibrated one.
+
+```json
+{"cli": {"path": "/absolute/path/to/claude", "sha256": "<sha256>", "version": "<version>", "origin": "npm"},
+ "model": "<exact model ID>", "instruction": "/absolute/path/to/judge-instruction.md",
+ "reviewer": "judge", "attempts": 3, "timeout_seconds": 1800}
+```
+
+```sh
+python3 -m evals.benchmark.judge /absolute/path/to/review-export \
+  --config /absolute/path/to/judge.json --output /absolute/path/to/new-judge-run
+```
+
+| Contract | Behavior |
+|---|---|
+| Visible inputs | A verified copy of `reviewer/` in a fresh temporary directory per attempt; no coordinator, raw trials or earlier attempts |
+| Runtime | `--bare`, only the `Read` tool and no allow rule, so `dontAsk` denies reads outside the copy. No MCP servers or user, project and local settings; private `HOME` |
+| Observed runtime | The stream's init event must report `Read` only, no MCP servers, the copy as cwd, `dontAsk`, the pinned CLI version and the requested model. Plugins and permission denials are recorded |
+| Attempts | Same prompt each time, at most 3; stops at the first output that passes the import checks |
+| Rejected attempt | Unclean exit, timeout, output cap, runtime mismatch, error result, another model, no JSON or a rejected assessment; retained with its error code |
+| Output | `judge.json`, `attempt-N.{stdout,stderr,json}`, `assessment.json` when valid, and `judge-run.json` on every path, with `error` when the run stopped early. Exit 0 only after import |
+| No valid attempt | No receipt; the export's outcomes stay unresolved |
+
+Another reviewer may import during a judge run; the importer rechecks the export
+under its lock. The CLI's permission layer is not an OS sandbox, and built-in
+plugins still load under `--bare`. Judge output quotes answers and keys, so keep
+it with the review export. If the import fails after a valid attempt, import the
+retained `assessment.json` with `review import`. The importer checks quotes,
+anchors and outcome consistency, not semantic truth.
+
 ## Compare paired outcomes
 
 ```sh

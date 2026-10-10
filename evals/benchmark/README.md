@@ -41,6 +41,7 @@ flowchart LR
 | `adapters.bundle`, `adapters.claude`, `adapters.codex`, `tools`, `mcp` | Frozen client runtimes and read-only tool transport |
 | `corpus` | Calibration and qualification task/key source bindings |
 | `review`, `review_io`, `review_contracts` | Blinded packets and offline artifact validation |
+| `judge` | Pinned Claude CLI assessment of a review export, with every attempt retained |
 | `assessment` | Reviewer evidence and receipt validation |
 | `analysis` | Paired outcomes, uncertainty and all-attempt resource totals |
 | `efficiency` | Useful outcomes per measured resource, by task and corpus |
@@ -667,7 +668,7 @@ keys and case-specific counterexamples stay outside the model input.
 
 ```sh
 python3 -m unittest tests.evals.benchmark.test_trials tests.evals.benchmark.test_claude \
-  tests.evals.benchmark.test_corpus tests.evals.benchmark.test_review
+  tests.evals.benchmark.test_corpus tests.evals.benchmark.test_review tests.evals.benchmark.test_judge
 ```
 
 These checks exercise real disposable files/processes and fixture adapters.
