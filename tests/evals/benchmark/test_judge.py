@@ -1,4 +1,4 @@
-"""The judge sees only a reviewer copy, retains every attempt and imports one valid assessment."""
+"""The judge sees one answer per call, retains every attempt and imports one complete assessment."""
 
 from contextlib import redirect_stderr, redirect_stdout
 import hashlib
@@ -27,7 +27,9 @@ cwd = pathlib.Path.cwd()
 (state / f'call-{call}.json').write_text(json.dumps({
     'argv': sys.argv[1:], 'stdin': sys.stdin.read(), 'cwd': str(cwd), 'home': os.environ['HOME'],
     'environment': sorted(os.environ), 'key': os.environ.get('ANTHROPIC_API_KEY'),
+    'base_url': os.environ.get('ANTHROPIC_BASE_URL'),
     'disabled': [os.environ.get(name) for name in ('DISABLE_AUTOUPDATER', 'CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC')],
+    'template': json.loads((cwd / 'assessment-template.json').read_text()),
     'files': {str(path.relative_to(cwd)): hashlib.sha256(path.read_bytes()).hexdigest()
               for path in cwd.rglob('*') if path.is_file()}}))
 def load(name, default):
@@ -62,6 +64,7 @@ class JudgeTests(unittest.TestCase):
         self.case.qualify()
         selected = corpus.select_case(self.case.path, self.case.task["id"], self.fixture.repo)
         self.export = self.make_export("review-export", selected["rubric"], selected["summary"])
+        self.template = artifact_io.load_json(self.export / "reviewer/assessment-template.json")
         self.state = self.root / "judge-state"
         self.state.mkdir()
         os.mkfifo(self.state / "never")
@@ -88,14 +91,19 @@ class JudgeTests(unittest.TestCase):
             if value is not None:
                 (self.state / f"{name}-{call}.json").write_text(json.dumps(value))
 
-    def reviews(self, **change):
-        rows = completed_assessment(self.export, "judge")["reviews"]
-        for row in rows:
-            row["claims"][0].update(change)
-        return json.dumps({"reviews": rows})
+    def review(self, position, **change):
+        """A completed reply for the answer at this template position (1-based)."""
+        row = completed_assessment(self.export, "judge")["reviews"][position - 1]
+        row["claims"][0].update(change)
+        return json.dumps({"reviews": [row]})
+
+    def respond_valid(self, first_call, positions):
+        for offset, position in enumerate(positions):
+            self.respond(first_call + offset, self.review(position))
 
     def calls(self):
-        return [json.loads(path.read_text()) for path in sorted(self.state.glob("call-*.json"))]
+        paths = sorted(self.state.glob("call-*.json"), key=lambda path: int(path.stem.split("-")[1]))
+        return [json.loads(path.read_text()) for path in paths]
 
     def main(self, config=None, output=None, export=None, key="fixture-key"):
         path = self.root / "judge-config.json"
@@ -111,39 +119,48 @@ class JudgeTests(unittest.TestCase):
         output = output or self.output
         self.assertEqual(artifact_io.load_json(output / "judge-run.json"), summary)
         for record in summary["attempts"]:
-            index = record["attempt"]
-            self.assertEqual(artifact_io.load_json(output / f"attempt-{index}.json"), record)
-            stdout = (output / f"attempt-{index}.stdout").read_bytes()
+            self.assertEqual(artifact_io.load_json(output / f"{record['name']}.json"), record)
+            stdout = (output / f"{record['name']}.stdout").read_bytes()
             self.assertEqual(hashlib.sha256(stdout).hexdigest(), record["stdout_sha256"])
-            self.assertTrue((output / f"attempt-{index}.stderr").is_file())
+            self.assertTrue((output / f"{record['name']}.stderr").is_file())
 
-    def test_retries_invalid_output_and_imports_first_valid_assessment(self):
-        self.respond(1, self.reviews(quote="A sentence the answer never wrote."))
-        self.respond(2, "```json\n" + self.reviews() + "\n```")
+    def test_retries_one_answer_and_imports_the_complete_assessment(self):
+        self.respond(1, self.review(1, quote="A sentence the answer never wrote."))
+        self.respond(2, "```json\n" + self.review(1) + "\n```\nDone; the {reviews} field above holds one review.")
+        self.respond_valid(3, (2, 3))
         code, out, err = self.main()
         self.assertEqual(code, 0, err)
         summary = json.loads(out)
-        self.assertEqual([row["status"] for row in summary["attempts"]], ["invalid", "valid"])
+        items = self.template["reviews"]
+        self.assertEqual([(row["review_id"], row["status"]) for row in summary["attempts"]],
+                         [(items[0]["review_id"], "invalid")] + [(item["review_id"], "valid") for item in items])
         self.assertEqual(summary["attempts"][0]["error"]["code"], "review_quote")
-        self.assertIsNone(summary["error"])
+        self.assertEqual((summary["answers"], summary["assessed_answers"], summary["error"]), (3, 3, None))
         self.assert_retained(summary)
         self.assertEqual(review.review_status(self.export)["reviewers"], [{"reviewer": "judge", "reviewed": 3}])
         recorded = artifact_io.load_json(self.output / "judge.json")
         self.assertEqual(recorded["instruction_sha256"], hashlib.sha256(self.instruction.read_bytes()).hexdigest())
         self.assertEqual(recorded["prompt_sha256"], hashlib.sha256(judge.PROMPT).hexdigest())
         reviewer = self.export / "reviewer"
-        expected = {str(path.relative_to(reviewer)): hashlib.sha256(path.read_bytes()).hexdigest()
-                    for path in reviewer.rglob("*") if path.is_file()}
+        verified = {str(path.relative_to(reviewer)): hashlib.sha256(path.read_bytes()).hexdigest()
+                    for path in reviewer.rglob("*") if path.is_file() and path.parent.name != "answers"
+                    and path.name != "assessment-template.json"}
         calls = self.calls()
-        self.assertEqual(len(calls), 2)
-        self.assertNotEqual(calls[0]["cwd"], calls[1]["cwd"])
-        self.assertNotEqual(calls[0]["home"], calls[1]["home"])
-        for call in calls:
+        self.assertEqual(len(calls), 4)
+        self.assertEqual(len({call["cwd"] for call in calls}), 4)
+        self.assertEqual(len({call["home"] for call in calls}), 4)
+        for call, item in zip(calls, [items[0], *items]):
+            answer = f"answers/{item['review_id']}.md"
+            files = dict(call["files"])
+            self.assertEqual(files.pop(answer), hashlib.sha256((reviewer / answer).read_bytes()).hexdigest())
+            files.pop("assessment-template.json")
+            self.assertEqual(files, verified)
+            self.assertEqual(call["template"], dict(self.template, reviews=[item]))
             argv = call["argv"]
             self.assertEqual(call["stdin"], judge.PROMPT.decode())
-            self.assertEqual(call["files"], expected)
             self.assertEqual(Path(call["home"]).parent, Path(call["cwd"]).parent)
             self.assertEqual(call["key"], "fixture-key")
+            self.assertIsNone(call["base_url"])
             self.assertEqual(call["disabled"], ["1", "1"])
             self.assertFalse(set(CANARIES) & set(call["environment"]))
             self.assertIn("--bare", argv)
@@ -153,40 +170,44 @@ class JudgeTests(unittest.TestCase):
                                   ("--output-format", "stream-json"), ("--system-prompt", "Assess the answers.\n")):
                 self.assertEqual(argv[argv.index(option) + 1], value)
 
-    def test_keeps_every_rejected_attempt_and_leaves_the_review_unresolved(self):
+    def test_an_answer_without_a_valid_review_stops_the_run_unresolved(self):
         self.respond(1, "I could not finish the review.")
-        self.respond(2, self.reviews(), models=("judge-model", "another-model"))
-        self.respond(3, self.reviews(), init={"tools": ["Read", "Bash"]})
+        self.respond(2, json.dumps({"reviews": [json.loads(self.review(1))["reviews"][0]] * 2}))
+        self.respond(3, self.review(2))
         code, out, err = self.main()
         self.assertEqual(code, 2, err)
         summary = json.loads(out)
         self.assertIsNone(summary["receipt"])
+        self.assertEqual(summary["assessed_answers"], 0)
         self.assertEqual([row["error"]["code"] for row in summary["attempts"]],
-                         ["judge_output_invalid", "judge_model_mismatch", "judge_runtime_mismatch"])
-        self.assertEqual(summary["attempts"][1]["observed"]["models_used"], ["another-model", "judge-model"])
-        self.assertEqual(summary["attempts"][2]["observed"]["tools"], ["Read", "Bash"])
+                         ["judge_output_invalid", "judge_output_invalid", "review_inventory"])
+        self.assertEqual(len(self.calls()), 3)
         self.assert_retained(summary)
         self.assertFalse((self.output / "assessment.json").exists())
         self.assertEqual(review.review_status(self.export)["reviewers"], [])
 
     def test_each_runtime_field_outside_the_contract_rejects_the_attempt(self):
-        for call, (init, code) in enumerate((
-                ({"cwd": "/elsewhere"}, "judge_runtime_mismatch"),
-                ({"mcp_servers": [{"name": "extra", "status": "connected"}]}, "judge_runtime_mismatch"),
-                ({"permissionMode": "default"}, "judge_runtime_mismatch"),
-                ({"claude_code_version": "fake-v2"}, "judge_runtime_mismatch"),
-                ({"model": "another-model"}, "judge_model_mismatch")), start=1):
-            with self.subTest(init=init):
-                self.respond(call, self.reviews(), init=init)
+        for call, (change, code) in enumerate((
+                ({"init": {"tools": ["Read", "Bash"]}}, "judge_runtime_mismatch"),
+                ({"init": {"cwd": "/elsewhere"}}, "judge_runtime_mismatch"),
+                ({"init": {"mcp_servers": [{"name": "extra", "status": "connected"}]}}, "judge_runtime_mismatch"),
+                ({"init": {"permissionMode": "default"}}, "judge_runtime_mismatch"),
+                ({"init": {"claude_code_version": "fake-v2"}}, "judge_runtime_mismatch"),
+                ({"init": {"model": "another-model"}}, "judge_model_mismatch"),
+                ({"models": ("judge-model", "another-model")}, "judge_model_mismatch")), start=1):
+            with self.subTest(change=change):
+                self.respond(call, self.review(1), **change)
                 status, out, err = self.main(dict(self.config, attempts=1), output=self.root / f"judge-run-{call}")
                 self.assertEqual(status, 2, err)
-                self.assertEqual(json.loads(out)["attempts"][0]["error"]["code"], code)
+                record = json.loads(out)["attempts"][0]
+                self.assertEqual(record["error"]["code"], code)
+        self.assertEqual(record["observed"]["models_used"], ["another-model", "judge-model"])
         self.assertEqual(review.review_status(self.export)["reviewers"], [])
 
     def test_cli_failures_and_error_results_are_rejected_attempts(self):
-        self.respond(1, self.reviews(), mode="block")
-        self.respond(2, self.reviews(), mode="flood")
-        self.respond(3, self.reviews(), mode="exit")
+        self.respond(1, self.review(1), mode="block")
+        self.respond(2, self.review(1), mode="flood")
+        self.respond(3, self.review(1), mode="exit")
         with patch.object(judge, "STDOUT_LIMIT", 4096):
             code, out, err = self.main(dict(self.config, timeout_seconds=1))
         self.assertEqual(code, 2, err)
@@ -196,23 +217,32 @@ class JudgeTests(unittest.TestCase):
         self.assertEqual(attempts[2]["returncode"], 3)
         for call, change in ((4, {"is_error": True}), (5, {"subtype": "error_max_turns"})):
             with self.subTest(change=change):
-                self.respond(call, self.reviews(), **change)
+                self.respond(call, self.review(1), **change)
                 code, out, err = self.main(dict(self.config, attempts=1), output=self.root / f"judge-run-{call}")
                 self.assertEqual(code, 2, err)
                 self.assertEqual(json.loads(out)["attempts"][0]["error"]["code"], "judge_cli_error")
         self.assertEqual(review.review_status(self.export)["reviewers"], [])
 
+    def test_configured_endpoint_reaches_the_cli_and_its_provenance(self):
+        endpoint = "https://judge.example.invalid/api/anthropic"
+        self.respond_valid(1, (1, 2, 3))
+        code, _, err = self.main(dict(self.config, base_url=endpoint))
+        self.assertEqual(code, 0, err)
+        self.assertEqual({call["base_url"] for call in self.calls()}, {endpoint})
+        self.assertEqual(artifact_io.load_json(self.output / "judge.json")["base_url"], endpoint)
+
     def test_another_reviewer_import_does_not_discard_a_valid_assessment(self):
         alice = self.root / "alice.json"
         alice.write_bytes(artifact_io.canonical(completed_assessment(self.export, "alice")))
         original = judge.run_bounded
+        imported = []
 
         def run_with_concurrent_import(command, **options):
-            if "--version" not in command:
-                review.import_assessment(self.export, alice)
+            if "--version" not in command and not imported:
+                imported.append(review.import_assessment(self.export, alice))
             return original(command, **options)
 
-        self.respond(1, self.reviews())
+        self.respond_valid(1, (1, 2, 3))
         with patch.object(judge, "run_bounded", side_effect=run_with_concurrent_import):
             code, out, err = self.main()
         self.assertEqual(code, 0, err)
@@ -220,7 +250,7 @@ class JudgeTests(unittest.TestCase):
                          ["alice", "judge"])
 
     def test_failed_import_keeps_the_run_summary(self):
-        self.respond(1, self.reviews())
+        self.respond_valid(1, (1, 2, 3))
         with patch.object(review, "import_assessment", side_effect=artifact_io.BenchmarkError("review_busy", "busy")):
             code, out, err = self.main()
         self.assertEqual(code, 2)
@@ -228,7 +258,7 @@ class JudgeTests(unittest.TestCase):
         summary = artifact_io.load_json(self.output / "judge-run.json")
         self.assertEqual(summary["error"]["code"], "review_busy")
         self.assertIsNone(summary["receipt"])
-        self.assertEqual(summary["attempts"][0]["status"], "valid")
+        self.assertEqual(summary["assessed_answers"], 3)
         self.assertTrue((self.output / "assessment.json").is_file())
 
     def test_refuses_before_any_model_call(self):
@@ -244,7 +274,8 @@ class JudgeTests(unittest.TestCase):
                   "claude_cli_version_mismatch"),
                  ("extra_field", {"config": dict(self.config, effort="max")}, "judge_config")]
         for field, value in (("attempts", 4), ("attempts", 0), ("attempts", True), ("timeout_seconds", 0),
-                             ("timeout_seconds", 7201), ("timeout_seconds", True), ("reviewer", "Judge"), ("model", "")):
+                             ("timeout_seconds", 7201), ("timeout_seconds", True), ("reviewer", "Judge"), ("model", ""),
+                             ("base_url", "http://judge.invalid"), ("base_url", "https://judge invalid")):
             cases.append((f"{field}={value!r}", {"config": dict(self.config, **{field: value})}, "judge_config"))
         cases.append(("reviewer_exists", {}, "review_exists"))
         for name, change, code in cases:

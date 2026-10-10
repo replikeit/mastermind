@@ -142,15 +142,21 @@ python3 -m evals.benchmark.judge /absolute/path/to/review-export \
   --config /absolute/path/to/judge.json --output /absolute/path/to/new-judge-run
 ```
 
+Optional `"base_url"` sends the CLI's requests and `ANTHROPIC_API_KEY` to another
+Anthropic-compatible https endpoint, for example GLM through
+`https://api.z.ai/api/anthropic` with `"model": "glm-5.3"`. That provider then
+receives the task, key, sources and answers. Such endpoints can echo the requested
+model name, so the served model remains unverified.
+
 | Contract | Behavior |
 |---|---|
-| Visible inputs | A verified copy of `reviewer/` in a fresh temporary directory per attempt; no coordinator, raw trials or earlier attempts |
+| Visible inputs | One answer per call: the verified packet and sources, that answer and a one-review template, in a fresh temporary directory. No other answers, coordinator, raw trials or earlier attempts |
 | Runtime | `--bare`, only the `Read` tool and no allow rule, so `dontAsk` denies reads outside the copy. No MCP servers or user, project and local settings; private `HOME` |
 | Observed runtime | The stream's init event must report `Read` only, no MCP servers, the copy as cwd, `dontAsk`, the pinned CLI version and the requested model. Plugins and permission denials are recorded |
-| Attempts | Same prompt each time, at most 3; stops at the first output that passes the import checks |
-| Rejected attempt | Unclean exit, timeout, output cap, runtime mismatch, error result, another model, no JSON or a rejected assessment; retained with its error code |
-| Output | `judge.json`, `attempt-N.{stdout,stderr,json}`, `assessment.json` when valid, and `judge-run.json` on every path, with `error` when the run stopped early. Exit 0 only after import |
-| No valid attempt | No receipt; the export's outcomes stay unresolved |
+| Attempts | Same prompt each time, at most 3 per answer; an answer stops at its first review that passes the import checks for that answer |
+| Rejected attempt | Unclean exit, timeout, output cap, runtime mismatch, error result, another model, no JSON, not exactly one review or a rejected review; retained with its error code |
+| Output | `judge.json`, `answer-K-attempt-N.{stdout,stderr,json}`, `assessment.json` when every answer is reviewed, and `judge-run.json` on every path, with `error` when the run stopped early. Exit 0 only after import |
+| Answer without a valid review | The run stops, no receipt is written and the export's outcomes stay unresolved |
 
 Another reviewer may import during a judge run; the importer rechecks the export
 under its lock. The CLI's permission layer is not an OS sandbox, and built-in

@@ -1,10 +1,10 @@
-"""Assess a review export with a pinned Claude CLI and import its first valid assessment.
+"""Assess a review export with a pinned Claude CLI, one answer per call, and import the result.
 
-The judge reads a verified copy of reviewer/ in a fresh temporary directory, so
-the coordinator mapping, raw trials and earlier attempts are not beside it. The
-CLI's permission layer confines Read to that directory; it is not an OS sandbox.
-Judge labels are model declarations until they are calibrated against blind
-human review.
+Each call reads the verified packet, sources and a single answer in a fresh
+temporary directory, so other answers, the coordinator mapping, raw trials and
+earlier attempts are not beside it. The CLI's permission layer confines Read to
+that directory; it is not an OS sandbox. Judge labels are model declarations
+until they are calibrated against blind human review.
 """
 
 from __future__ import annotations
@@ -26,24 +26,28 @@ from .review_io import Root, sha
 from evals.shared.process import run_bounded
 
 
-VERSION = "mastermind-judge-v1"
+VERSION = "mastermind-judge-v2"
 
 # An allow rule for Read would also lift the CLI's working-directory confinement,
 # so permissions come only from dontAsk mode.
 TOOLS = "Read"
 
-PROMPT = (b"Assess every retained answer in the current directory. packet.json holds the original task "
-          b"and its review key, answers/ holds the answers and source/ holds the cited source. Complete "
-          b"assessment-template.json and reply with only a JSON object whose \"reviews\" field holds the "
-          b"completed reviews.\n")
+PROMPT = (b"Assess the retained answer in the current directory. packet.json holds the original task "
+          b"and its review key, answers/ holds the answer and source/ holds the cited source. Complete "
+          b"the single review in assessment-template.json and reply with only a JSON object whose "
+          b"\"reviews\" field holds that one completed review.\n")
 
 STDOUT_LIMIT = 64 * 1024 * 1024
 
 
 def load_config(path: Path) -> dict:
     value = artifact_io.load_json(path)
-    review_contracts.require(isinstance(value, dict) and set(value) == {
-            "cli", "model", "instruction", "reviewer", "attempts", "timeout_seconds"}, "unexpected judge config fields", "judge_config")
+    required = {"cli", "model", "instruction", "reviewer", "attempts", "timeout_seconds"}
+    review_contracts.require(isinstance(value, dict) and required <= set(value) <= required | {"base_url"},
+                             "unexpected judge config fields", "judge_config")
+    review_contracts.require("base_url" not in value or isinstance(value["base_url"], str)
+            and re.fullmatch(r"https://\S+", value["base_url"]),
+            "base_url must be an https endpoint", "judge_config")
     review_contracts.require(isinstance(value["model"], str) and value["model"].strip()
             and isinstance(value["reviewer"], str) and re.fullmatch(r"[a-z0-9][a-z0-9_-]{0,63}", value["reviewer"])
             and type(value["attempts"]) is int and 1 <= value["attempts"] <= 3
@@ -75,15 +79,19 @@ def check_version(config: dict, key: str) -> None:
         raise artifact_io.BenchmarkError("claude_cli_version_mismatch", "CLI does not report the pinned version")
 
 
-def write_workspace(root: Root, workspace: Path) -> None:
+def write_workspace(root: Root, workspace: Path, template: dict, item: dict) -> None:
+    answer = "reviewer/answers/" + item["review_id"] + ".md"
     for path, record in sorted(root.records.items()):
-        if not path.startswith("reviewer/") or record["sha256"] is None:
+        if (not path.startswith("reviewer/") or record["sha256"] is None
+                or path == "reviewer/assessment-template.json"
+                or path.startswith("reviewer/answers/") and path != answer):
             continue
         body = root.read(path, record["limit"])
         review_contracts.require(sha(body) == record["sha256"], "reviewer packet changed", "review_changed")
         target = workspace / path.removeprefix("reviewer/")
         target.parent.mkdir(parents=True, exist_ok=True)
         artifact_io.write_new_bytes(target, body)
+    artifact_io.write_new(workspace / "assessment-template.json", dict(template, reviews=[item]))
 
 
 def observe(stdout: bytes, record: dict) -> tuple[dict, dict]:
@@ -115,42 +123,48 @@ def check_runtime(init: dict, result: dict, config: dict, workspace: Path) -> No
 
 
 def reply_reviews(text: str) -> list:
-    start, end = text.find("{"), text.rfind("}")
-    review_contracts.require(0 <= start < end, "reply contains no JSON object", "judge_output_invalid")
-    reply = artifact_io.parse_json(text[start:end + 1].encode())
+    start = text.find("{")
+    review_contracts.require(start >= 0, "reply contains no JSON object", "judge_output_invalid")
+    # The first complete object is the reply; prose after it is ignored, duplicate keys are not.
+    _, end = json.JSONDecoder().raw_decode(text, start)
+    reply = artifact_io.parse_json(text[start:end].encode())
     review_contracts.require(isinstance(reply, dict) and "reviews" in reply, "reply omits reviews", "judge_output_invalid")
     return reply["reviews"]
 
 
-def attempt(root: Root, config: dict, key: str, output: Path, index: int, check) -> tuple[dict, dict | None]:
+def attempt(root: Root, config: dict, key: str, output: Path, name: str, template: dict, item: dict,
+            check) -> tuple[dict, dict | None]:
     with tempfile.TemporaryDirectory(prefix="mastermind-judge-") as temporary:
         base = Path(temporary).resolve()
         workspace = base / "workspace"
-        write_workspace(root, workspace)
+        write_workspace(root, workspace, template, item)
         env = runtime_identity.clean_environment(base, {"ANTHROPIC_API_KEY": key})
         env.update({"DISABLE_AUTOUPDATER": "1", "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
                     "DISABLE_TELEMETRY": "1", "DISABLE_ERROR_REPORTING": "1"})
+        if "base_url" in config:
+            env["ANTHROPIC_BASE_URL"] = config["base_url"]
         result = run_bounded(command(config), cwd=workspace, env=env, stdin=PROMPT,
                              timeout=config["timeout_seconds"], stdout_limit=STDOUT_LIMIT, stderr_limit=256 * 1024)
     stdout = bytes(result.stdout)
-    artifact_io.write_new_bytes(output / f"attempt-{index}.stdout", stdout)
-    artifact_io.write_new_bytes(output / f"attempt-{index}.stderr", bytes(result.stderr))
-    record = {"attempt": index, "stop_reason": result.stop_reason, "returncode": result.returncode,
-              "stdout_sha256": sha(stdout), "observed": None, "usage": None, "status": "invalid", "error": None}
-    assessment = None
+    artifact_io.write_new_bytes(output / f"{name}.stdout", stdout)
+    artifact_io.write_new_bytes(output / f"{name}.stderr", bytes(result.stderr))
+    record = {"name": name, "review_id": item["review_id"], "stop_reason": result.stop_reason,
+              "returncode": result.returncode, "stdout_sha256": sha(stdout), "observed": None, "usage": None,
+              "status": "invalid", "error": None}
+    reviewed = None
     try:
         review_contracts.require(not result.stop_reason and result.returncode == 0,
                                  "CLI did not exit cleanly", "judge_cli_error")
         init, outcome = observe(stdout, record)
         check_runtime(init, outcome, config, workspace)
-        assessment = check(reply_reviews(outcome["result"]))
+        reviewed = check(item, reply_reviews(outcome["result"]))
         record["status"] = "valid"
     except artifact_io.BenchmarkError as error:
         record["error"] = {"code": error.code, "message": str(error)}
     except (ValueError, TypeError, KeyError, AttributeError) as error:
         record["error"] = {"code": "judge_output_invalid", "message": str(error)}
-    artifact_io.write_new(output / f"attempt-{index}.json", record)
-    return record, assessment if record["status"] == "valid" else None
+    artifact_io.write_new(output / f"{name}.json", record)
+    return record, reviewed if record["status"] == "valid" else None
 
 
 def run(export: Path, config: dict, output: Path, key: str) -> dict:
@@ -166,37 +180,48 @@ def run(export: Path, config: dict, output: Path, key: str) -> dict:
                 "reviewer already submitted an assessment", "review_exists")
         check_version(config, key)
 
-        def check(reviews):
+        def check(item, reviews):
+            review_contracts.require(isinstance(reviews, list) and len(reviews) == 1, "reply must hold one review",
+                                     "judge_output_invalid")
             value = dict(template, reviewer=config["reviewer"], reviews=reviews)
-            check_assessment(value, seal, packet, answers, sources)
-            return value
+            check_assessment(value, seal, packet, {item["review_id"]: answers[item["review_id"]]}, sources)
+            return reviews[0]
 
         output.mkdir(mode=0o700)
-        artifact_io.write_new(output / "judge.json", {"kind": "mastermind-judge-config", "schema_version": 1,
+        artifact_io.write_new(output / "judge.json", {"kind": "mastermind-judge-config", "schema_version": 2,
             "version": VERSION, "export_id": seal["export_id"], "packet_sha256": seal["packet_sha256"],
             "template_sha256": seal["template_sha256"], "cli": config["cli"], "model": config["model"],
-            "reviewer": config["reviewer"], "instruction_sha256": config["instruction_sha256"],
-            "prompt_sha256": sha(PROMPT), "tools": TOOLS, "attempts": config["attempts"],
-            "timeout_seconds": config["timeout_seconds"]})
-        attempts, receipt, failure = [], None, None
+            "base_url": config.get("base_url"), "reviewer": config["reviewer"],
+            "instruction_sha256": config["instruction_sha256"], "prompt_sha256": sha(PROMPT), "tools": TOOLS,
+            "attempts_per_answer": config["attempts"], "timeout_seconds": config["timeout_seconds"]})
+        attempts, accepted, receipt, failure = [], [], None, None
         try:
-            for index in range(1, config["attempts"] + 1):
-                record, assessment = attempt(root, config, key, output, index, check)
-                attempts.append(record)
-                if assessment is not None:
-                    artifact_io.write_new(output / "assessment.json", assessment)
-                    # The importer re-verifies the export and assessment under its own lock;
-                    # another reviewer's receipt is not input drift for this judge.
-                    receipt = str(review.import_assessment(export, output / "assessment.json"))
+            for position, item in enumerate(template["reviews"], start=1):
+                for index in range(1, config["attempts"] + 1):
+                    record, reviewed = attempt(root, config, key, output, f"answer-{position}-attempt-{index}",
+                                               template, item, check)
+                    attempts.append(record)
+                    if reviewed is not None:
+                        accepted.append(reviewed)
+                        break
+                else:
+                    # An assessment must cover every answer, so later answers cannot help.
                     break
+            if len(accepted) == len(template["reviews"]):
+                assessment = dict(template, reviewer=config["reviewer"], reviews=accepted)
+                artifact_io.write_new(output / "assessment.json", assessment)
+                # The importer re-verifies the export and assessment under its own lock;
+                # another reviewer's receipt is not input drift for this judge.
+                receipt = str(review.import_assessment(export, output / "assessment.json"))
         except BaseException as error:
             failure = {"code": getattr(error, "code", "judge_error"), "message": str(error)}
             raise
         finally:
-            summary = {"kind": "mastermind-judge-run", "schema_version": 1, "export_id": seal["export_id"],
-                       "reviewer": config["reviewer"], "attempts": attempts, "receipt": receipt, "error": failure,
-                       "semantics": "model_declared_not_human_calibrated", "comparison_accepted": False,
-                       "quality_uplift": None}
+            summary = {"kind": "mastermind-judge-run", "schema_version": 2, "export_id": seal["export_id"],
+                       "reviewer": config["reviewer"], "answers": len(template["reviews"]),
+                       "assessed_answers": len(accepted), "attempts": attempts, "receipt": receipt,
+                       "error": failure, "semantics": "model_declared_not_human_calibrated",
+                       "comparison_accepted": False, "quality_uplift": None}
             artifact_io.write_new(output / "judge-run.json", summary)
     return summary
 
