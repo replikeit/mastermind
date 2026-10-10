@@ -172,12 +172,15 @@ def paired_comparison(coordinator, assessment, baseline, candidate, *, outcome_b
         intervals = {}
         for condition, label in ((baseline, "baseline"), (candidate, "candidate")):
             slot = slots[(repetition, condition)]
-            interval, reason = outcome_interval(slot, reviews.get(slot["review_id"]))
+            reviewed = reviews.get(slot["review_id"])
+            interval, reason = outcome_interval(slot, reviewed)
             intervals[condition] = interval
             for index in (0, 1):
                 totals[condition][index] += interval[index]
             pair[label] = {"review_id": slot["review_id"], "run_status": slot["status"],
-                           "success": {"lower": interval[0], "upper": interval[1]}, "reason": reason}
+                           "success": {"lower": interval[0], "upper": interval[1]}, "reason": reason,
+                           "material_error": any(claim["material_error"] for claim in reviewed["claims"])
+                           if reviewed and "claims" in reviewed else None}
         lower = intervals[candidate][0] - intervals[baseline][1]
         upper = intervals[candidate][1] - intervals[baseline][0]
         pair["success_delta"] = {"lower": lower, "upper": upper}

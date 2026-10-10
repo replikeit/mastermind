@@ -42,6 +42,7 @@ flowchart LR
 | `corpus` | Calibration and qualification task/key source bindings |
 | `review`, `review_io`, `review_contracts` | Blinded packets and offline artifact validation |
 | `judge` | Pinned Claude CLI assessment of a review export, with every attempt retained |
+| `qualify` | Pre-registered promote/experimental/reject rule over sealed qualification review sets |
 | `assessment` | Reviewer evidence and receipt validation |
 | `analysis` | Paired outcomes, uncertainty and all-attempt resource totals |
 | `efficiency` | Useful outcomes per measured resource, by task and corpus |
@@ -581,6 +582,50 @@ Import assessments into each case directory using [the review instructions](REVI
 Corpus totals keep each reviewer separate. Missing case reviews leave outcome
 bounds unresolved. Repetitions do not turn four public tasks into 36 independent
 task samples.
+
+## Qualify a candidate
+
+Apply a frozen decision rule to one or more sealed qualification review sets after
+every case has its reviewer assessment. Write the pre-registration before running
+the campaign and record its SHA-256.
+
+```json
+{"kind": "mastermind-qualification-prereg", "schema_version": 1, "claim": "R",
+ "baseline": "max", "candidate": "high", "reviewer": "judge", "repetitions": 6,
+ "clusters": {"q-01": "repo-a", "q-02": "repo-a", "q-03": "repo-b"},
+ "margin": 0.10, "t_star": 2.05, "t_upper": 1.729, "veto_material_errors": 8,
+ "max_unknown_usage": 5, "max_infrastructure_failures": 3, "latency": false,
+ "audit": {"reviewer": "maintainer", "false_accept_limit": 0.15, "discordance_p": 0.01}}
+```
+
+```sh
+python3 -m evals.benchmark.qualify --prereg /private/prereg.json \
+  --review-set /private/stage-1-review-set --review-set /private/stage-2-review-set \
+  --report /private/new-report.json --decision /private/new-decision.json
+```
+
+| Input check | Rule |
+|---|---|
+| Campaigns | Exactly the registered two conditions and an even number of repetitions, balanced positions, sealed qualification scope, one configuration hash, model and tool revision across all review sets |
+| Stage validity | Any `not_run`, `unfinished`, `missing_artifacts`, `setup_error` or `input_changed` attempt, or more `invocation_error`/`model_error` attempts than `max_infrastructure_failures` in a review set, fails with `qualify_stage_invalid` |
+| Cases | Disjoint cases covering `clusters` exactly (a subset only with `--interim`); the registered reviewer must have assessed at least one case per review set. Cases it did not assess stay unresolved and are counted as `unreviewed_cases` |
+
+| Step | Rule |
+|---|---|
+| Unit | Tasks are sampled; each repository in `clusters` is one test unit. Per-task differences are averaged within a repository, then across repositories |
+| Acceptance | `R`: lower bound `mean − t_star·SE > −margin`. `Q`: lower bound above zero. Candidate answers the reviewer flags as material errors, including failed attempts, may exceed the baseline's by at most `veto_material_errors` |
+| Tokens | Per-task log ratio of geometric means over positive measurements, including failed attempts; bounds use `t_upper`. `R`: upper bound below 1, ratio and tokens per accepted answer at most 0.90. `Q`: upper bound below 1.10 |
+| Latency | Only when `latency` is true and the token step holds: per-task log ratio of median trial seconds, upper bound below 1 and ratio at most 0.90 |
+| Unresolved outcomes | Evaluated at both bounds; a decision that differs between them is `inconclusive` |
+| Unknown usage | Missing or non-positive measurements count as unknown; more than `max_unknown_usage` in an arm, or a task arm without any measurement, makes that resource step `inconclusive` |
+| Audit | With an audit reviewer: inconclusive when no case has its labels, when the exact one-sided 95% lower bound of judge false accepts among human-unmet answers exceeds the limit, or when judge–human discordance differs between arms by Fisher's exact test |
+| Decision | Acceptance fails → `reject`; acceptance and every resource step hold → `promote`; otherwise `experimental` |
+| `--interim` | Non-binding futility after stage 1: best-case acceptance below `−margin` → `reject`; `R` token ratio at least 1 → `experimental`; otherwise `continue`. Bounds are null when the cases cover one repository |
+
+`t_star` and `t_upper` are declared because they are calibrated by simulation for
+the registered number of repositories. The report keeps per-case records; share
+only the decision file. Both outputs must be new, distinct files; on any error
+neither is left behind.
 
 ## Interpret results
 
