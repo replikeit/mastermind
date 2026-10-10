@@ -43,6 +43,7 @@ flowchart LR
 | `review`, `review_io`, `review_contracts` | Blinded packets and offline artifact validation |
 | `judge` | Pinned Claude CLI assessment of a review export, with every attempt retained |
 | `qualify` | Pre-registered promote/experimental/reject rule over sealed qualification review sets |
+| `qualify_calibration` | Simulated size and power of that rule; calibrates `t_star`, `t_upper` and the material-error veto |
 | `assessment` | Reviewer evidence and receipt validation |
 | `analysis` | Paired outcomes, uncertainty and all-attempt resource totals |
 | `efficiency` | Useful outcomes per measured resource, by task and corpus |
@@ -622,10 +623,36 @@ python3 -m evals.benchmark.qualify --prereg /private/prereg.json \
 | Decision | Acceptance fails → `reject`; acceptance and every resource step hold → `promote`; otherwise `experimental` |
 | `--interim` | Non-binding futility after stage 1: best-case acceptance below `−margin` → `reject`; `R` token ratio at least 1 → `experimental`; otherwise `continue`. Bounds are null when the cases cover one repository |
 
-`t_star` and `t_upper` are declared because they are calibrated by simulation for
-the registered number of repositories. The report keeps per-case records; share
-only the decision file. Both outputs must be new, distinct files; on any error
-neither is left behind.
+The report keeps per-case records; share only the decision file. Both outputs must
+be new, distinct files; on any error neither is left behind.
+
+### Calibrate before registration
+
+`t_star`, `t_upper` and `veto_material_errors` are declared in the pre-registration
+because they are calibrated by simulation for the registered design:
+
+```sh
+python3 -m evals.benchmark.qualify_calibration --input /private/calibration-input.json \
+  --output /private/new-calibration.json
+```
+
+The input declares the claim, design (repositories, tasks per repository, even
+repetitions), baseline acceptance, nuisance standard deviations, `margin`, `alpha`,
+`concentrated_fraction`, `material_error_rate`, `veto_false_rate`, an optional
+`interim_repositories` and scenarios; see `qualify_calibration.FIELDS`. `simulations`
+must be at least `20/alpha`.
+
+| Output | Meaning |
+|---|---|
+| `nulls` | `R`: a logit shift whose average change is `−margin`, and a concentrated null whose `concentrated_fraction` of tasks lose the `loss` that makes the average change exactly `−margin`. `Q`: the logit shift at zero. Each null reports its conformal `critical` value and `fresh_size`, the false-pass rate on an independent batch with its standard error and a `check` |
+| `t_star` | The largest null critical value. Passes are counted with `qualify`'s own arithmetic, and ties move the value upwards. A design whose null campaigns pass at any registrable value fails with `calibration_design` |
+| `t_upper` | One-sided 95% Student t quantile with `repositories − 1` degrees of freedom |
+| `veto_material_errors` | Smallest limit whose exact false-veto probability, reported as `false_veto_probability`, stays at or below `veto_false_rate` when both arms share `material_error_rate` |
+| `power` | Decision fractions per scenario through `qualify.decide`, with Monte Carlo standard errors and `interim_stops` when `interim_repositories` is set |
+| `limitations` | Simulated outcomes are resolved; reviewer error, unknown usage, infrastructure failures, latency and the audit detector are not modelled |
+
+Replace the nuisance assumptions with pilot measurements before registration. The
+output must be a new file in a canonical directory and is checked before simulation.
 
 ## Interpret results
 
