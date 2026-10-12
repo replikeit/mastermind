@@ -164,14 +164,7 @@ enum Cmd {
     /// Build a compact deterministic architecture briefing from the codegraph.
     Map(MapArgs),
     /// Build a bounded question-specific navigation shortlist from indexed definitions.
-    RepoMap {
-        question: String,
-        /// Source projection digest already validated by the caller; metadata is not source evidence.
-        #[arg(long)]
-        source_sha256: String,
-        #[arg(long, default_value_t = 1600, value_parser = clap::value_parser!(u32).range(512..=16384))]
-        budget_bytes: u32,
-    },
+    RepoMap(RepoMapArgs),
     /// Analyze changes through calls and syntactic references, component crossings, and candidate tests.
     Impact(ImpactArgs),
     /// Build one bounded revision-bound context packet for an agent role.
@@ -357,6 +350,16 @@ struct MapArgs {
     /// Exclude non-production path segments and conventional test filenames.
     #[arg(long)]
     production_only: bool,
+}
+
+#[derive(clap::Args)]
+struct RepoMapArgs {
+    question: String,
+    /// Source projection digest already validated by the caller; metadata is not source evidence.
+    #[arg(long)]
+    source_sha256: String,
+    #[arg(long, default_value_t = 1600, value_parser = clap::value_parser!(u32).range(512..=16384))]
+    budget_bytes: u32,
 }
 
 #[derive(clap::Args)]
@@ -2166,11 +2169,11 @@ fn run_cli_inner(
         }) => {
             commands::query::dispatch_map(&path, format, depth, top, production_only, &index_path)?
         }
-        Cmd::RepoMap {
+        Cmd::RepoMap(RepoMapArgs {
             question,
             source_sha256,
             budget_bytes,
-        } => {
+        }) => {
             commands::query::dispatch_repo_map(
                 &question,
                 &source_sha256,
@@ -3402,6 +3405,7 @@ mod tests {
     #[test]
     fn cli_command_tree_fits_a_one_megabyte_stack() {
         std::thread::Builder::new()
+            .name("cli-command-tree-1mb".into())
             .stack_size(1024 * 1024)
             .spawn(|| {
                 use clap::CommandFactory;
@@ -3418,6 +3422,24 @@ mod tests {
                     "native",
                 ])
                 .unwrap();
+                let digest = "a".repeat(64);
+                let repo_map = Cli::try_parse_from([
+                    "mastermind",
+                    "repo-map",
+                    "cache delivery",
+                    "--source-sha256",
+                    &digest,
+                    "--budget-bytes",
+                    "512",
+                ])
+                .unwrap();
+                assert!(matches!(
+                    repo_map.cmd,
+                    Cmd::RepoMap(RepoMapArgs {
+                        budget_bytes: 512,
+                        ..
+                    })
+                ));
             })
             .unwrap()
             .join()
@@ -4010,10 +4032,10 @@ mod tests {
         .unwrap();
         assert!(matches!(
             cli.cmd,
-            Cmd::RepoMap {
+            Cmd::RepoMap(RepoMapArgs {
                 budget_bytes: 1600,
                 ..
-            }
+            })
         ));
         assert!(Cli::try_parse_from(["mastermind", "repo-map", "cache"]).is_err());
         assert!(Cli::try_parse_from([
