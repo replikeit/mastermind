@@ -311,6 +311,27 @@ def collect_batch(root):
     return context, slots, answers, source_bodies, sources, batch, order_integrity
 
 
+def assessment_template(packet, packet_sha256):
+    rubric = packet["rubric"]
+    criteria = rubric.get("acceptance_criteria")
+    template = {"kind": "mastermind-research-assessment", "schema_version": 3 if criteria else 2,
+                "export_id": packet["export_id"], "packet_sha256": packet_sha256, "reviewer": None, "reviews": []}
+    for item in packet["items"]:
+        if item["answer"] is not None:
+            template["reviews"].append({"review_id": item["review_id"], "answer_sha256": item["answer"]["sha256"],
+                "rubric_sha256": packet["rubric_sha256"], "claims": [],
+                "outcome": {"status": None, "rationale": None},
+                "knowns": [{"known_index": index, "coverage": None, "answer_excerpt": None, "rationale": None}
+                           for index in range(len(rubric["required_knowns"]))],
+                "unknowns": [{"unknown_index": index, "handling": None, "answer_excerpt": None, "rationale": None}
+                             for index in range(len(rubric["expected_unknowns"]))]})
+            if criteria:
+                template["reviews"][-1]["acceptance"] = [
+                    {"criterion_id": row["id"], "status": None, "answer_excerpt": None, "rationale": None}
+                    for row in criteria]
+    return template
+
+
 def export_review(batch: Path, output: Path):
     destination = output.parent.resolve(strict=True) / output.name
     with Root(batch) as root:
@@ -340,23 +361,7 @@ def export_review(batch: Path, output: Path):
                        "corpus_case": batch_value.get("corpus_case"), "batch": batch_contract,
                        "execution_order_integrity": order_integrity, "slots": slots}
         coordinator_body = encoded(coordinator)
-        criteria = context["rubric"].get("acceptance_criteria")
-        template = {"kind": "mastermind-research-assessment", "schema_version": 3 if criteria else 2, "export_id": export_id,
-                    "packet_sha256": sha(packet_body), "reviewer": None, "reviews": []}
-        for item in items:
-            if item["answer"] is not None:
-                template["reviews"].append({"review_id": item["review_id"], "answer_sha256": item["answer"]["sha256"],
-                    "rubric_sha256": packet["rubric_sha256"], "claims": [],
-                    "outcome": {"status": None, "rationale": None},
-                    "knowns": [{"known_index": index, "coverage": None, "answer_excerpt": None, "rationale": None}
-                               for index in range(len(context["rubric"]["required_knowns"]))],
-                    "unknowns": [{"unknown_index": index, "handling": None, "answer_excerpt": None, "rationale": None}
-                                 for index in range(len(context["rubric"]["expected_unknowns"]))]})
-                if criteria:
-                    template["reviews"][-1]["acceptance"] = [
-                        {"criterion_id": row["id"], "status": None, "answer_excerpt": None, "rationale": None}
-                        for row in criteria]
-        template_body = encoded(template)
+        template_body = encoded(assessment_template(packet, sha(packet_body)))
         try:
             destination.mkdir(mode=0o700)
         except FileExistsError as error:
@@ -378,17 +383,11 @@ def export_review(batch: Path, output: Path):
     return destination
 
 
-def load_export(root):
-    seal = root.json("seal.json")
-    review_contracts.fields(seal, ("kind", "schema_version", "export_id", "packet_sha256", "coordinator_sha256", "template_sha256"))
-    review_contracts.require(seal["kind"] == "mastermind-research-review-seal" and type(seal["schema_version"]) is int
-            and seal["schema_version"] == 1, "unsupported review export")
-    review_contracts.identifier(seal["export_id"], "export-")
+def load_packet(root, seal):
+    """The reviewer-visible packet, template, sources and answers bound to a seal's hashes."""
     packet = root.json("reviewer/packet.json")
-    coordinator = root.json("coordinator.json")
     template = root.read("reviewer/assessment-template.json")
     review_contracts.require(root.records["reviewer/packet.json"]["sha256"] == seal["packet_sha256"]
-            and root.records["coordinator.json"]["sha256"] == seal["coordinator_sha256"]
             and sha(template) == seal["template_sha256"], "review export changed", "review_identity")
     review_contracts.fields(packet, ("kind", "schema_version", "export_id", "task", "rubric", "rubric_sha256", "source_files", "items",
                     "answer_text_may_reveal_condition", "comparison_accepted", "quality_uplift"))
@@ -427,6 +426,19 @@ def load_export(root):
     root.inventory({"reviewer/packet.json", "reviewer/assessment-template.json"}
                    | {"reviewer/source/" + path for path in sources}
                    | {"reviewer/" + item["answer"]["path"] for item in items.values() if item["answer"] is not None})
+    return packet, items, answers, sources
+
+
+def load_export(root):
+    seal = root.json("seal.json")
+    review_contracts.fields(seal, ("kind", "schema_version", "export_id", "packet_sha256", "coordinator_sha256", "template_sha256"))
+    review_contracts.require(seal["kind"] == "mastermind-research-review-seal" and type(seal["schema_version"]) is int
+            and seal["schema_version"] == 1, "unsupported review export")
+    review_contracts.identifier(seal["export_id"], "export-")
+    coordinator = root.json("coordinator.json")
+    review_contracts.require(root.records["coordinator.json"]["sha256"] == seal["coordinator_sha256"],
+                             "review export changed", "review_identity")
+    packet, items, answers, sources = load_packet(root, seal)
     coordinator_version = coordinator.get("schema_version") if isinstance(coordinator, dict) else None
     extra = ("batch", "execution_order_integrity") if coordinator_version in (2, 3) else ()
     review_contracts.fields(coordinator, ("kind", "schema_version", "export_id", "packet_sha256", "batch_sha256", "model",

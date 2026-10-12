@@ -120,6 +120,50 @@ For a corpus-wide campaign, repeat import in every case directory under the
 review set. Use the same reviewer label only for the same reviewer. The campaign
 comparison checks each export against its original batch, task and key.
 
+## Assign reference and blind reviewers
+
+Purpose: keep the human reference separate from model assessments. For new
+calibration reviews, use these roles:
+
+| Role | Reviewer label | Responsibility |
+|---|---|---|
+| Reference | `human` | A real person reviews the frozen sources and answers without seeing condition mappings or model verdicts. These are the reference labels for judge calibration |
+| Blind model reviewer | `gpt-6-1-sol-blind` | GPT 6.1 Sol, requested model `gpt-6.1-sol`, reviews the same inputs in a fresh session without the reference labels or prior judge outputs |
+| Historical model reference | Existing label, such as `claude-reference` | Retained model evidence; never relabel it as human evidence |
+
+Prerequisite: an intact sealed export. Human-based calibration additionally needs
+an actual human reference assessment; the two reviewers can work independently.
+The previous chat's source review had seen aggregate results and is not the new
+blind GPT review. Until a person submits the reference assessment, human
+calibration remains pending; seeded-defect agreement may still be reported with
+its original reference identity.
+
+Give each reviewer only the export's `reviewer/` directory and the instructions
+for their role. Keep `coordinator.json`, raw trials, condition mappings, imported
+receipts, seed `key.json`, prior results and this chat outside the review session.
+Use [blind-review-gpt61.md](blind-review-gpt61.md) for the GPT reviewer. Record the
+requested model, runtime, instruction hash, visible packet hash and any prior
+exposure with its retained assessment; a label alone does not attest the model or
+prove blindness. Answer wording can still reveal a condition.
+
+Each reviewer fills every answer in `assessment-template.json`, using their own
+reviewer label. Import the two assessments separately, after both initial
+assessments have been retained, without rewriting the original export:
+
+```sh
+python3 -m evals.benchmark.review import /absolute/path/to/review-export \
+  --assessment /absolute/path/to/human-assessment.json
+python3 -m evals.benchmark.review import /absolute/path/to/review-export \
+  --assessment /absolute/path/to/gpt-assessment.json
+```
+
+The existing automated `judge` command below runs a Claude Code transport with an
+Anthropic-compatible endpoint. It does not run Codex: do not pass a Codex CLI as
+its `cli`. For GPT, retain the fresh session's assessment and import it through
+the same reviewer contract. An invalid import can be corrected under that
+reviewer's label before admission. A changed admitted assessment needs a new
+reviewer label and a retained explanation; never overwrite the first verdict.
+
 ## Assess with a model judge
 
 A model judge fills the same assessment form and is admitted through the same
@@ -165,6 +209,61 @@ plugins still load under `--bare`. Judge output quotes answers and keys, so keep
 it with the review export. If the import fails after a valid attempt, import the
 retained `assessment.json` with `review import`. The importer checks quotes,
 anchors and outcome consistency, not semantic truth.
+
+## Calibrate the judge with seeded defects
+
+Purpose: measure whether a judge rejects answers with a known defect and accepts
+answers a reference reviewer judged satisfied. Seeded defects give ground truth by
+construction; they do not replace calibration against blind human review, and a
+judge may catch artificial edits more easily than natural errors.
+
+Prerequisites: a review export whose key has acceptance criteria, a reference
+reviewer's receipt in that export, and mutant answers written from originals that
+reference labelled satisfied. Each mutant carries exactly one defect:
+
+| Defect | Target | `passage` | Anchors | Ground truth |
+|---|---|---|---|---|
+| `criterion_removed` | `criterion_id` | Removed text: in the original, absent from the mutant | none | criterion unmet |
+| `fabricated_citation` | `criterion_id` | Text with wrong citations: in the mutant, not the original | correct locations | criterion unmet |
+| `listed_false_claim` | `false_claim_index` | The false sentence: in the mutant, not the original | contradicting source | material error |
+| `novel_false_claim` | none (`{}`) | The false sentence, not equivalent to a listed false claim | contradicting source | material error |
+| `overclaimed_unknown` | `unknown_index` | The unverifiable assertion | none | unknown overclaimed |
+
+```json
+{"kind": "mastermind-judge-calibration-mutations", "schema_version": 1, "reference": "reference",
+ "controls": ["review-<original id>"],
+ "mutants": [{"source_review_id": "review-<original id>", "defect": "listed_false_claim",
+              "target": {"false_claim_index": 0}, "answer": "mutants/m01.md",
+              "passage": "<exact sentence>", "anchors": ["src/file.py:12"], "rationale": "<why it is unsatisfied>"}]}
+```
+
+```sh
+python3 -m evals.benchmark.judge_calibration build /absolute/path/to/review-export \
+  --mutations /absolute/path/to/mutations.json --output /absolute/path/to/new-set
+python3 -m evals.benchmark.judge_calibration run /absolute/path/to/new-set \
+  --config /absolute/path/to/judge.json --output /absolute/path/to/new-run
+python3 -m evals.benchmark.judge_calibration score /absolute/path/to/new-run [...] \
+  --output /absolute/path/to/new-report.json
+```
+
+`answer` paths are relative to the mutations file. `build` refuses a mutant equal
+to its original, a passage that breaks its rule, a target outside the key, missing
+or out-of-range anchors, a control or original that the reference did not label
+satisfied, and duplicate answers.
+
+| Contract | Behavior |
+|---|---|
+| Set | `reviewer/` holds the source export's task, key and sources with new answer IDs in shuffled order, in the export packet format. `key.json` maps answers to defects and `seal.json` binds packet, template and key; neither is copied to the judge |
+| Run | The judge contract above, one answer per call. Every answer is attempted; an unresolved answer does not stop the rest. Output: `judge.json`, attempt files and `calibration-run.json`; no receipt is imported. The judge's reviewer label must differ from the reference's |
+| Score | Re-verifies each set and every accepted review. Refuses a changed set, an interrupted run (`error` set or answers not all attempted), runs with different judge configurations (CLI, model, endpoint, instruction, prompt, tools, attempts, timeout), the judge scored against its own reference, and any answer text scored twice, including a rebuilt set |
+| `sensitivity` | Controls judged `satisfied`: over resolved answers and worst case (unresolved counted as errors), with one-sided 95% Clopper–Pearson lower bounds that treat answers as independent |
+| `specificity` | Mutants judged `unsatisfied`, same forms; an `unknown` verdict is a miss. `by_defect` splits it by defect |
+| `located` | Mutants where the judge flagged the broken element: the target criterion unmet, the target unknown overclaimed, or a material error on a claim whose every occurrence overlaps the passage. Same forms as `specificity` |
+| `youden_j` | `sensitivity + specificity − 1`, in resolved and worst-case forms |
+| `gwet_ac1` | Three-category agreement over resolved answers, so `unknown` agrees with neither ground truth. `case_bootstrap_lower_95` is the 5% quantile of a case-level bootstrap and is `null` below `minimum_cases_for_bound` (5) cases; sets from one export are one case |
+
+A judge that rejects a mutant for an unrelated reason counts in `specificity` but
+not in `located`. Keep sets with their export: answers quote the key and sources.
 
 ## Compare paired outcomes
 

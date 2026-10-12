@@ -11,86 +11,25 @@ import unittest
 from unittest.mock import patch
 
 from evals.benchmark import artifacts as artifact_io
-from evals.benchmark import corpus, judge, review
-from evals.benchmark import trials as trial_runner
-from tests.evals.support.corpus import CorpusFixture
+from evals.benchmark import judge, review
+from tests.evals.support.judge import CANARIES, JudgeFixture
 from tests.evals.support.review import completed_assessment
-
-
-STUB = """import hashlib, json, os, pathlib, sys
-state = pathlib.Path(STATE)
-if sys.argv[1:] == ['--version']:
-    print('fake-v1 (Claude Code)')
-    sys.exit(0)
-call = len(list(state.glob('call-*.json'))) + 1
-cwd = pathlib.Path.cwd()
-(state / f'call-{call}.json').write_text(json.dumps({
-    'argv': sys.argv[1:], 'stdin': sys.stdin.read(), 'cwd': str(cwd), 'home': os.environ['HOME'],
-    'environment': sorted(os.environ), 'key': os.environ.get('ANTHROPIC_API_KEY'),
-    'base_url': os.environ.get('ANTHROPIC_BASE_URL'),
-    'disabled': [os.environ.get(name) for name in ('DISABLE_AUTOUPDATER', 'CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC')],
-    'template': json.loads((cwd / 'assessment-template.json').read_text()),
-    'files': {str(path.relative_to(cwd)): hashlib.sha256(path.read_bytes()).hexdigest()
-              for path in cwd.rglob('*') if path.is_file()}}))
-def load(name, default):
-    path = state / f'{name}-{call}.json'
-    return json.loads(path.read_text()) if path.exists() else default
-mode = load('mode', '')
-if mode == 'block':
-    open(state / 'never', 'rb').read()
-init = {'type': 'system', 'subtype': 'init', 'model': 'judge-model', 'claude_code_version': 'fake-v1',
-        'cwd': str(cwd), 'permissionMode': 'dontAsk', 'tools': ['Read'], 'mcp_servers': [], 'plugins': []}
-init.update(load('init', {}))
-print(json.dumps(init))
-if mode == 'flood':
-    print('x' * 8192)
-result = load('result', None)
-if result is not None:
-    print(json.dumps(result))
-sys.exit(3 if mode == 'exit' else 0)
-"""
-
-CANARIES = {"CLAUDE_CODE_OAUTH_TOKEN": "canary", "ANTHROPIC_BASE_URL": "http://canary.invalid",
-            "CLAUDE_CONFIG_DIR": "/canary-config"}
 
 
 @unittest.skipUnless(os.name == "posix" and shutil.which("git"), "requires POSIX and Git")
 class JudgeTests(unittest.TestCase):
     def setUp(self):
-        self.case = CorpusFixture()
-        self.addCleanup(self.case.close)
-        self.fixture = self.case.fixture
-        self.root = self.fixture.root
-        self.case.qualify()
-        self.fixture.adapter("init()\nfinal(answer='Observed src/service.py:2. It\\u2019s fixed. It\\u2018s set.')\n")
-        selected = corpus.select_case(self.case.path, self.case.task["id"], self.fixture.repo)
-        self.export = self.make_export("review-export", selected["rubric"], selected["summary"])
-        self.template = artifact_io.load_json(self.export / "reviewer/assessment-template.json")
-        self.state = self.root / "judge-state"
-        self.state.mkdir()
-        os.mkfifo(self.state / "never")
-        self.instruction = self.root / "judge.md"
-        self.instruction.write_text("Assess the answers.\n")
-        self.config = {"cli": self.fixture.executable("fake-claude", f"STATE = {str(self.state)!r}\n" + STUB),
-                       "model": "judge-model", "instruction": str(self.instruction), "reviewer": "judge",
-                       "attempts": 3, "timeout_seconds": 30}
+        self.judge = JudgeFixture("Observed src/service.py:2. It\u2019s fixed. It\u2018s set.")
+        self.addCleanup(self.judge.close)
+        for name in ("case", "fixture", "root", "export", "template", "state", "instruction", "config"):
+            setattr(self, name, getattr(self.judge, name))
         self.output = self.root / "judge-run"
 
     def make_export(self, name, rubric, corpus_case=None):
-        batch = trial_runner.prepare_batch(task=self.case.task, rubric=rubric, config=self.fixture.config,
-            source_repo=self.fixture.repo, tool_repo=self.fixture.repo, output=self.root / ("batches-" + name),
-            repetitions=1, corpus_case=corpus_case)
-        for item in artifact_io.load_json(batch / "batch.json")["trials"]:
-            trial_runner.run_trial(batch / item["directory"])
-        return review.export_review(batch, self.root / name)
+        return self.judge.export_batch(name, rubric, corpus_case)
 
-    def respond(self, call, text, models=("judge-model",), is_error=False, subtype="success", init=None, mode=None):
-        result = {"type": "result", "subtype": subtype, "is_error": is_error, "result": text,
-                  "modelUsage": {model: {} for model in models}, "permission_denials": [],
-                  "usage": {"input_tokens": 10, "output_tokens": 5}}
-        for name, value in (("result", result), ("init", init), ("mode", mode)):
-            if value is not None:
-                (self.state / f"{name}-{call}.json").write_text(json.dumps(value))
+    def respond(self, call, text, **options):
+        self.judge.respond(call, text, **options)
 
     def review(self, position, **change):
         """A completed reply for the answer at this template position (1-based)."""
@@ -110,8 +49,7 @@ class JudgeTests(unittest.TestCase):
             self.respond(first_call + offset, self.review(position))
 
     def calls(self):
-        paths = sorted(self.state.glob("call-*.json"), key=lambda path: int(path.stem.split("-")[1]))
-        return [json.loads(path.read_text()) for path in paths]
+        return self.judge.calls()
 
     def main(self, config=None, output=None, export=None, key="fixture-key"):
         path = self.root / "judge-config.json"

@@ -193,6 +193,38 @@ def attempt(root: Root, config: dict, key: str, output: Path, name: str, templat
     return record, reviewed if record["status"] == "valid" else None
 
 
+def checker(template: dict, config: dict, seal: dict, packet: dict, answers: dict, sources: dict):
+    """Validate one reply against the frozen packet; typographic retyping is repaired first."""
+    def check(item, reviews):
+        review_contracts.require(isinstance(reviews, list) and len(reviews) == 1 and isinstance(reviews[0], dict),
+                                 "reply must hold one review", "judge_output_invalid")
+        repaired = repair_quotes(reviews[0], answers[item["review_id"]])
+        value = dict(template, reviewer=config["reviewer"], reviews=reviews)
+        check_assessment(value, seal, packet, {item["review_id"]: answers[item["review_id"]]}, sources)
+        return reviews[0], repaired
+    return check
+
+
+def config_record(seal: dict, config: dict) -> dict:
+    return {"kind": "mastermind-judge-config", "schema_version": 2,
+            "version": VERSION, "export_id": seal["export_id"], "packet_sha256": seal["packet_sha256"],
+            "template_sha256": seal["template_sha256"], "cli": config["cli"], "model": config["model"],
+            "base_url": config.get("base_url"), "reviewer": config["reviewer"],
+            "instruction_sha256": config["instruction_sha256"], "prompt_sha256": sha(PROMPT), "tools": TOOLS,
+            "attempts_per_answer": config["attempts"], "timeout_seconds": config["timeout_seconds"]}
+
+
+def assess(root: Root, config: dict, key: str, output: Path, position: int, template: dict, item: dict,
+           check, records: list) -> dict | None:
+    """Up to the configured attempts for one answer, each recorded as it ends; a valid review is never requested again."""
+    for index in range(1, config["attempts"] + 1):
+        record, reviewed = attempt(root, config, key, output, f"answer-{position}-attempt-{index}", template, item, check)
+        records.append(record)
+        if reviewed is not None:
+            return reviewed
+    return None
+
+
 def run(export: Path, config: dict, output: Path, key: str) -> dict:
     export = export.resolve(strict=True)
     output = output.parent.resolve(strict=True) / output.name
@@ -205,35 +237,17 @@ def run(export: Path, config: dict, output: Path, key: str) -> dict:
         review_contracts.require(config["reviewer"] + ".json" not in receipt_names(root),
                 "reviewer already submitted an assessment", "review_exists")
         check_version(config, key)
-
-        def check(item, reviews):
-            review_contracts.require(isinstance(reviews, list) and len(reviews) == 1 and isinstance(reviews[0], dict),
-                                     "reply must hold one review", "judge_output_invalid")
-            repaired = repair_quotes(reviews[0], answers[item["review_id"]])
-            value = dict(template, reviewer=config["reviewer"], reviews=reviews)
-            check_assessment(value, seal, packet, {item["review_id"]: answers[item["review_id"]]}, sources)
-            return reviews[0], repaired
-
+        check = checker(template, config, seal, packet, answers, sources)
         output.mkdir(mode=0o700)
-        artifact_io.write_new(output / "judge.json", {"kind": "mastermind-judge-config", "schema_version": 2,
-            "version": VERSION, "export_id": seal["export_id"], "packet_sha256": seal["packet_sha256"],
-            "template_sha256": seal["template_sha256"], "cli": config["cli"], "model": config["model"],
-            "base_url": config.get("base_url"), "reviewer": config["reviewer"],
-            "instruction_sha256": config["instruction_sha256"], "prompt_sha256": sha(PROMPT), "tools": TOOLS,
-            "attempts_per_answer": config["attempts"], "timeout_seconds": config["timeout_seconds"]})
+        artifact_io.write_new(output / "judge.json", config_record(seal, config))
         attempts, accepted, receipt, failure = [], [], None, None
         try:
             for position, item in enumerate(template["reviews"], start=1):
-                for index in range(1, config["attempts"] + 1):
-                    record, reviewed = attempt(root, config, key, output, f"answer-{position}-attempt-{index}",
-                                               template, item, check)
-                    attempts.append(record)
-                    if reviewed is not None:
-                        accepted.append(reviewed)
-                        break
-                else:
+                reviewed = assess(root, config, key, output, position, template, item, check, attempts)
+                if reviewed is None:
                     # An assessment must cover every answer, so later answers cannot help.
                     break
+                accepted.append(reviewed)
             if len(accepted) == len(template["reviews"]):
                 assessment = dict(template, reviewer=config["reviewer"], reviews=accepted)
                 artifact_io.write_new(output / "assessment.json", assessment)
