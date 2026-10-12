@@ -33,6 +33,9 @@ scratch/
 # Generated per-machine by `mmcg init`. Not for commit.
 .mastermind/
 
+# Personal profile export for local sharing.
+/style.md
+
 # Claude Code per-machine permissions allowlist with absolute paths.
 .claude/settings.local.json
 
