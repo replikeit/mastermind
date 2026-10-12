@@ -36,6 +36,7 @@ flowchart LR
 | `batch` | Plan binding, execution order and snapshot checks |
 | `campaign` | Prepare/run/export every corpus case with one configuration |
 | `source` | Git projections and SQLite index validation |
+| `repo_map` | Offline byte sweep, payload aliases and development component schedules |
 | `runtime` | Executable pins and private environments |
 | `artifacts` | Bounded reads, hashes and immutable publication |
 | `adapters.bundle`, `adapters.claude`, `adapters.codex`, `tools`, `mcp` | Frozen client runtimes and read-only tool transport |
@@ -735,6 +736,57 @@ For the separate scope-instruction experiment, freeze
 `agents/instructions/source-boundaries.md` as a candidate instruction path. Keep
 source delivery and effort common. It is a generic development candidate; gold
 keys and case-specific counterexamples stay outside the model input.
+
+## Offline repo-map component planning
+
+Before spending model calls on header size, sweep the native payload against a
+retained integrated-map campaign. Use the frozen map generator that produced its
+header, or build that implementation with `cargo build --locked --manifest-path
+mcp/servers/mmcg/Cargo.toml`. The campaign must contain its original
+input seal, requests, runtime records, source projections, indexes and map JSON.
+The sweep reads these inputs, checks their bindings before and after generation,
+and invokes only the local native CLI. It does not run a model.
+
+```sh
+python3 -m evals.benchmark.repo_map /absolute/path/to/retained-campaign \
+  --native /absolute/path/to/mmcg \
+  --output /absolute/path/to/new-sweep.json
+```
+
+The output parent must exist. Publication is immutable: use a new output path to
+repeat a sweep, and preserve failed model attempts separately when executing a
+later plan. A source, request, index or default-payload mismatch stops the sweep;
+recover the pinned inputs instead of rewriting their seals.
+Changing the navigation instruction creates a new experiment. Keep the previous
+payload seal immutable and compare the new header against fresh matched controls;
+do not use a changed generator to reproduce an older header sweep.
+
+| Arm | Added content after the retained common instruction |
+| --- | --- |
+| baseline | Nothing |
+| map-only | Source binding, shortlist disclaimer and the bundle's selected locations |
+| instructions-only | Direct-read and uncovered-range advice |
+| bundle | Both factors, with the original header layout |
+
+Budgets are 512, 1600, 4096 and 16384 bytes. Map-only reserves the bundle's advice
+space, so removing advice does not add definitions. The report retains every
+payload and command, verifies two identical generations, and checks the 1600-byte
+bundle against the original producer input. Equal request digests are aliases.
+Only distinct curve points need later budget experiments; byte counts are not
+token counts and do not establish quality or cost savings.
+
+The report recommends the smallest tested budget whose payloads equal those at
+the largest budget. It also provides two **alternative development plans**:
+an append-only second repetition in reversed order of the retained baseline/map
+pair, and a fresh four-arm factorial with two repetitions. Each factorial arm's
+mean position is balanced within a case; uniform position coverage within each
+case requires four repetitions. Neither plan starts model calls automatically.
+
+Keep exact-profile seeded judge calibration and real human reference separate
+from model proxy labels. Existing tuned questions from one repository remain
+development data. Formal `qualify` additionally needs an independent preregistered
+held-out corpus from at least two repositories and its design-specific simulated
+thresholds. Do not relabel repeated development questions as qualification data.
 
 ## Test the harness
 

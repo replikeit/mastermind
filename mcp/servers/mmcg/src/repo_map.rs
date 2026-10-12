@@ -4,6 +4,9 @@ use serde::Serialize;
 use std::collections::{BTreeMap, BTreeSet};
 
 pub const MAX_SYMBOLS: usize = 20000;
+pub const NAVIGATION_INSTRUCTIONS: &str =
+    "Read relevant locations directly, then follow calls or search for missing locations.\n\
+    Track ranges already read; extend with uncovered gaps. Read source to support claims.\n";
 
 #[derive(Clone)]
 pub struct Symbol {
@@ -33,6 +36,23 @@ pub struct Output {
     pub relevant_candidates: usize,
     pub truncated: bool,
     pub payload: String,
+}
+
+impl Output {
+    /// Keep the same selected locations and reservation as the combined header.
+    pub fn map_only(mut self) -> Self {
+        self.payload = self.payload.replacen(NAVIGATION_INSTRUCTIONS, "", 1);
+        self.payload_bytes = self.payload.len();
+        self
+    }
+
+    pub fn instructions_only(mut self) -> Self {
+        self.payload = NAVIGATION_INSTRUCTIONS.into();
+        self.payload_bytes = self.payload.len();
+        self.selected = 0;
+        self.truncated = self.candidates > 0;
+        self
+    }
 }
 
 fn words(text: &str) -> BTreeSet<String> {
@@ -165,8 +185,7 @@ pub fn build(input: Input) -> Result<Output, String> {
     }
     let mut payload = format!(
         "Repository map: partial definition locations from frozen source {digest}.\n\
-         Read relevant locations directly, then follow calls or search for missing locations.\n\
-         Track ranges already read; extend with uncovered gaps. Read source to support claims.\n\
+         {NAVIGATION_INSTRUCTIONS}\
          This shortlist is navigation metadata, not behavioral evidence or complete coverage.\n",
         digest = input.source_sha256
     );
@@ -301,5 +320,35 @@ mod tests {
         assert!(!result.payload.contains("tests.rs"));
         assert_eq!(result.selected, 1);
         assert!(result.truncated);
+    }
+
+    #[test]
+    fn ablations_preserve_locations_and_isolate_navigation_advice() {
+        let symbols = vec![Symbol {
+            file: "src/cache.rs".into(),
+            name: "cache_receipts".into(),
+            kind: "function".into(),
+            line: 7,
+            signature: None,
+        }];
+        let bundle = build(input(symbols.clone(), 512)).unwrap();
+        let map = build(input(symbols.clone(), 512)).unwrap().map_only();
+        let instructions = build(input(symbols, 512)).unwrap().instructions_only();
+        assert_eq!(map.selected, bundle.selected);
+        assert!(map
+            .payload
+            .contains("src/cache.rs\n  :7 function cache_receipts"));
+        assert!(!map.payload.contains("Track ranges already read"));
+        assert!(map.payload.contains("not behavioral evidence"));
+        assert!(instructions.payload.contains("Track ranges already read"));
+        assert!(!instructions.payload.contains("src/cache.rs"));
+        assert_eq!(instructions.selected, 0);
+        assert!(instructions.truncated);
+        assert_eq!(
+            bundle.payload_bytes,
+            map.payload_bytes + instructions.payload_bytes
+        );
+        assert_eq!(map.payload_bytes, map.payload.len());
+        assert_eq!(instructions.payload_bytes, instructions.payload.len());
     }
 }

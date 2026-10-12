@@ -86,6 +86,7 @@ pub fn dispatch_repo_map(
     question: &str,
     source_sha256: &str,
     budget_bytes: usize,
+    payload: crate::RepoMapPayload,
     index_path: &Path,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let store = open_query_store(index_path)?;
@@ -100,6 +101,11 @@ pub fn dispatch_repo_map(
         symbols,
     })
     .map_err(std::io::Error::other)?;
+    let mapping = match payload {
+        crate::RepoMapPayload::Bundle => mapping,
+        crate::RepoMapPayload::MapOnly => mapping.map_only(),
+        crate::RepoMapPayload::InstructionsOnly => mapping.instructions_only(),
+    };
     store.ensure_source_snapshot_current()?;
     println!("{}", serde_json::to_string(&mapping)?);
     Ok(())

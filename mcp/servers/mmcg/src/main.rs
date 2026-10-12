@@ -56,6 +56,14 @@ pub enum ConceptFormat {
 
 #[derive(Copy, Clone, Debug, ValueEnum)]
 #[clap(rename_all = "kebab-case")]
+pub enum RepoMapPayload {
+    Bundle,
+    MapOnly,
+    InstructionsOnly,
+}
+
+#[derive(Copy, Clone, Debug, ValueEnum)]
+#[clap(rename_all = "kebab-case")]
 pub enum BriefRoleArg {
     Planner,
     Executor,
@@ -360,6 +368,9 @@ struct RepoMapArgs {
     source_sha256: String,
     #[arg(long, default_value_t = 1600, value_parser = clap::value_parser!(u32).range(512..=16384))]
     budget_bytes: u32,
+    /// Select the map, navigation advice, or their combined header.
+    #[arg(long, value_enum, default_value_t = RepoMapPayload::Bundle)]
+    payload: RepoMapPayload,
 }
 
 #[derive(clap::Args)]
@@ -2173,11 +2184,13 @@ fn run_cli_inner(
             question,
             source_sha256,
             budget_bytes,
+            payload,
         }) => {
             commands::query::dispatch_repo_map(
                 &question,
                 &source_sha256,
                 budget_bytes as usize,
+                payload,
                 &index_path,
             )?;
         }
@@ -3431,12 +3444,15 @@ mod tests {
                     &digest,
                     "--budget-bytes",
                     "512",
+                    "--payload",
+                    "map-only",
                 ])
                 .unwrap();
                 assert!(matches!(
                     repo_map.cmd,
                     Cmd::RepoMap(RepoMapArgs {
                         budget_bytes: 512,
+                        payload: RepoMapPayload::MapOnly,
                         ..
                     })
                 ));
@@ -4034,6 +4050,7 @@ mod tests {
             cli.cmd,
             Cmd::RepoMap(RepoMapArgs {
                 budget_bytes: 1600,
+                payload: RepoMapPayload::Bundle,
                 ..
             })
         ));

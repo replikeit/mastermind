@@ -91,6 +91,12 @@ stale index against the intended scope and generate a new binding before retryin
 The repository report `evals/baselines/repo-map-20261012.md` records resource use
 and provisional model reviews on eight questions; human reference is pending.
 
+For component comparisons, use `--payload map-only` or
+`--payload instructions-only`; the default is `bundle`. All variants use the
+same selected locations and combined-header byte reservation, so removing advice
+does not introduce additional definitions. `payload_bytes` charges the text
+actually returned; instruction-only output has zero selected locations.
+
 ## Connect an agent
 
 ```bash
