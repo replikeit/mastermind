@@ -48,12 +48,19 @@ pub struct Request {
 }
 
 #[derive(Clone, Debug, Serialize)]
+pub struct CodexSpawnArgs {
+    pub fork_turns: &'static str,
+    pub reasoning_effort: Level,
+}
+
+#[derive(Clone, Debug, Serialize)]
 pub struct Decision {
     pub schema_version: u32,
     pub policy: &'static str,
     pub requested_effort: Level,
     pub reason: &'static str,
     pub codex_args: Vec<String>,
+    pub codex_spawn_args: CodexSpawnArgs,
     pub claude_args: Vec<String>,
     pub applied: bool,
     pub declarations_verified: bool,
@@ -98,6 +105,10 @@ pub fn select(request: &Request) -> Result<Decision, &'static str> {
             "-c".into(),
             format!("model_reasoning_effort=\"{}\"", effort.as_str()),
         ],
+        codex_spawn_args: CodexSpawnArgs {
+            fork_turns: "none",
+            reasoning_effort: effort,
+        },
         claude_args: vec!["--effort".into(), effort.as_str().into()],
         // A tool result cannot change its caller's model configuration.
         applied: false,
@@ -149,6 +160,10 @@ mod tests {
             assert_eq!(result.requested_effort, Level::Low);
             assert_eq!(result.codex_args, ["-c", "model_reasoning_effort=\"low\""]);
             assert_eq!(result.claude_args, ["--effort", "low"]);
+            assert_eq!(
+                serde_json::to_value(&result.codex_spawn_args).unwrap(),
+                json!({"fork_turns": "none", "reasoning_effort": "low"})
+            );
             assert!(!result.applied);
             assert!(!result.quality_qualified);
         }
@@ -197,11 +212,9 @@ mod tests {
             },
         ]);
         for request in cases {
-            assert_eq!(
-                select(&request).unwrap().requested_effort,
-                Level::High,
-                "{request:?}"
-            );
+            let decision = select(&request).unwrap();
+            assert_eq!(decision.requested_effort, Level::High, "{request:?}");
+            assert_eq!(decision.codex_spawn_args.reasoning_effort, Level::High);
         }
     }
 
@@ -211,7 +224,9 @@ mod tests {
             user_effort: Some(Level::Max),
             ..research()
         };
-        assert_eq!(select(&request).unwrap().requested_effort, Level::Max);
+        let decision = select(&request).unwrap();
+        assert_eq!(decision.requested_effort, Level::Max);
+        assert_eq!(decision.codex_spawn_args.reasoning_effort, Level::Max);
         let request = Request {
             user_effort: Some(Level::Low),
             ..Request::default()

@@ -50,13 +50,37 @@ implementation was done in Codex.
 
 ## Route reasoning effort
 
-The shared task/agent policy is available through `mmcg_effort_route` and
-`mastermind effort-route`; it makes no model call. The controller declares the
-agent's duty, task family and inspected scope before a new invocation. See
-[effort routing](../guides/effort-routing.md) for the request contract and
-Codex/Claude launch arguments. `mastermind effort-route --request route.json
---exec codex -- exec ...` submits the override to a native invocation. MCP cannot
-reconfigure the active chat. Preserve the user's selected model and permissions.
+The core workflow includes `mastermind-agent-handoff`. Planning, research and
+delegated execution use it before each new agent:
+
+1. Declare the receiving agent's duty, family, source scope and risk to `mmcg_effort_route` or `mastermind effort-route`.
+2. Merge returned `codex_spawn_args` into the ordinary `spawn_agent` call; carry the bounded role/task packet into the fresh child.
+3. Retain the decision and child ID, then check that child's own `turn_context.effort`.
+
+See [effort routing](../guides/effort-routing.md) for inputs, launch commands,
+fallbacks and evidence. Preserve the selected model and permissions. A
+full-history fork retains parent effort and is recorded as `not_applied`.
+
+### Resolve a competing dispatcher
+
+TokenX assignment routing rejects explicit `reasoning_effort` fields. When it
+is active, stop the handoff before spawn and let the user select one effort
+authority.
+
+To select Mastermind globally while keeping TokenX installed:
+
+1. Open `/hooks` in the Codex CLI and locate the TokenX hooks.
+2. Disable its non-managed `PreToolUse`, `SessionStart`, `SessionEnd` and `UserPromptSubmit` hooks. Preserve other hooks and their trust records.
+3. Start a new session. Verify those hooks are disabled and no TokenX assignment instruction is active before applying a route.
+
+| Configuration | Verification or recovery |
+|---|---|
+| Non-managed TokenX hooks | Must be disabled in the native hook inventory |
+| Managed hook | Cannot be disabled in user controls; resolve with its administrator |
+| Local `plugins.enabled = false` | Remote registries can retain enabled catalog state; the written setting alone is insufficient |
+| Restore TokenX routing | Select it as effort authority and re-enable only its hooks, preserving previous trust hashes |
+
+See [Codex hook controls](https://developers.openai.com/codex/hooks#review-and-trust-hooks).
 
 ## Verify or remove
 

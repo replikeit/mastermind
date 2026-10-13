@@ -70,9 +70,16 @@ covers source inspection, candidate review and optional separate analysis.
 
 ## Route reasoning effort
 
-Use the shared `mmcg_effort_route` / `mastermind effort-route` policy before a
-new invocation. `mastermind effort-route --request route.json --exec claude --
---print ...` submits its `claude_args` while preserving the selected model and
-permissions. Non-fork subagents support Agent-tool per-invocation effort from
-Claude Code 2.1.292; older or unsupported paths keep their agent defaults.
-An active chat and an already running subagent keep their current setting. See [effort routing](../guides/effort-routing.md).
+The core workflow includes `mastermind-agent-handoff`. Before a new agent, it
+selects effort through `mmcg_effort_route` or `mastermind effort-route` and applies
+the result through the available native control.
+
+| Invocation | Control |
+|---|---|
+| New CLI session | `mastermind effort-route --request route.json --exec claude -- --print ...` submits `claude_args` |
+| Non-fork `Agent`, Claude Code 2.1.292 or later | Pass `effort: requested_effort`; `CLAUDE_CODE_EFFORT_LEVEL` takes precedence |
+| Older client or unsupported path | Keep agent defaults and record `not_applied` |
+
+Keep the selected model and permissions. Already running sessions and subagents
+retain their settings. See [effort routing](../guides/effort-routing.md) for the
+request contract, verification and recovery.

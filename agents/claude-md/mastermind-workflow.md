@@ -2,7 +2,7 @@
 name: mastermind-workflow
 description: Compact project router for the Mastermind Direct, Verified, and Strict workflows.
 metadata:
-  version: 2.2.0
+  version: 2.2.1
   authors: [mastermind]
   tags: [claude-md, workflow, delegation, audit]
 ---
@@ -186,18 +186,12 @@ Skip roles that add no new evidence.
 
 ### Effort routing
 
-Before each new agent, select effort with `mmcg_effort_route` or
-`mastermind effort-route`; see [the contract](https://github.com/xcrft/mastermind/blob/main/docs/guides/effort-routing.md).
-Declare actual duties and inspected scope. Low requires `researcher`, family
-`callees_trace`, `source_read_reuse` or `task_phase_trace`, source-only bounded
-work, stable inputs, a 1600-byte lexical map and low risk. Other or unknown
-context routes high. Explicit human effort choices win.
-
-Apply returned native arguments or the host's per-agent setting on the next
-invocation. Preserve model, tools and budgets. Without that control, retain the
-current setting; prompts cannot switch effort. Re-route if duties or risk change,
-carrying facts and gaps. This pilot has GPT-6.1 Sol evidence only; Claude and
-other profiles remain uncalibrated. Keep source and citation checks.
+Use [[mastermind-agent-handoff]] before each new agent, including ordinary
+in-session research, execution and review. Select effort and pass its setting
+to the actual spawn. Codex uses the returned `codex_spawn_args` with a fresh
+child and a compact context packet; a full-history fork inherits parent effort.
+Preserve model, tools, budgets, facts and gaps. Unsupported hosts retain their
+setting with an explicit `not_applied` record. See [the contract](https://github.com/xcrft/mastermind/blob/main/docs/guides/effort-routing.md).
 
 ### Completion and release
 

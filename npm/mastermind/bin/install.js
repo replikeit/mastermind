@@ -21,6 +21,7 @@ const LEGACY_MANIFEST_SCHEMA = 1;
 const DEFAULT_PROFILE = "core";
 
 const CORE_SKILLS = [
+  "mastermind-agent-handoff",
   "mastermind-architecture-review",
   "mastermind-change-impact",
   "mastermind-codegraph-research",

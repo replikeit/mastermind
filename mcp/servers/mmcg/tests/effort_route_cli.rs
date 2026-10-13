@@ -46,6 +46,10 @@ fn stdin_and_file_select_the_same_route_without_creating_an_index() {
     assert!(from_file.status.success());
     let decision: Value = serde_json::from_slice(&from_stdin.stdout).unwrap();
     assert_eq!(decision["requested_effort"], "low");
+    assert_eq!(
+        decision["codex_spawn_args"],
+        json!({"fork_turns": "none", "reasoning_effort": "low"})
+    );
     assert_eq!(from_file.stdout, from_stdin.stdout);
     assert!(!root.path().join(".mastermind").exists());
 }

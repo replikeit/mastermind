@@ -1470,6 +1470,10 @@ Tool-specific arguments and response bounds are listed below. The
 |---|---|---|
 | `mmcg_effort_route` | optional `agent`, `task_family` (each at most 80 UTF-8 bytes), `read_only`, `bounded_scope`, `stable_inputs`, `lexical_repo_map`, `risk` (`low`, `high`, `unknown`), `user_effort` (`low`, `medium`, `high`, `xhigh`, `max`) | Deterministic task/agent policy, requested effort, reason and Codex/Claude argument arrays. Missing context retains high; explicit human effort overrides win. No source/index access, model call or configuration write. Declarations are not verified. `applied` and `quality_qualified` remain false. The controller applies supported overrides to the next invocation; see [routing and fallback](../guides/effort-routing.md). |
 
+The decision also returns `codex_spawn_args` with `fork_turns: "none"` and
+`reasoning_effort` for ordinary Codex subagents. Use the bundled
+`mastermind-agent-handoff` skill to apply it and retain child runtime evidence.
+
 The CLI accepts the same JSON through `mastermind effort-route --request route.json`
 or stdin, with a 16 KiB input limit. Neither interface changes an active chat.
 

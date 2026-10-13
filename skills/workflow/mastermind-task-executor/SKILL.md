@@ -12,7 +12,7 @@ workflow:
       runtime: portable
       exclusivity_group: task-executor
 metadata:
-  version: 0.6.3
+  version: 0.6.4
   authors: [mastermind]
   tags: [workflow, execution, delegation, mmcg]
 ---
@@ -33,6 +33,9 @@ not in this executor mode.
 
 The task folder may contain reports or scratch files. `spec.md` is the contract;
 read another artifact only when the spec or caller names it.
+
+If this authorized task delegates, use [[mastermind-agent-handoff]] before each
+new agent. Preserve Scope and permissions; routing does not grant delegation.
 
 ## Before editing
 

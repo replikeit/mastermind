@@ -1,0 +1,4 @@
+interface:
+  display_name: "Mastermind Agent Handoff"
+  short_description: "Apply routed effort to ordinary agent delegation"
+  default_prompt: "Use $mastermind-agent-handoff before spawning a Mastermind agent, preserving scope and native runtime evidence."

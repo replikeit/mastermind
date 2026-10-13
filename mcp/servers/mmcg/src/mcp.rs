@@ -2366,7 +2366,7 @@ fn schema_change_impact() -> Value {
 fn schema_effort_route() -> Value {
     json!({
         "name": "mmcg_effort_route",
-        "description": "Select requested reasoning effort from declared agent duty, task family and scope. Low is an opt-in bounded-research pilot; high is the fallback. An explicit human override wins. No model call, index access or configuration write; the controller applies the returned Codex/Claude arguments to its next invocation.",
+        "description": "Select requested reasoning effort before each Mastermind agent handoff from declared duty, task family and scope. Low is a bounded-research pilot; high is the fallback. An explicit human override wins. No model call, index access or configuration write. Apply codex_spawn_args to ordinary Codex spawn_agent (fresh child), or native Codex/Claude argument arrays to a CLI invocation; retain child runtime evidence.",
         "inputSchema": crate::effort::input_schema()
     })
 }
@@ -4770,6 +4770,10 @@ mod tests {
         assert_eq!(result["isError"], false);
         let decision = unwrap_content(&result);
         assert_eq!(decision["requested_effort"], "low");
+        assert_eq!(
+            decision["codex_spawn_args"],
+            json!({"fork_turns": "none", "reasoning_effort": "low"})
+        );
         assert_eq!(decision["applied"], false);
         for arguments in [
             json!({"read_only": "true"}),

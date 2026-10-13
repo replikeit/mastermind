@@ -11,6 +11,7 @@ that matches the work. Claude Code-specific roles are listed in
 
 | Skill | Description |
 |---|---|
+| [`mastermind-agent-handoff`](workflow/mastermind-agent-handoff/SKILL.md) | Selects effort and applies it to ordinary agent spawns with a bounded context packet. |
 | [`mastermind-task-planning`](workflow/mastermind-task-planning/SKILL.md) | Selects Direct, Verified or Strict and writes the task contract. |
 | [`mastermind-task-executor`](workflow/mastermind-task-executor/SKILL.md) | Implements the approved contract and writes `executor-report.md`. |
 | [`mastermind-codegraph-research`](workflow/mastermind-codegraph-research/SKILL.md) | Uses mmcg to discover symbols and inspect repository structure. |

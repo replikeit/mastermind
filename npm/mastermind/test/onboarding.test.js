@@ -10,6 +10,7 @@ import { fileURLToPath } from "node:url";
 const SOURCE = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const NATIVE = process.env.MMCG_TEST_BINARY;
 const CORE = [
+  "mastermind-agent-handoff",
   "mastermind-architecture-review", "mastermind-change-impact", "mastermind-codegraph-research",
   "mastermind-comment-audit", "mastermind-critical-review", "mastermind-investigation-ledger",
   "mastermind-project-history", "mastermind-project-map", "mastermind-product-intake",

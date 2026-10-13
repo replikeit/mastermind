@@ -1,34 +1,43 @@
 # Task and agent effort routing
 
-Choose effort once before a new agent invocation. The Rust policy is shared by
-CLI and MCP, with no model call or index requirement. It uses declared duties
-and scope, rather than a keyword guess or a hidden difficulty score.
+Select effort before starting an agent, then apply the decision through the
+host's native control. CLI and MCP share one deterministic Rust policy; selection
+needs neither an index nor a model call.
 
-## Choose a route
+## Prerequisites
 
-| Context | Automatic choice |
+- Install the Mastermind workflow and register MCP, or have `mastermind` on PATH.
+- Inspect the receiving agent's duty, source scope and risk.
+- Use a host that supports per-invocation effort and an authenticated client for execution.
+- Resolve any competing effort dispatcher before spawning an agent.
+
+Routing uses declarations from the controller. It does not inspect the task or
+verify those declarations. Keep the selected model, permissions and budgets.
+
+## Choose effort
+
+| Condition | Result |
 |---|---|
-| Researcher, `callees_trace`, `source_read_reuse` or `task_phase_trace`; all conditions below met | `low` pilot |
-| Unknown/other duty or family, incomplete context, high/unknown risk | `high` |
-| Explicit human `user_effort` for this invocation | The requested override |
+| Explicit human `user_effort` for this invocation | Requested override, ahead of automatic routing |
+| Researcher on an allowed family, with every low condition below | `low` pilot |
+| Other or unknown duty/family, incomplete scope, high or unknown risk | `high` |
 
-The low route requires source-only research, a bounded source scope, stable
-inputs, a lexical repo-map with a 1600-byte budget and the frozen
-direct-read/uncovered-range instruction, and inspected low risk.
-Execution, review, security, function-removal proofs and normalization-boundary
-questions use high. A phase trace explains the saved/current input contract
-under stated assumptions; changing or approving workflow state is a different
-duty. Unknown roles and families are accepted and conservatively retain high.
+| Required for automatic low | Controller declaration |
+|---|---|
+| Source-only research | `agent: researcher` or `mastermind-researcher`, `read_only: true` |
+| Allowed task | `task_family: callees_trace`, `source_read_reuse` or `task_phase_trace` |
+| Bounded source scope and stable inputs | `bounded_scope: true`, `stable_inputs: true` |
+| Lexical map at a 1600-byte budget, with the frozen direct-read/uncovered-range instruction | `lexical_repo_map: true` |
+| Inspected low risk | `risk: low` |
 
-The controller owns these declarations. They are not verified by the router.
-Keep current source evidence, precise citations and unresolved obligations.
-When a research request grows into a different duty, end the low handoff and
-carry its facts and gaps into the new role instead of repeating every read.
+Execution, review, security, removal proofs and normalization boundaries select
+high. A phase trace explains an input contract; changing or approving workflow
+state is a different duty. When duty, risk or source scope changes, route a new
+handoff with the existing facts and gaps. Do not route per lookup.
 
-## Request and apply
+## Select a decision
 
-The model, tool permissions and budgets stay under the existing controller.
-For an eligible read-only source-reuse request, create `route.json`:
+Create `route.json` for an eligible source-reuse request:
 
 ```json
 {
@@ -46,83 +55,80 @@ For an eligible read-only source-reuse request, create `route.json`:
 mastermind effort-route --request route.json
 ```
 
-Or send the same object as arguments to `mmcg_effort_route`. Omitted booleans
-are false; omitted risk is unknown. `user_effort`, when explicitly selected by
-the human for this invocation, accepts low, medium, high, xhigh or max.
-Unknown fields, invalid types and unrecognized effort/risk values are errors.
-CLI requests are limited to 16 KiB; agent and family names to 80 UTF-8 bytes.
+Alternatively, pass that object to `mmcg_effort_route`. Omitted booleans default
+to false and risk to unknown. `user_effort` accepts `low`, `medium`, `high`,
+`xhigh` or `max`; use it only for an explicit human choice. Unknown fields,
+invalid types and unrecognized values fail validation. CLI input is limited to
+16 KiB; agent and family names to 80 UTF-8 bytes.
 
-The response includes `requested_effort`, a reason and fixed argument arrays:
+## Apply to an ordinary agent
 
-| Client | Low invocation override |
-|---|---|
-| Codex CLI | `-c 'model_reasoning_effort="low"'` |
-| Claude Code CLI | `--effort low` |
-| Another host | Map `requested_effort` to its supported per-agent control |
+Mastermind planning, research and executor workflows use
+[`mastermind-agent-handoff`](../../skills/workflow/mastermind-agent-handoff/SKILL.md)
+before each new agent. The controller must:
 
-The controller must apply those arguments/settings to the next invocation and
-retain the decision alongside its runtime record. Do not join an argument array
-into an executable shell string. Keep the selected model and authentication;
-the router does not grant permissions or change its caller's configuration.
-Its response has `applied: false` because selecting an effort is distinct from
-submitting that setting or observing the served effort. Reject unsupported
-settings at the host boundary; do not silently pretend that routing took effect.
-If no per-invocation control exists, retain the current setting and record the
-limitation. Global client configuration remains a user choice.
+1. Select the decision for the receiving agent's actual task.
+2. Apply the returned setting through the native control below.
+3. Carry role instructions, objective, authorized scope, facts, citations, remaining obligations, source/map bindings, permissions and budgets into the child.
+4. Retain the request, decision, child ID and runtime evidence together.
 
-## Native client launch
+| Host | Native control | Constraint |
+|---|---|---|
+| Codex `spawn_agent` | Merge returned `codex_spawn_args`: `fork_turns: "none"`, `reasoning_effort: requested_effort` | Fresh child with a self-contained packet; full-history forks inherit parent effort |
+| Codex CLI | Returned `codex_args`, such as `-c 'model_reasoning_effort="low"'` | Applies to the new native session |
+| Claude Code CLI | Returned `claude_args`, such as `--effort low` | Agent definitions and environment settings can override session effort |
+| Claude non-fork `Agent`, 2.1.292 or later | `effort: requested_effort` | `CLAUDE_CODE_EFFORT_LEVEL` takes precedence |
+| Another host | Supported per-agent field | Record `not_applied` if the control is unavailable |
 
-The CLI can select and submit the override in one step. Execution requires a
-request file so the native client keeps stdin for its prompt. Arguments after
-`--` are passed directly, without shell expansion:
+Keep any existing model choice. Custom Codex agent files can override spawn
+settings; avoid a conflicting fixed effort. See
+[Codex subagent configuration](https://developers.openai.com/codex/multi-agent)
+and [Claude subagent effort](https://code.claude.com/docs/en/sub-agents#choose-an-effort-level).
+A prompt or MCP response cannot reconfigure its caller or a running child.
+
+## Launch a native client
+
+`--exec` selects and submits the override together. It requires a request file,
+leaving stdin for the client's prompt. Arguments after `--` pass directly to the
+client, without shell expansion:
 
 ```bash
 mastermind effort-route --request route.json --exec codex -- exec --sandbox read-only - < task.txt
 mastermind effort-route --request route.json --exec claude -- --print --tools Read,Grep,Glob < task.txt
 ```
 
-Keep the model, tools, source scope and budgets of the invocation you intended
-within those native arguments/configuration. The launcher adds only the effort
-arguments. It resolves the named client from PATH and inherits its configuration,
-authentication and working directory. stdout is the client's output; stderr
-includes a JSON route record after spawn, with `override_submitted: true` and
-`served_effort: null`. Child exit codes 0–255 are preserved; signal exits and wider codes return 1.
-Capture stderr alongside the runtime result. Selection, submission and observed
-provider behavior remain separate.
+The launcher resolves the client from PATH and inherits its working directory,
+configuration and authentication. stdout contains client output. stderr includes
+a JSON route record after spawn: `override_submitted: true`, `served_effort: null`.
+Capture it with the result. Exit codes 0–255 are preserved; signal exits and wider
+codes return 1. A nonzero exit fails the command without retrying at another effort.
 
-Put explicit effort in `user_effort`. Conflicting native effort flags or a
-visible conflicting `CLAUDE_CODE_EFFORT_LEVEL` stop before spawn. Invalid inputs,
-a missing client or a nonzero client exit fail the command; there is no retry
-with a silently different effort. The launcher's flags affect the main native
-session. In Claude, agent/frontmatter effort and settings/environment precedence
-can override it; do not treat `--exec claude -- --agent ...` as proof of the
-agent's effort. See [Claude effort precedence](https://code.claude.com/docs/en/model-config#adjust-effort-level),
-[environment precedence](https://code.claude.com/docs/en/env-vars#precedence)
-and [Codex configuration](https://developers.openai.com/codex/config-reference).
+## Verify application
 
-## In-session agents and other hosts
+| Evidence | Meaning |
+|---|---|
+| `requested_effort` and reason | Policy decision |
+| `applied: false`, `declarations_verified: false`, `quality_qualified: false` | Selection verifies neither the declarations, application nor answer quality |
+| Native setting submitted | Requested configuration reached the host |
+| Codex child's own `turn_context.effort` | Observed native child setting; the parent's record is insufficient |
+| Provider record or matched answer evaluation | Separate evidence for provider behavior or semantic quality |
 
-For a non-fork Claude subagent on Claude Code 2.1.292 or later, the controller
-passes `requested_effort` as the Agent tool's per-invocation `effort` value. It
-overrides that agent's definition, unless `CLAUDE_CODE_EFFORT_LEVEL` overrides
-both. Older clients and forks keep their defaults when no supported control
-exists. Do not force one environment effort across unrelated agent duties.
-See [Claude subagent effort](https://code.claude.com/docs/en/sub-agents#choose-an-effort-level).
+Automatic low is a selective pilot with GPT-6.1 Sol evidence. Qualify other
+models or additional families using matched inputs, instructions and tools,
+independent answer review, and retained failed/unknown outcomes. Routing and
+transport checks do not establish quality or savings.
 
-For Codex subagents or another SDK/client, apply the same decision through the
-host's supported per-agent field and retain the request in its runtime record.
-The MCP tool stays read-only and cannot launch or reconfigure the host. If the
-host exposes no control, record `not_applied` and preserve its existing setting.
+## Recover or disable
 
-## Evidence and rollback
+| Condition | Action |
+|---|---|
+| Invalid input or missing client | Fix the request or PATH; no child has started |
+| Conflicting native effort flag or `CLAUDE_CODE_EFFORT_LEVEL` | Put the human choice in `user_effort` and remove the conflict for this invocation |
+| Codex full-history fork required, older Claude, or unsupported host | Keep the host's setting and record `not_applied` |
+| Dispatcher forbids effort overrides | Stop before spawn; select one authority. See [Codex integration](../integrations/codex.md#route-reasoning-effort) |
+| Authentication or transport failure | Retain the failed attempt, fix the cause, then explicitly retry |
+| Disable automatic low | Use an explicit `user_effort: high` for new invocations or remove the routing step |
 
-This is a selective pilot, not a general difficulty classifier. The route's
-`quality_qualified: false` separates a configuration decision from measured
-answer quality. Before expanding the allowed families or applying low to a new
-model, use matched task inputs and tools, preserve failed/unknown outcomes, and
-review complete answers independently. Deterministic routing and transport tests
-do not establish semantic quality.
-
-Disable automatic low by removing the controller's routing step, or retain
-high with an explicit per-invocation override. Preserve existing results and
-failure records. Changing a router cannot repair or relabel historical grades.
+See [Claude effort precedence](https://code.claude.com/docs/en/model-config#adjust-effort-level)
+for client controls. Preserve existing results when changing routing; historical
+grades remain bound to their original invocation.

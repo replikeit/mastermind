@@ -2,7 +2,7 @@
 name: mastermind-task-planning
 description: Choose the lightest Mastermind workflow that fits the risk, then create an evidence-grounded verified or strict task contract for delegated implementation. Direct work deliberately uses no task spec.
 metadata:
-  version: 0.17.4
+  version: 0.17.5
   authors: [mastermind]
   tags: [workflow, planning, delegation, mmcg, audit]
 ---
@@ -19,8 +19,7 @@ Choose the mode by risk.
 | **verified** | Normal multi-file feature/fix or delegated work | Compact Goals, Scope, Acceptance Criteria, affected symbols, Tests Plan, Final Verification. |
 | **strict** | Auth, billing, migration, public API, data-loss, supply-chain, or hard rollback | Verified contract plus alternatives, risk/evidence ledger, rollback, critic and security review where relevant. |
 
-Do not create a fake direct-mode spec. If direct is appropriate, leave planner
-mode and let the implementation agent work normally. `lite` and `standard` are
+Direct work uses no spec; leave planner mode and implement normally. `lite` and `standard` are
 legacy task-file modes; do not create new ones.
 
 ## Planner boundary
@@ -60,8 +59,9 @@ History retrieval is not current proof. Read sources and active/superseding
 records. User approval records scope and authority, not technical truth.
 
 The graph is syntactic evidence. Preserve collision, precision, stale-index and
-truncation notes. Work inline for one or two lookups. Use the researcher for
-bounded batches and the investigator for unknown-cause bugs.
+truncation notes. Work inline for one or two lookups. Use
+[[mastermind-agent-handoff]] before every new agent: researcher for bounded facts,
+investigator for unknown-cause bugs.
 
 Reuse a hook profile only for matching planner paths and mode. Otherwise call
 `mmcg_profile` with those paths, `role: planner`, and the selected `workflow`
