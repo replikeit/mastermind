@@ -10,6 +10,8 @@ use std::path::PathBuf;
 use std::process::{Command, Output, Stdio};
 use std::time::{Duration, Instant};
 
+const WORKER_RUNTIME_SECONDS: u64 = 60;
+
 const NATIVE: &str = r#"#!/usr/bin/python3
 import sys,json,os,pathlib,subprocess
 client=pathlib.Path(sys.argv[0]).name
@@ -144,7 +146,7 @@ impl Fixture {
         settings.mining = mmcg::onboarding::Mining::On;
         settings.provider = Some("native".into());
         settings.max_calls = max_calls;
-        settings.max_runtime = 60;
+        settings.max_runtime = WORKER_RUNTIME_SECONDS;
         fs::create_dir_all(self.root.join(".mastermind")).unwrap();
         mmcg::onboarding::Session::begin(&self.root)
             .unwrap()
@@ -157,7 +159,9 @@ impl Fixture {
     }
 
     fn terminal(&self) -> Value {
-        let deadline = Instant::now() + Duration::from_secs(10);
+        // Completion is bounded by the configured runtime, including retries.
+        // Allow owner release after that deadline instead of assuming host speed.
+        let deadline = Instant::now() + Duration::from_secs(WORKER_RUNTIME_SECONDS + 10);
         loop {
             let report = self.worker();
             if report["owner"] == "available" && report["status"] != "starting" {
@@ -898,6 +902,7 @@ fn automatic_worker_retries_a_transient_failure_without_resetting_the_budget() {
     assert_eq!(terminal["run"]["attempts"], 2);
     assert_eq!(terminal["run"]["completed"], 1);
     assert_eq!(terminal["status"], "budget_exhausted");
+    assert_eq!(terminal["run"]["reason"], "worker_call_budget_exhausted");
 }
 
 #[test]
