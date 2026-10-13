@@ -298,6 +298,11 @@ static TOOLS: &[ToolDef] = &[
     refreshable_tool("mmcg_concept", schema_concept, handle_concept),
     read_only_tool("mmcg_context", schema_context, handle_context),
     read_only_tool("mmcg_profile", schema_profile, handle_profile),
+    read_only_tool(
+        "mmcg_effort_route",
+        schema_effort_route,
+        handle_effort_route,
+    ),
     additive_tool(
         "mmcg_mining_submit",
         schema_mining_submit,
@@ -2356,6 +2361,22 @@ fn schema_change_impact() -> Value {
         "mmcg_change_impact",
         "Deterministic schema-v1 analysis of working-tree changes, dependency candidates through calls and syntactic references, component crossings, and candidate tests. Precision notes preserve extraction and name-resolution limitations even when no dependencies are returned.",
     )
+}
+
+fn schema_effort_route() -> Value {
+    json!({
+        "name": "mmcg_effort_route",
+        "description": "Select requested reasoning effort from declared agent duty, task family and scope. Low is an opt-in bounded-research pilot; high is the fallback. An explicit human override wins. No model call, index access or configuration write; the controller applies the returned Codex/Claude arguments to its next invocation.",
+        "inputSchema": crate::effort::input_schema()
+    })
+}
+
+fn handle_effort_route(_store: &mut Store, args: &Value) -> Result<Value, HandlerError> {
+    let request: crate::effort::Request = serde_json::from_value(args.clone())
+        .map_err(|_| HandlerError::InvalidArguments("invalid effort context".into()))?;
+    let decision = crate::effort::select(&request)
+        .map_err(|error| HandlerError::InvalidArguments(error.into()))?;
+    serde_json::to_value(decision).map_err(|error| HandlerError::internal("effort_route", error))
 }
 
 fn schema_brief() -> Value {
@@ -4665,6 +4686,7 @@ mod tests {
             "mmcg_change_class",
             "mmcg_context",
             "mmcg_profile",
+            "mmcg_effort_route",
         ];
         let refreshers = [
             "mmcg_search",
@@ -4728,6 +4750,39 @@ mod tests {
                 };
                 assert_eq!(tool["annotations"], annotations, "{name}");
             }
+        }
+    }
+
+    #[test]
+    fn effort_route_is_available_without_a_current_index_and_rejects_bad_context() {
+        let (_root, mut store) = fresh_test_store();
+        let context = json!({
+            "agent": "researcher", "task_family": "source_read_reuse",
+            "read_only": true, "bounded_scope": true, "stable_inputs": true,
+            "lexical_repo_map": true, "risk": "low"
+        });
+        let result = handle_tools_call(
+            ProtocolVersion::Current,
+            &mut store,
+            &json!({"name": "mmcg_effort_route", "arguments": context}),
+        )
+        .unwrap();
+        assert_eq!(result["isError"], false);
+        let decision = unwrap_content(&result);
+        assert_eq!(decision["requested_effort"], "low");
+        assert_eq!(decision["applied"], false);
+        for arguments in [
+            json!({"read_only": "true"}),
+            json!({"risk": "safe"}),
+            json!({"task_famliy": "source_read_reuse"}),
+        ] {
+            let result = handle_tools_call(
+                ProtocolVersion::Current,
+                &mut store,
+                &json!({"name": "mmcg_effort_route", "arguments": arguments}),
+            )
+            .unwrap();
+            assert_eq!(result["isError"], true);
         }
     }
 
@@ -7621,6 +7676,7 @@ mod checks {
             "mmcg_change_class",
             "mmcg_context",
             "mmcg_profile",
+            "mmcg_effort_route",
             "mmcg_mining_submit",
         ];
         for tool in TOOLS {

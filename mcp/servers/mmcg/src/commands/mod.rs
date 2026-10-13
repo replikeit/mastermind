@@ -8,6 +8,7 @@ pub mod acceptance;
 pub mod audit;
 pub mod ci;
 pub mod demo;
+pub mod effort;
 pub mod init;
 pub mod new_spec;
 pub mod onboard;

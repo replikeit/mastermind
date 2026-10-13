@@ -2,7 +2,7 @@
 name: mastermind-codegraph-research
 description: Use mmcg before Bash or literal search for repository orientation, natural-language symbol discovery, symbol existence, callers, callees, imports, blast radius, file existence, or stale-index handling.
 metadata:
-  version: 0.3.4
+  version: 0.3.5
   authors:
     - mastermind
   tags:
@@ -23,6 +23,25 @@ compiler/type resolution. Dynamic dispatch, reflection, generated code,
 re-exports, and cross-language edges can reduce precision.
 
 **Never name a symbol, file, caller, or blast radius from memory.** "I think `X` exists" is not evidence; `mmcg_search X` returning a hit is. A spec, audit, or critique built on a guessed symbol fails at the first step that touches real code.
+
+## Effort selection at handoff
+
+The controller may use `mmcg_effort_route` before starting a research agent.
+Declare the actual agent duty, task family, source-only/bounded/stable scope,
+lexical repo-map (1600-byte cap) and inspected risk. Low is a pilot for
+`researcher` on `callees_trace`, `source_read_reuse` or `task_phase_trace` only.
+Unknown context, other duties/families, edits, security, removal proofs and
+normalization boundaries retain high. Explicit human effort choices win.
+
+Apply the returned effort through the client's per-invocation control while
+preserving the model, tools and budgets. Codex and Claude CLI argument arrays
+are returned for native launchers. If that control is unavailable, keep the
+current setting; a tool result or prompt does not change model configuration.
+Route once per handoff, not once per lookup. Escalate when the scope or duty
+changes, carrying existing facts and remaining obligations instead of repeating
+completed discovery. The low pilot's measured profile is GPT-6.1 Sol with a
+lexical map; other profiles are uncalibrated. Source and citation checks below
+still apply.
 
 ## Structural vs literal
 

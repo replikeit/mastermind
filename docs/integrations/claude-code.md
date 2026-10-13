@@ -67,3 +67,12 @@ mastermind setup claude --scope project --root . --remove --write
 [Workflow](../workflow.md) covers handoff and `run-task --exec` with existing
 Claude authentication and permissions. [Persona hooks](../guides/persona-hooks.md)
 covers source inspection, candidate review and optional separate analysis.
+
+## Route reasoning effort
+
+Use the shared `mmcg_effort_route` / `mastermind effort-route` policy before a
+new invocation. `mastermind effort-route --request route.json --exec claude --
+--print ...` submits its `claude_args` while preserving the selected model and
+permissions. Non-fork subagents support Agent-tool per-invocation effort from
+Claude Code 2.1.292; older or unsupported paths keep their agent defaults.
+An active chat and an already running subagent keep their current setting. See [effort routing](../guides/effort-routing.md).

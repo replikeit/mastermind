@@ -173,6 +173,9 @@ enum Cmd {
     Map(MapArgs),
     /// Build a bounded question-specific navigation shortlist from indexed definitions.
     RepoMap(RepoMapArgs),
+
+    /// Select task/agent effort; optionally launch a native client with the override.
+    EffortRoute(Box<commands::effort::Options>),
     /// Analyze changes through calls and syntactic references, component crossings, and candidate tests.
     Impact(ImpactArgs),
     /// Build one bounded revision-bound context packet for an agent role.
@@ -2180,6 +2183,7 @@ fn run_cli_inner(
         }) => {
             commands::query::dispatch_map(&path, format, depth, top, production_only, &index_path)?
         }
+        Cmd::EffortRoute(options) => commands::effort::route(&options)?,
         Cmd::RepoMap(RepoMapArgs {
             question,
             source_sha256,
@@ -3400,6 +3404,9 @@ fn render_exit(
     match result {
         Ok(()) => ExitCode::SUCCESS,
         Err(e) => {
+            if let Some(exit) = e.downcast_ref::<commands::effort::NativeExit>() {
+                return ExitCode::from(exit.code);
+            }
             let _ = writeln!(stderr, "{}", cli_error_line(e.as_ref()));
             ExitCode::FAILURE
         }
@@ -3435,6 +3442,19 @@ mod tests {
                     "native",
                 ])
                 .unwrap();
+                let effort = Cli::try_parse_from([
+                    "mastermind",
+                    "effort-route",
+                    "--request",
+                    "route.json",
+                    "--exec",
+                    "codex",
+                    "--",
+                    "exec",
+                    "-",
+                ])
+                .unwrap();
+                assert!(matches!(effort.cmd, Cmd::EffortRoute(_)));
                 let digest = "a".repeat(64);
                 let repo_map = Cli::try_parse_from([
                     "mastermind",

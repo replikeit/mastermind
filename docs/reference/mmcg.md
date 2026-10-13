@@ -11,7 +11,7 @@ CLI, Lens and MCP read the same indexed state.
 
 | Interface | Contract |
 |---|---|
-| MCP | 36 tools: 21 queries that may refresh the managed index, 13 read-only queries, 2 additive writes (scratchpad and task mining) |
+| MCP | 37 tools: 21 queries that may refresh the managed index, 14 read-only operations, 2 additive writes (scratchpad and task mining) |
 | CLI | Indexing, spec gates, setup, ingestion, review export and profile mining |
 | npm commands | `mastermind` and `mmcg` |
 | Cargo command | `mmcg`, used in the examples below |
@@ -1463,6 +1463,15 @@ mmcg --index /absolute/index/mmcg.db serve --root /absolute/repository
 
 Tool-specific arguments and response bounds are listed below. The
 [protocol contract](#protocol-contract) defines framing and refresh behavior.
+
+### Effort selection
+
+| Tool | Args | What it returns |
+|---|---|---|
+| `mmcg_effort_route` | optional `agent`, `task_family` (each at most 80 UTF-8 bytes), `read_only`, `bounded_scope`, `stable_inputs`, `lexical_repo_map`, `risk` (`low`, `high`, `unknown`), `user_effort` (`low`, `medium`, `high`, `xhigh`, `max`) | Deterministic task/agent policy, requested effort, reason and Codex/Claude argument arrays. Missing context retains high; explicit human effort overrides win. No source/index access, model call or configuration write. Declarations are not verified. `applied` and `quality_qualified` remain false. The controller applies supported overrides to the next invocation; see [routing and fallback](../guides/effort-routing.md). |
+
+The CLI accepts the same JSON through `mastermind effort-route --request route.json`
+or stdin, with a 16 KiB input limit. Neither interface changes an active chat.
 
 ### Symbol lookup
 

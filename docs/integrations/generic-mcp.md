@@ -51,6 +51,7 @@ To select a specific index, place `--index` before `serve`:
 | Need | Start with |
 |---|---|
 | Role briefing | `mmcg_brief` |
+| Task/agent effort decision | `mmcg_effort_route` |
 | Name or concept | `mmcg_search`, `mmcg_concept` |
 | Structure or change impact | `mmcg_map`, `mmcg_change_impact` |
 | Project documentation | `mmcg_docs`, `mmcg_project_profile` |
@@ -62,6 +63,11 @@ To select a specific index, place `--index` before `serve`:
 The [MCP reference](../reference/mmcg.md#mcp-tools) defines arguments and limits.
 Graph queries may refresh the derived index. Scratchpad append is an additive
 local write.
+
+The effort tool returns a requested level and client argument arrays. Apply it
+through a supported per-agent control before the next invocation; without that
+control, keep the existing setting. It does not change this chat or launch a
+model. See [effort routing](../guides/effort-routing.md).
 
 ## Enable personal context separately
 

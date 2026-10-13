@@ -138,9 +138,8 @@ and do not replace declared verification commands.
 
 ### Role routing
 
-In Claude, use the shipped role's model and effort unless the user overrides
-them. In other clients, keep the user's selected model; Claude aliases do not
-select a model there.
+Keep the selected model; Claude role aliases do not select models in other
+clients. Shipped effort defaults apply when no per-invocation route is applied.
 Route by the required outcome and inspected risk, not by how short the request
 looks. Do not run every role for every task. Each handoff carries supported facts,
 citations, remaining obligations and the exact evidence gap; the controller
@@ -184,6 +183,21 @@ keeps the original request open until those obligations are resolved.
   verbatim, in their profile.
 
 Skip roles that add no new evidence.
+
+### Effort routing
+
+Before each new agent, select effort with `mmcg_effort_route` or
+`mastermind effort-route`; see [the contract](https://github.com/xcrft/mastermind/blob/main/docs/guides/effort-routing.md).
+Declare actual duties and inspected scope. Low requires `researcher`, family
+`callees_trace`, `source_read_reuse` or `task_phase_trace`, source-only bounded
+work, stable inputs, a 1600-byte lexical map and low risk. Other or unknown
+context routes high. Explicit human effort choices win.
+
+Apply returned native arguments or the host's per-agent setting on the next
+invocation. Preserve model, tools and budgets. Without that control, retain the
+current setting; prompts cannot switch effort. Re-route if duties or risk change,
+carrying facts and gaps. This pilot has GPT-6.1 Sol evidence only; Claude and
+other profiles remain uncalibrated. Keep source and citation checks.
 
 ### Completion and release
 

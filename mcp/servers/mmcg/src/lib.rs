@@ -21,6 +21,7 @@ pub mod diff;
 pub mod doctor;
 pub mod document_graph;
 mod document_sections;
+pub mod effort;
 pub mod evidence;
 mod executor_claims;
 pub mod executor_report;

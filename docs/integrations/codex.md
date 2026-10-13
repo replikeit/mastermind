@@ -48,6 +48,16 @@ See [Workflow](../workflow.md) for commands.
 `run-task --exec` and `review-task run` launch Claude Code, even when the
 implementation was done in Codex.
 
+## Route reasoning effort
+
+The shared task/agent policy is available through `mmcg_effort_route` and
+`mastermind effort-route`; it makes no model call. The controller declares the
+agent's duty, task family and inspected scope before a new invocation. See
+[effort routing](../guides/effort-routing.md) for the request contract and
+Codex/Claude launch arguments. `mastermind effort-route --request route.json
+--exec codex -- exec ...` submits the override to a native invocation. MCP cannot
+reconfigure the active chat. Preserve the user's selected model and permissions.
+
 ## Verify or remove
 
 ```bash
