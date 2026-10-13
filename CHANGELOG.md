@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.3.0] - 2026-10-13
+
+### Added
+
+- Bounded source-range reads with source hashes and task-bound receipts for
+  extending previously delivered ranges.
+- Question-specific lexical repo-maps with bounded payloads and source/index
+  bindings. Separate map-only and instruction-only modes support controlled
+  comparisons. Claims still require source reads.
+- Shared task and agent effort routing through CLI and MCP, with native client
+  launch arguments and ordinary Codex spawn fields. The core agent-handoff
+  skill applies routing before delegated research, execution and review.
+- Seeded judge calibration, blind review exports and pre-registered
+  qualification decisions with simulation-calibrated critical values.
+
+### Changed
+
+- Research and evaluation workflows retain source coverage, lookup usage,
+  failed attempts and unknown measurements. Human reference labels remain
+  distinct from model reviews.
+- Missing effort context and duties outside the bounded research pilot select
+  high. Explicit human effort choices take precedence; unsupported hosts retain
+  their settings with an application limitation recorded.
+- Update tree-sitter, TOML and pinned CI action dependencies.
+
+### Fixed
+
+- Keep repo-map CLI parsing within the Windows stack budget.
+- Align native worker test waits with the worker's runtime budget.
+
 ## [3.2.4] - 2026-10-09
 
 ### Added
@@ -155,7 +185,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Give each Mastermind native hook an event-specific label in the client review
   screen. Re-running hook setup updates previous labels without duplicate hooks.
 
-[Unreleased]: https://github.com/xcrft/mastermind/compare/npm-v3.2.4...HEAD
+[Unreleased]: https://github.com/xcrft/mastermind/compare/npm-v3.3.0...HEAD
+[3.3.0]: https://github.com/xcrft/mastermind/releases/tag/npm-v3.3.0
 [3.2.4]: https://github.com/xcrft/mastermind/releases/tag/npm-v3.2.4
 [3.2.3]: https://github.com/xcrft/mastermind/releases/tag/npm-v3.2.3
 [3.2.2]: https://github.com/xcrft/mastermind/releases/tag/npm-v3.2.2
