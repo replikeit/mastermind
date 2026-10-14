@@ -7710,6 +7710,63 @@ impl Store {
         result
     }
 
+    /// Conservative name links for navigation; duplicate names within a language stay unresolved.
+    pub fn repo_map_graph(&self) -> SqlResult<crate::repo_map::Graph> {
+        let sql = format!(
+            "WITH raw AS MATERIALIZED (
+                 SELECT * FROM edges WHERE kind IN ('calls', 'references')
+                 ORDER BY id LIMIT ?1
+             ), targets AS MATERIALIZED (
+                 SELECT id, file_path, line_start, name, kind, language,
+                        COUNT(*) OVER (PARTITION BY name, language) AS matches
+                 FROM symbols
+             )
+             SELECT caller.file_path, caller.line_start, caller.name, caller.kind,
+                    target.file_path, target.line_start, target.name, target.kind
+             FROM raw e JOIN symbols caller ON caller.id = e.from_id
+             LEFT JOIN targets target ON target.name = e.to_name
+                 AND target.language = caller.language AND target.matches = 1
+                 AND ({EDGE_NAME_MATCH_SQL})
+             ORDER BY e.id"
+        );
+        let mut statement = self.conn.prepare(&sql)?;
+        let rows = statement.query_map([crate::repo_map::MAX_GRAPH_EDGES as i64 + 1], |row| {
+            let from = crate::repo_map::Location {
+                file: row.get(0)?,
+                line: row.get(1)?,
+                name: row.get(2)?,
+                kind: row.get(3)?,
+            };
+            let to = row
+                .get::<_, Option<String>>(4)?
+                .map(|file| -> SqlResult<_> {
+                    Ok(crate::repo_map::Location {
+                        file,
+                        line: row.get(5)?,
+                        name: row.get(6)?,
+                        kind: row.get(7)?,
+                    })
+                })
+                .transpose()?;
+            Ok((from, to))
+        })?;
+        let mut graph = crate::repo_map::Graph::default();
+        for row in rows {
+            let (from, to) = row?;
+            graph.scanned_edges += 1;
+            if let Some(to) = to {
+                graph.edges.push((from, to));
+            } else {
+                graph.omitted_targets += 1;
+            }
+        }
+        if graph.scanned_edges > crate::repo_map::MAX_GRAPH_EDGES {
+            graph.overflow = true;
+            graph.edges.clear();
+        }
+        Ok(graph)
+    }
+
     /// All symbols defined in a given file, ordered by line.
     pub fn symbols_in_file(&self, file_path: &str) -> SqlResult<Vec<Symbol>> {
         self.symbols_in_file_rows(file_path, None)
@@ -8281,6 +8338,65 @@ fn tarjan_scc(adj: &std::collections::BTreeMap<String, Vec<String>>) -> Vec<Vec<
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn repo_map_graph_keeps_unique_same_language_links_and_omits_ambiguous_or_incompatible_targets()
+    {
+        let directory = tempfile::tempdir().unwrap();
+        let store = Store::open(directory.path().join("graph.db")).unwrap();
+        store.conn.execute_batch(
+            "INSERT INTO symbols(id, name, kind, file_path, language, line_start, line_end) VALUES
+                (1, 'seed', 'function', 'src/a.rs', 'rust', 1, 1),
+                (2, 'target', 'function', 'src/b.rs', 'rust', 2, 2),
+                (3, 'target', 'function', 'src/b.py', 'python', 3, 3),
+                (4, 'duplicate', 'function', 'src/c.rs', 'rust', 4, 4),
+                (5, 'duplicate', 'function', 'src/d.rs', 'rust', 5, 5),
+                (6, 'unknown_caller', 'function', 'src/e.rs', NULL, 6, 6),
+                (7, 'unknown_target', 'function', 'src/f.rs', NULL, 7, 7);
+             INSERT INTO edges(from_id, to_name, kind, target_kind, line) VALUES
+                (1, 'target', 'calls', 'function', 1),
+                (1, 'target', 'references', 'function', 1),
+                (1, 'duplicate', 'calls', 'function', 1),
+                (1, 'target', 'calls', 'method', 1),
+                (1, 'absent', 'references', 'function', 1),
+                (1, 'target', 'imports', NULL, 1),
+                (6, 'unknown_target', 'calls', 'function', 6);"
+        ).unwrap();
+        let graph = store.repo_map_graph().unwrap();
+        assert_eq!(graph.scanned_edges, 6);
+        assert_eq!(graph.omitted_targets, 4);
+        assert_eq!(graph.edges.len(), 2);
+        assert!(graph
+            .edges
+            .iter()
+            .all(|(from, to)| from.name == "seed" && to.file == "src/b.rs"));
+    }
+
+    #[test]
+    fn repo_map_graph_overflow_discards_partial_graph_instead_of_ranking_its_prefix() {
+        let directory = tempfile::tempdir().unwrap();
+        let store = Store::open(directory.path().join("graph-limit.db")).unwrap();
+        store
+            .conn
+            .execute_batch(
+                "INSERT INTO symbols(id, name, kind, file_path, language, line_start, line_end)
+                 VALUES (1, 'seed', 'function', 'src/a.rs', 'rust', 1, 1);",
+            )
+            .unwrap();
+        store
+            .conn
+            .execute(
+                "WITH RECURSIVE ids(n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM ids WHERE n < ?1)
+             INSERT INTO edges(from_id, to_name, kind, line)
+             SELECT 1, 'seed', 'calls', n FROM ids",
+                [crate::repo_map::MAX_GRAPH_EDGES as i64 + 2],
+            )
+            .unwrap();
+        let graph = store.repo_map_graph().unwrap();
+        assert_eq!(graph.scanned_edges, crate::repo_map::MAX_GRAPH_EDGES + 1);
+        assert!(graph.overflow);
+        assert!(graph.edges.is_empty());
+    }
 
     #[test]
     fn repo_map_export_probes_overflow_instead_of_silently_dropping_candidates() {

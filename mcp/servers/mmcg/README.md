@@ -97,6 +97,21 @@ same selected locations and combined-header byte reservation, so removing advice
 does not introduce additional definitions. `payload_bytes` charges the text
 actually returned; instruction-only output has zero selected locations.
 
+Use `--ranking graph` to evaluate experimental personalized PageRank; the default
+is `--ranking lexical`. Both modes retain the same advice, byte cap and shortlist
+limits. Graph mode uses lexical scores as seeds and deduplicated, bidirectional
+`calls`/`references` links between eligible definitions. Targets must have a unique
+same-language name and compatible kind. Links are navigation hints, not resolved
+semantic evidence.
+
+The ranker runs 24 iterations with damping 0.85; dangling rank returns to the seed
+distribution. Stable source locations break ties. Graph collection probes a
+100,000-edge cap and discards overflowed graphs. Empty graphs, absent seeds and
+overflow fall back to lexical selection; the JSON `graph` field records the
+fallback, scanned/omitted counts and usable links. SQLite query errors still fail
+the command. Keep graph ranking opt-in; require a new quality and cost
+qualification before enabling it in an agent workflow.
+
 ## Connect an agent
 
 ```bash

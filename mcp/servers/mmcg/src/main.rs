@@ -64,6 +64,13 @@ pub enum RepoMapPayload {
 
 #[derive(Copy, Clone, Debug, ValueEnum)]
 #[clap(rename_all = "kebab-case")]
+pub enum RepoMapRanking {
+    Lexical,
+    Graph,
+}
+
+#[derive(Copy, Clone, Debug, ValueEnum)]
+#[clap(rename_all = "kebab-case")]
 pub enum BriefRoleArg {
     Planner,
     Executor,
@@ -374,6 +381,9 @@ struct RepoMapArgs {
     /// Select the map, navigation advice, or their combined header.
     #[arg(long, value_enum, default_value_t = RepoMapPayload::Bundle)]
     payload: RepoMapPayload,
+    /// Graph ranking is experimental; lexical ranking remains the default.
+    #[arg(long, value_enum, default_value_t = RepoMapRanking::Lexical)]
+    ranking: RepoMapRanking,
 }
 
 #[derive(clap::Args)]
@@ -2189,12 +2199,14 @@ fn run_cli_inner(
             source_sha256,
             budget_bytes,
             payload,
+            ranking,
         }) => {
             commands::query::dispatch_repo_map(
                 &question,
                 &source_sha256,
                 budget_bytes as usize,
                 payload,
+                ranking,
                 &index_path,
             )?;
         }
@@ -3466,6 +3478,8 @@ mod tests {
                     "512",
                     "--payload",
                     "map-only",
+                    "--ranking",
+                    "graph",
                 ])
                 .unwrap();
                 assert!(matches!(
@@ -3473,6 +3487,7 @@ mod tests {
                     Cmd::RepoMap(RepoMapArgs {
                         budget_bytes: 512,
                         payload: RepoMapPayload::MapOnly,
+                        ranking: RepoMapRanking::Graph,
                         ..
                     })
                 ));
@@ -4071,6 +4086,7 @@ mod tests {
             Cmd::RepoMap(RepoMapArgs {
                 budget_bytes: 1600,
                 payload: RepoMapPayload::Bundle,
+                ranking: RepoMapRanking::Lexical,
                 ..
             })
         ));

@@ -87,19 +87,34 @@ pub fn dispatch_repo_map(
     source_sha256: &str,
     budget_bytes: usize,
     payload: crate::RepoMapPayload,
+    ranking: crate::RepoMapRanking,
     index_path: &Path,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let store = open_query_store(index_path)?;
-    let symbols = store.with_work_budget(
+    let (symbols, graph) = store.with_work_budget(
         WorkBudget::from_millis(query_budget_ms_from_env(DEFAULT_CLI_BUDGET_MS)),
-        || store.repo_map_symbols(),
+        || {
+            let symbols = store.repo_map_symbols()?;
+            let graph = if matches!(ranking, crate::RepoMapRanking::Graph)
+                && symbols.len() <= mmcg::repo_map::MAX_SYMBOLS
+            {
+                Some(store.repo_map_graph()?)
+            } else {
+                None
+            };
+            Ok((symbols, graph))
+        },
     )?;
-    let mapping = mmcg::repo_map::build(mmcg::repo_map::Input {
+    let input = mmcg::repo_map::Input {
         question: question.into(),
         source_sha256: source_sha256.into(),
         budget_bytes,
         symbols,
-    })
+    };
+    let mapping = match graph {
+        Some(graph) => mmcg::repo_map::build_graph(input, graph),
+        None => mmcg::repo_map::build(input),
+    }
     .map_err(std::io::Error::other)?;
     let mapping = match payload {
         crate::RepoMapPayload::Bundle => mapping,
