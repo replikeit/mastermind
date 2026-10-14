@@ -15,7 +15,7 @@ from . import artifacts, evidence_binding
 from .review_io import sha
 
 
-PARSER_VERSION = "mastermind-producer-binding-v3"
+PARSER_VERSION = "mastermind-producer-binding-v4"
 ANSWER_BYTE_LIMIT = 16 * 1024 * 1024
 SNIPPET_BYTE_LIMIT = 16 * 1024
 MAX_CITATIONS = 4096
@@ -25,7 +25,7 @@ PARSER_CONTRACT = {
     "citations": "whitespace-free inventory path/basename or filelike path:line or path:first-last (ASCII hyphen or en dash); LF source line numbering",
     "fences": "backticks or tildes, zero to three leading spaces; closing marker has the same kind and at least the opening length",
     "adjacency": "citation-before-fence preferred within punctuation-adjacent runs; one citation and one fence per pair; reverse fallback never reuses a preceding fence",
-    "framing": "remove up to the opening indentation per body line and one final LF or CRLF",
+    "framing": "check fixed raw and CommonMark-dedented body candidates after removing one final LF or CRLF; raw-only matches are unverifiable",
     "paths": "exact inventory path, trusted root prefix, or unique inventory basename",
     "unsafe_paths": "URLs, backslashes, traversal components, and network roots are never reinterpreted",
     "indented_code": "lines with four leading spaces or a leading tab are excluded; they prevent snippet association",
@@ -188,13 +188,14 @@ def _quote(answer, block):
         removed += count
         changed += int(bool(count))
     quote = "".join(parts)
-    framing = "\r\n" if quote.endswith("\r\n") else "\n" if quote.endswith("\n") else ""
+    framing = "\r\n" if body.endswith("\r\n") else "\n" if body.endswith("\n") else ""
     if framing:
         quote = quote[:-len(framing)]
+        body = body[:-len(framing)]
     metadata = dict(block, removed_indentation_spaces=removed, indented_body_lines=changed,
                     removed_final_linebreak=framing, raw_body_bytes=len(raw_bytes),
                     raw_body_sha256=sha(raw_bytes))
-    return quote, metadata
+    return quote, body, metadata
 
 
 def audit_answer(answer: str, sources: dict, source_bodies: dict, *, source_prefix: str | None = None) -> dict:
@@ -218,24 +219,28 @@ def audit_answer(answer: str, sources: dict, source_bodies: dict, *, source_pref
     paired, pairing_reasons = _associate(answer, references, blocks)
     bindings, claims, claim_indices, quote_reasons = [], [], [], {}
     for index, reference in enumerate(references):
-        row = dict(reference, resolved_path=None, anchor=None, quote=None, fence=None)
+        row = dict(reference, resolved_path=None, anchor=None, quote=None, fence=None,
+                   quote_match_mode=None)
         path, resolution, status = _resolve(reference["original_path"], sources, basenames, prefix)
         row.update(resolved_path=path, resolution=resolution)
         if path is not None:
             row["source_sha256"] = sources[path]["sha256"]
-        quote = None
+        quote, raw_quote = None, None
         if index in paired:
-            quote, row["fence"] = _quote(answer, blocks[paired[index]])
-            quoted_bytes = quote.encode("utf-8")
-            row.update(quote_sha256=sha(quoted_bytes), quote_bytes=len(quoted_bytes))
-            if len(quoted_bytes) > SNIPPET_BYTE_LIMIT:
-                quote_reasons[index] = "producer_quote_limit"
-            else:
+            quote, raw_quote, row["fence"] = _quote(answer, blocks[paired[index]])
+            for mode, candidate in (("rendered", quote), ("raw", raw_quote)):
+                quoted_bytes = candidate.encode("utf-8")
+                field_prefix = "" if mode == "rendered" else "raw_"
+                row.update({field_prefix + "quote_sha256": sha(quoted_bytes),
+                            field_prefix + "quote_bytes": len(quoted_bytes)})
+                if len(quoted_bytes) > SNIPPET_BYTE_LIMIT:
+                    quote_reasons[index, mode] = "producer_quote_limit"
+                elif not candidate.strip():
+                    quote_reasons[index, mode] = "producer_quote_blank"
+            if len(quote.encode("utf-8")) <= SNIPPET_BYTE_LIMIT:
                 row["quote"] = quote
-                if not quote.strip():
-                    quote_reasons[index] = "producer_quote_blank"
         if index in pairing_reasons:
-            quote_reasons[index] = pairing_reasons[index]
+            quote_reasons[index, "rendered"] = pairing_reasons[index]
         bounds_reason = _bounds_reason(reference["line_span"])
         if bounds_reason:
             row.update(status="invalid", reason=bounds_reason)
@@ -247,22 +252,48 @@ def audit_answer(answer: str, sources: dict, source_bodies: dict, *, source_pref
             if len(anchor.encode("utf-8")) > 1024:
                 row.update(status="invalid", reason="producer_source_path_limit")
             else:
-                quotes = ([] if quote is None or index in quote_reasons else
-                          [{"anchor": anchor, "source_sha256": sources[path]["sha256"], "quote": quote}])
-                claims.append({"anchors": [anchor], "source_quotes": quotes})
-                claim_indices.append(index)
+                candidates = [("rendered", quote)]
+                if raw_quote is not None:
+                    candidates.append(("raw", raw_quote))
+                for mode, candidate in candidates:
+                    quotes = ([] if candidate is None or (index, mode) in quote_reasons else
+                              [{"anchor": anchor, "source_sha256": sources[path]["sha256"],
+                                "quote": candidate}])
+                    claims.append({"anchors": [anchor], "source_quotes": quotes})
+                    claim_indices.append((index, mode))
         bindings.append(row)
     diagnostic = {"reviewer": "producer-literal-diagnostic", "reviews": [
         {"review_id": "producer-answer", "answer_sha256": sha(body), "claims": claims}]}
     audit = evidence_binding.audit([diagnostic], sources, source_bodies)
-    for index, claim in zip(claim_indices, audit["assessments"][0]["reviews"][0]["claims"]):
+    results = {}
+    for (index, mode), claim in zip(claim_indices, audit["assessments"][0]["reviews"][0]["claims"]):
         result = claim["anchors"][0]
         row = bindings[index]
-        row.update(status=result["status"], reason=result["reason"])
-        if "source_sha256" in result:
+        status, reason = result["status"], result["reason"]
+        if (index, mode) in quote_reasons and status != "invalid":
+            status, reason = "unverifiable", quote_reasons[index, mode]
+        results[index, mode] = status, reason
+        if mode == "rendered" and "source_sha256" in result:
             row["observed_source_sha256"] = result["source_sha256"]
-        if index in quote_reasons and row["status"] != "invalid":
-            row.update(status="unverifiable", reason=quote_reasons[index])
+    for index, mode in claim_indices:
+        if mode != "rendered":
+            continue
+        row = bindings[index]
+        status, reason = results[index, "rendered"]
+        raw = results.get((index, "raw"))
+        if raw is not None:
+            rendered_bound, raw_bound = status == "valid", raw[0] == "valid"
+            rendered_absent = reason == "source_quote_outside_span"
+            raw_absent = raw[1] == "source_quote_outside_span"
+            row["quote_match_mode"] = ("both" if rendered_bound and raw_bound else
+                                       "rendered_only" if rendered_bound and raw_absent else
+                                       "raw_only" if raw_bound and rendered_absent else
+                                       "neither" if rendered_absent and raw_absent else None)
+            if rendered_absent and raw_bound:
+                status, reason = "unverifiable", "producer_quote_raw_only"
+            elif rendered_absent and raw[0] == "unverifiable":
+                status, reason = raw
+        row.update(status=status, reason=reason)
     counts = dict.fromkeys(evidence_binding.STATUSES, 0)
     for row in bindings:
         counts[row["status"]] += 1

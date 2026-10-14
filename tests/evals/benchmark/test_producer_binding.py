@@ -50,6 +50,51 @@ class ProducerBindingTests(unittest.TestCase):
         self.assertEqual(row["quote_sha256"], hashlib.sha256(row["quote"].encode()).hexdigest())
         self.assertEqual(row["anchor"], "src/service.py:1-2")
 
+    def test_fixed_raw_and_displayed_snippets_have_distinct_binding_results(self):
+        reference = "src/service.py:1-2"
+        answer = (f"`{reference}`\n"
+                  "  ```python\n"
+                  "  def value():\n"
+                  "     return 7\n"
+                  "  ```\n")
+        displayed = "def value():\n   return 7"
+        raw = "  def value():\n     return 7"
+        cases = (
+            ("rendered_only", b"def value():\n   return 7\n", "valid", "quote_bound"),
+            ("raw_only", b"  def value():\n     return 7\n", "unverifiable", "producer_quote_raw_only"),
+            ("both", b"  def value():\n     return 7\n# split\ndef value():\n   return 7\n", "valid", "quote_bound"),
+            ("neither", b"def value():\n    return 7\n", "invalid", "source_quote_outside_span"),
+        )
+        for case, source, status, reason in cases:
+            with self.subTest(case=case):
+                self.bodies = {"src/service.py": source}
+                self.sources = source_inventory(self.bodies)
+                current_answer = answer.replace(reference, "src/service.py:1-5" if case == "both" else reference)
+                row = self.binding(current_answer)
+                self.assertEqual((row["status"], row["reason"]), (status, reason))
+                self.assertEqual(row["quote_match_mode"], case)
+                self.assertEqual(row["quote"], displayed)
+                self.assertEqual(row["quote_sha256"], hashlib.sha256(displayed.encode()).hexdigest())
+                self.assertEqual(row["raw_quote_sha256"], hashlib.sha256(raw.encode()).hexdigest())
+                self.assertEqual(row["raw_quote_bytes"], len(raw.encode()))
+                self.assertEqual(row["fence"]["raw_body_sha256"], hashlib.sha256((raw + "\n").encode()).hexdigest())
+                self.assertEqual(row["source_sha256"], self.sources["src/service.py"]["sha256"])
+                self.assertEqual(row["original_citation"], row["anchor"])
+                self.assertEqual(current_answer[slice(*row["answer_span"])], row["original_citation"])
+                self.assertEqual(current_answer[slice(*row["fence"]["body_span"])], raw + "\n")
+
+    def test_unchecked_raw_candidate_does_not_claim_rendered_only_match(self):
+        displayed = "a\n" * 4099 + "a"
+        body = "  a\n" * 4099 + "  a"
+        self.bodies = {"src/service.py": (displayed + "\n").encode()}
+        self.sources = source_inventory(self.bodies)
+        answer = "src/service.py:1-4100\n  ```\n" + body + "\n  ```\n"
+        row = self.binding(answer)
+        self.assertEqual((row["status"], row["reason"]), ("valid", "quote_bound"))
+        self.assertIsNone(row["quote_match_mode"])
+        self.assertGreater(row["raw_quote_bytes"], producer_binding.SNIPPET_BYTE_LIMIT)
+        self.assertLess(row["quote_bytes"], producer_binding.SNIPPET_BYTE_LIMIT)
+
     def test_tilde_and_long_backtick_fences_preserve_shorter_marker_lines_as_source(self):
         self.bodies["src/service.py"] = b"value = 7\n```\n"
         self.sources = source_inventory(self.bodies)
@@ -252,6 +297,11 @@ class ProducerBindingTests(unittest.TestCase):
         row = self.binding(quoted_answer(prefix + "/src/service.py:2"), source_prefix=prefix)
         self.assertEqual(row["status"], "valid")
         self.assertEqual(row["resolution"]["reason"], "source_prefix_exact")
+        repeated = quoted_answer(prefix + "/src/service.py:2") * 2
+        report = self.audit(repeated, source_prefix=prefix)
+        self.assertEqual(report["summary"]["citations"], {"valid": 2, "invalid": 0, "unverifiable": 0})
+        self.assertTrue(all(binding["resolution"]["reason"] == "source_prefix_exact"
+                            for binding in report["bindings"]))
         for reference in (prefix + "-foreign/src/service.py:2",
                           prefix + "/../source/src/service.py:2",
                           prefix + "//src/service.py:2"):
@@ -317,6 +367,7 @@ class ProducerBindingTests(unittest.TestCase):
         row = self.binding(quoted_answer("src/service.py:2", "    return 9"))
         self.assertEqual(row["status"], "invalid")
         self.assertEqual(row["reason"], "source_snapshot_mismatch")
+        self.assertIsNone(row["quote_match_mode"])
         self.assertEqual(self.sources, original_sources)
 
     def test_citation_cap_rejects_overflow_without_truncating_the_answer(self):

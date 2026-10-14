@@ -218,18 +218,31 @@ python3 -m evals.benchmark.review audit-producer-bindings /absolute/path/to/revi
 | Unknown or unsafe paths | Report an invalid reference; do not search the checkout for replacements |
 | Fences | Closed backtick or tilde fences with at least three markers and up to three opening spaces; closing markers must match and be at least as long |
 | Quote association | Prefer a citation immediately before its snippet; a citation after a snippet is a fallback only when that block is unused and the citation has no following block. Several citations or snippets competing for one association remain unverifiable; intervening prose breaks association |
-| Literal bytes | Remove only fence framing and Markdown indentation belonging to the opening fence; preserve source indentation, CRLF and Unicode |
+| Snippet representations | Compute both the displayed snippet, removing up to the opening fence's Markdown indentation per body line, and the raw fenced body, retaining that indentation. Remove one final LF or CRLF from each. Preserve all other whitespace and Unicode |
+| Literal matching | Check both representations independently against the same pinned source range. Never choose a representation by searching the source or repair whitespace beyond the fixed framing rule |
 | Unsupported code regions | Exclude references on lines beginning with four or more spaces or a tab; these lines also prevent association across them |
 | Bounds | Answer: 16 MiB; snippet: 16 KiB; at most 4,096 citations and 4,096 fenced blocks per answer |
 | Missing snippets | Remain `unverifiable`; an answer without citations is explicitly counted and cannot establish source coverage |
 
+| Match result | Binding status | Interpretation |
+|---|---|---|
+| Displayed and raw | `valid` | Both fixed representations occur within the pinned line range |
+| Displayed only | `valid` | The Markdown-displayed snippet occurs within the range |
+| Raw only | `unverifiable` (`producer_quote_raw_only`) | The literal body occurs, but Markdown indentation changes the displayed snippet; inspect the source and answer before treating it as evidence |
+| Neither | `invalid` (`source_quote_outside_span`) | Neither representation occurs within the range |
+| A candidate was not checked | Depends on the verified candidate or input failure | `quote_match_mode` is `null`; a size limit, blank snippet or source failure cannot establish an absent match |
+
 The JSON binds the export, source revision, source inventory and each answer.
-It records the parser version, citation spans, path resolution, associated
-snippets and `valid`/`invalid`/`unverifiable` counts. Source digests come from the
-pinned inventory, not from a producer declaration. A valid citation establishes
-only that a literal snippet occurs within its resolved range. It does not
-establish support for the surrounding assertion, complete claim coverage or
-acceptance.
+It records the parser version, original citation spans, path resolution,
+`quote_match_mode` (`both`, `rendered_only`, `raw_only`, `neither` or `null`) and
+`valid`/`invalid`/`unverifiable` counts. `quote` remains the displayed snippet;
+`raw_quote_sha256` and `raw_quote_bytes` identify the raw candidate without
+repeating its text. The fence's `raw_body_sha256` includes the original body
+framing. The pinned inventory supplies source digests; producer text does not
+declare them. A source snapshot mismatch stays invalid even if text matches a
+different version of the file. A valid citation establishes only a literal
+snippet within its resolved range. It does not establish support for the
+surrounding assertion, complete claim coverage or acceptance.
 
 Exit 0 means the diagnostic report was published, including invalid and
 unverifiable references. Exit 2 means input integrity or publication failed.
