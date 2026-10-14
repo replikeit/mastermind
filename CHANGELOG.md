@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Native review (`review-task run`, `run-task --auto-review`) is no longer lost
+  when the model fences its JSON or adds a field: Claude Code validates the
+  answer against the reviewer schema and the same model corrects it in the run.
+
+### Changed
+
+- The native reviewer needs Claude Code 2.1.290 or later and records review
+  policy v2 (Read, Grep, Glob and StructuredOutput). Completed reviews recorded
+  under policy v1 stay valid.
+- The reviewer has 30 turns by default, configurable per project with
+  `mastermind init --review-max-turns N`. A run that stops at its turn or
+  schema-retry limit records `invocation_native_max_turns` or
+  `invocation_native_structured_output_retries`.
+
 ## [3.3.0] - 2026-10-13
 
 ### Added

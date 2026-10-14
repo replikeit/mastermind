@@ -33,6 +33,10 @@ pub struct Options {
     /// spend by default when the caller does not pass an explicit budget.
     #[arg(long, value_parser = clap::value_parser!(u64).range(256..=8000))]
     profile_budget: Option<u64>,
+    /// Native turns the task reviewer gets by default (review-task run and
+    /// run-task --auto-review); an explicit command flag wins.
+    #[arg(long, value_parser = clap::value_parser!(u32).range(1..=100))]
+    review_max_turns: Option<u32>,
     /// Allow selected clients to read the personal profile. Enabled on first client setup.
     #[arg(long, value_parser = ["on", "off"])]
     profile_access: Option<String>,
@@ -149,6 +153,9 @@ fn selection(
     }
     if let Some(value) = options.profile_budget {
         settings.profile_budget_tokens = value as usize;
+    }
+    if let Some(value) = options.review_max_turns {
+        settings.review_max_turns = value;
     }
     if let Some(value) = &options.profile_access {
         settings.profile_access = value == "on";

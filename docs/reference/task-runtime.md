@@ -227,17 +227,17 @@ semantic correctness.
 | Source inventory | 10,000 files, 4 MiB/file, 64 MiB per snapshot |
 | Patch / complete prompt | 64 KiB / 128 KiB |
 | Terminal result | 1 MiB |
-| Wall time / turns | 1–7,200 seconds / 1–100, defaults 600 / 20 |
+| Wall time / turns | 1–7,200 seconds / 1–100, defaults 600 / 30. `mastermind init --review-max-turns N` (1–100) sets the project default turns in `.mastermind/setup.json`. An explicit `--max-turns` or `--review-max-turns` wins. The default 30 is never written |
 | Review invocation receipt | 256 KiB |
 
 | Native reviewer setting | Required value or limit |
 |---|---|
-| Adapter | Claude Code 2.1.267 or later within 2.1, with required flags in local help |
-| Tools | Read/Grep/Glob |
+| Adapter | Claude Code 2.1.290 or later within 2.1, with required flags in local help |
+| Tools | Read/Grep/Glob, plus StructuredOutput for the final answer. The adapter passes `--json-schema` with the closed reviewer answer schema |
 | Permissions | `dontAsk`, no permission prompts, safe/restricted mode |
 | MCP | Strict empty configuration |
 | Disabled | Slash commands, session persistence and Chrome |
-| Initialization | Must match policy. Tool errors or denials fail review |
+| Initialization | Must match policy. Tool errors or denials fail review. A StructuredOutput attempt rejected by the schema is not a tool error when the same run later succeeds. Reviewer tool calls need unique non-empty ids |
 | Mined profile | Not injected |
 | Authentication and model | Native selection |
 | Managed policy, reviewer identity and independence | Unverified |
@@ -245,13 +245,13 @@ semantic correctness.
 | Review evidence transition | Contract |
 |---|---|
 | Before preparation/probes | Revoke prior semantic approval and write pending `review-invocation.json`. Preserve executor receipt |
-| Assessment source | Final native result only. Reject extra fields, duplicate keys, code fences or alternative output files |
+| Assessment source | Final native result string only, parsed strictly. Reject extra fields, duplicate keys, code fences or alternative output files. A successful result must also carry a `structured_output` equal to it. Failures record `invocation_native_structured_output_invalid`. A run that stops at its turn or schema-retry limit records `invocation_native_max_turns` or `invocation_native_structured_output_retries` |
 | Reviewer metadata | Controller supplies `reviewer.kind: llm` and observed model name |
 | Binding | Result and normalized-submission digests bind the semantic record to exact receipt bytes |
 | Missing or replaced native evidence | Blocks completion |
 | `passed` receipt | Valid assessment produced. Its judgments may still be `blocked` |
 | Raw prompts and results | Not stored |
-| Historical completion | Validate pinned schema-v1 receipt against its own contract. Runner upgrade alone does not reopen it |
+| Historical completion | Validate pinned schema-v1 receipt against its own contract: review policy v1 (Claude Code 2.1.267+, Read/Grep/Glob) or v2. Runner upgrade alone does not reopen it |
 | New approval | Must satisfy the current contract |
 
 ## Automatic repair

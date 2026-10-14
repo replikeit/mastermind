@@ -268,11 +268,14 @@ conditional mediation, not OS containment. See [rules and limits](reference/task
 ### Native review
 
 ```bash
-mastermind review-task run "$TASK_SPEC" --timeout 600 --max-turns 20 --json
+mastermind review-task run "$TASK_SPEC" --timeout 600 --max-turns 30 --json
 ```
 
 The reviewer requests `Read,Grep,Glob`, no permission prompts, empty MCP, and
-supported native restrictions. It injects no personal profile.
+supported native restrictions. It answers through Claude Code's StructuredOutput
+tool against a closed JSON schema (Claude Code 2.1.290 or later) and has 30
+turns by default; `mastermind init --review-max-turns N` sets the project
+default. It injects no personal profile.
 `review-invocation.json` records the attempt separately.
 
 ```bash

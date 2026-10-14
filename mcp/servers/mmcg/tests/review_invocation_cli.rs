@@ -33,7 +33,11 @@ case "$1" in
     if test -f .mastermind/tasks/001-native-review/state.json; then
       /bin/cp .mastermind/tasks/001-native-review/state.json "$HARNESS/probe-state.json"
     fi
-    if test "$mode" = unsupported_probe; then printf '2.1.100 (Claude Code)\n'; else printf '2.1.267 (Claude Code)\n'; fi
+    case "$mode" in
+      unsupported_probe) printf '2.1.100 (Claude Code)\n' ;;
+      old_reviewer_version) printf '2.1.289 (Claude Code)\n' ;;
+      *) printf '2.1.290 (Claude Code)\n' ;;
+    esac
     exit 0 ;;
   --help)
     printf '%s\n' '--input-format text --output-format stream-json --verbose --tools --permission-mode acceptEdits dontAsk --permission-prompts none --no-session-persistence --no-chrome --max-turns --restricted --strict-mcp-config --mcp-config --disable-slash-commands'
@@ -82,6 +86,9 @@ export MMCG_REVIEW_FIXTURE_ATTEMPT=$calls
 "$TEST_HELPER" --ignored --exact native_fixture_helper --nocapture > "$HARNESS/$kind-helper-$calls.log" 2>&1
 /bin/cat "$HARNESS/$kind-stream-$calls.jsonl"
 printf 'PRIVATE_NATIVE_REVIEW_STDERR\n' >&2
+case "$kind:$mode" in
+  reviewer:max_turns_exit_1|reviewer:schema_retries_exhausted|reviewer:exit_failed) exit 1 ;;
+esac
 "##;
 
 struct Fixture {
@@ -420,9 +427,9 @@ fn native_fixture_helper() {
     let session = format!("synthetic-{kind}-session-{attempt}");
     let mut init = json!({
         "type":"system", "subtype":"init", "cwd":root,
-        "session_id":session, "model":MODEL, "claude_code_version":"2.1.267",
+        "session_id":session, "model":MODEL, "claude_code_version":"2.1.290",
         "permissionMode": if reviewer {"dontAsk"} else {"acceptEdits"},
-        "tools": if reviewer {json!(["Read","Grep","Glob"])}
+        "tools": if reviewer {json!(["Read","Grep","Glob","StructuredOutput"])}
             else {json!(["Read","Edit","Write","Grep","Glob","Bash"])},
         "mcp_servers":[]
     });
@@ -529,6 +536,24 @@ fn native_fixture_helper() {
             _ => {}
         }
         events.push(init);
+        let attempts = if mode == "schema_retry" { 2 } else { 1 };
+        for attempt_no in 1..=attempts {
+            let id = format!("synthetic-structured-output-{attempt_no}");
+            let rejected = mode == "schema_retry" && attempt_no == 1;
+            events.push(json!({"type":"assistant", "session_id":session,
+            "message":{"role":"assistant", "content":[{
+                "type":"tool_use", "id":id, "name":"StructuredOutput", "input":{}
+            }]}}));
+            events.push(json!({"type":"user", "session_id":session,
+            "message":{"role":"user", "content":[{
+                "type":"tool_result", "tool_use_id":id, "is_error":rejected,
+                "content": if rejected {
+                    "Output does not match required schema: /history/context: must NOT have additional properties ('status' is not allowed)"
+                } else {
+                    "Structured output provided successfully"
+                }
+            }]}}));
+        }
         if mode == "forbidden_tool" {
             events.push(json!({"type":"assistant", "session_id":session,
             "message":{"role":"assistant", "content":[{
@@ -650,6 +675,23 @@ fn native_fixture_helper() {
         "type":"result", "subtype":"success", "is_error":false,
         "session_id":session, "result":response, "permission_denials":[]
     });
+    if reviewer && mode != "missing_structured_output" {
+        result["structured_output"] = serde_json::from_str(&response).unwrap_or(Value::Null);
+    }
+    if reviewer {
+        let subtype = match mode.as_str() {
+            "max_turns_exit_0" | "max_turns_exit_1" => Some("error_max_turns"),
+            "schema_retries_exhausted" => Some("error_max_structured_output_retries"),
+            "exit_failed" => Some("error_during_execution"),
+            _ => None,
+        };
+        if let Some(subtype) = subtype {
+            result = json!({
+                "type":"result", "subtype":subtype, "is_error":true,
+                "session_id":session, "permission_denials":[]
+            });
+        }
+    }
     if reviewer && mode == "denial" {
         result["permission_denials"] =
             json!([{"tool_name":"Read", "tool_input":{"file_path":"PRIVATE_DENIED_PATH"}}]);
@@ -737,7 +779,7 @@ fn standalone_native_review_binds_exact_input_and_result_and_preserves_executor_
     assert_eq!(native["agent"]["role"], "reviewer");
     assert_eq!(
         native["policy"]["builtin_tools"],
-        json!(["Read", "Grep", "Glob"])
+        json!(["Read", "Grep", "Glob", "StructuredOutput"])
     );
     assert_eq!(native["native"]["init"]["permission_mode"], "dontAsk");
     assert_eq!(native["native"]["init"]["model"], MODEL);
@@ -864,6 +906,13 @@ fn standalone_native_review_binds_exact_input_and_result_and_preserves_executor_
             "{flag}: {args:?}"
         );
     }
+    let schema = args
+        .iter()
+        .position(|arg| *arg == "--json-schema")
+        .expect("reviewer must be launched with --json-schema");
+    let schema: Value = serde_json::from_str(args[schema + 1]).unwrap();
+    assert_eq!(schema["additionalProperties"], false);
+    assert_eq!(schema["properties"]["schema_version"]["const"], 1);
     let mcp = args.iter().position(|arg| *arg == "--mcp-config").unwrap();
     assert_eq!(
         serde_json::from_str::<Value>(args[mcp + 1]).unwrap(),
@@ -911,6 +960,7 @@ fn a_new_native_request_revokes_old_approval_before_probe_and_on_protocol_failur
         "forbidden_tool",
         "assistant_error",
         "missing_history",
+        "missing_structured_output",
     ] {
         fixture.mode("positive");
         fixture.manual_positive();
@@ -1810,4 +1860,158 @@ fn review_resume_revokes_stale_pending_approval_before_any_native_or_check_launc
         );
         assert_eq!(fs::read(fixture.root.join(REVIEW)).unwrap(), old_review);
     }
+}
+
+#[test]
+fn a_rejected_structured_output_attempt_is_corrected_and_the_review_is_stored() {
+    let fixture = Fixture::held();
+    fixture.mode("schema_retry");
+    let output = fixture.native_review(&["--timeout", "20"]);
+    assert_success(&output);
+    assert_eq!(parse(&output)["status"], "accepted");
+    let wrapper = fixture.value(NATIVE_RECEIPT);
+    assert_eq!(wrapper["status"], "passed");
+    assert_eq!(wrapper["invocation"]["status"], "passed");
+    assert_eq!(wrapper["invocation"]["native"]["tool_errors"], 0);
+    assert_eq!(fixture.calls("reviewer"), 1);
+}
+
+#[test]
+fn a_reviewer_older_than_the_structured_output_floor_fails_the_probe_before_any_model_run() {
+    let fixture = Fixture::held();
+    fixture.mode("old_reviewer_version");
+    let output = fixture.native_review(&["--timeout", "20"]);
+    assert!(!output.status.success(), "{output:?}");
+    assert_eq!(
+        fixture.value(NATIVE_RECEIPT)["reason"],
+        "invocation_runtime_unsupported"
+    );
+    assert_eq!(fixture.calls("reviewer"), 0);
+}
+
+#[test]
+fn a_result_without_structured_output_is_a_distinct_receipt_reason() {
+    let fixture = Fixture::held();
+    fixture.mode("missing_structured_output");
+    let output = fixture.native_review(&["--timeout", "20"]);
+    assert!(!output.status.success(), "{output:?}");
+    assert_eq!(
+        fixture.value(NATIVE_RECEIPT)["reason"],
+        "invocation_native_structured_output_invalid"
+    );
+}
+
+impl Fixture {
+    fn reviewer_max_turns(&self, call: u32) -> String {
+        let argv = fs::read_to_string(self.harness.join(format!("reviewer-argv-{call}"))).unwrap();
+        let args: Vec<&str> = argv.lines().collect();
+        let flag = args.iter().position(|arg| *arg == "--max-turns").unwrap();
+        args[flag + 1].to_owned()
+    }
+
+    fn init_review_turns(&self, turns: &str) -> Output {
+        self.run(&[
+            "init",
+            "--client",
+            "none",
+            "--review-max-turns",
+            turns,
+            "--json",
+        ])
+    }
+
+    fn init_and_commit_review_turns(&self, turns: &str) {
+        assert_success(&self.init_review_turns(turns));
+        self.git(&["add", "."]);
+        self.git(&["commit", "-qm", "Scaffold written by init"]);
+        self.index();
+    }
+
+    fn setup_json(&self) -> Option<Value> {
+        let bytes = fs::read(self.root.join(".mastermind/setup.json")).ok()?;
+        Some(serde_json::from_slice(&bytes).unwrap())
+    }
+}
+
+#[test]
+fn the_reviewer_gets_thirty_turns_unless_a_flag_says_otherwise() {
+    let fixture = Fixture::held();
+    assert_success(&fixture.native_review(&["--timeout", "20"]));
+    assert_eq!(fixture.reviewer_max_turns(1), "30");
+    assert_success(&fixture.native_review(&["--timeout", "20", "--max-turns", "12"]));
+    assert_eq!(fixture.reviewer_max_turns(2), "12");
+}
+
+#[test]
+fn the_project_setting_is_the_review_task_run_default_and_a_flag_wins() {
+    let fixture = Fixture::new();
+    fixture.init_and_commit_review_turns("25");
+    let fixture = fixture.hold();
+    assert_success(&fixture.native_review(&["--timeout", "20"]));
+    assert_eq!(fixture.reviewer_max_turns(1), "25");
+    assert_success(&fixture.native_review(&["--timeout", "20", "--max-turns", "12"]));
+    assert_eq!(fixture.reviewer_max_turns(2), "12");
+}
+
+#[test]
+fn the_project_setting_is_the_auto_review_default_and_a_flag_wins() {
+    for (flag, expected) in [(None, "25"), (Some("12"), "12")] {
+        let fixture = Fixture::new();
+        fixture.init_and_commit_review_turns("25");
+        let mut args = vec!["run-task", SPEC, "--exec", "--auto-review"];
+        if let Some(turns) = flag {
+            args.extend(["--review-max-turns", turns]);
+        }
+        assert_success(&fixture.run(&args));
+        assert_eq!(fixture.reviewer_max_turns(1), expected);
+    }
+}
+
+#[test]
+fn init_stores_a_non_default_review_turn_budget_and_never_the_default() {
+    let fixture = Fixture::new();
+    assert_success(&fixture.init_review_turns("30"));
+    assert!(fixture
+        .setup_json()
+        .unwrap()
+        .get("review_max_turns")
+        .is_none());
+    assert_success(&fixture.init_review_turns("25"));
+    assert_eq!(fixture.setup_json().unwrap()["review_max_turns"], 25);
+}
+
+#[test]
+fn init_rejects_a_review_turn_budget_outside_one_to_one_hundred() {
+    let fixture = Fixture::new();
+    for turns in ["0", "101"] {
+        let output = fixture.init_review_turns(turns);
+        assert!(!output.status.success(), "{turns}: {output:?}");
+        assert!(fixture.setup_json().is_none(), "{turns}");
+    }
+}
+
+#[test]
+fn a_reviewer_that_stops_early_records_why_in_the_receipt() {
+    let fixture = Fixture::held();
+    for (mode, reason) in [
+        ("max_turns_exit_0", "invocation_native_max_turns"),
+        ("max_turns_exit_1", "invocation_native_max_turns"),
+        (
+            "schema_retries_exhausted",
+            "invocation_native_structured_output_retries",
+        ),
+        ("exit_failed", "invocation_native_exit_failed"),
+    ] {
+        fixture.mode(mode);
+        let output = fixture.native_review(&["--timeout", "20"]);
+        assert!(!output.status.success(), "{mode}: {output:?}");
+        assert_eq!(fixture.value(NATIVE_RECEIPT)["reason"], reason, "{mode}");
+    }
+}
+
+#[test]
+fn auto_review_gives_the_reviewer_thirty_turns_without_a_flag_or_setting() {
+    let fixture = Fixture::new();
+    assert_success(&fixture.run(&["run-task", SPEC, "--exec", "--auto-review"]));
+    assert_eq!(fixture.reviewer_max_turns(1), "30");
 }

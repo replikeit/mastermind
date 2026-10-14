@@ -5,6 +5,7 @@ use crate::bounded_fs::{
     self, AtomicWriteExpectation, BoundedReadError, ReadControl, RootCapability,
     StableFileIdentity, StableFileLock,
 };
+use crate::review_invocation::DEFAULT_MAX_TURNS;
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
@@ -22,6 +23,17 @@ fn default_profile_budget_tokens() -> usize {
 
 fn is_default_profile_budget_tokens(value: &usize) -> bool {
     *value == DEFAULT_PROFILE_BUDGET_TOKENS
+}
+
+pub const MIN_REVIEW_MAX_TURNS: u32 = 1;
+pub const MAX_REVIEW_MAX_TURNS: u32 = 100;
+
+fn default_review_max_turns() -> u32 {
+    DEFAULT_MAX_TURNS
+}
+
+fn is_default_review_max_turns(value: &u32) -> bool {
+    *value == DEFAULT_MAX_TURNS
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -56,6 +68,13 @@ pub struct Settings {
         skip_serializing_if = "is_default_profile_budget_tokens"
     )]
     pub profile_budget_tokens: usize,
+    /// Native turns for `review-task run` and `run-task --auto-review` when
+    /// the command line does not pass an explicit budget.
+    #[serde(
+        default = "default_review_max_turns",
+        skip_serializing_if = "is_default_review_max_turns"
+    )]
+    pub review_max_turns: u32,
 }
 
 impl Settings {
@@ -73,6 +92,7 @@ impl Settings {
             profile_access: false,
             workflow: true,
             profile_budget_tokens: DEFAULT_PROFILE_BUDGET_TOKENS,
+            review_max_turns: DEFAULT_MAX_TURNS,
         }
     }
 
@@ -108,6 +128,12 @@ impl Settings {
         {
             return Err(format!(
                 "profile budget must be {MIN_PROFILE_BUDGET_TOKENS}-{MAX_PROFILE_BUDGET_TOKENS} tokens"
+            )
+            .into());
+        }
+        if !(MIN_REVIEW_MAX_TURNS..=MAX_REVIEW_MAX_TURNS).contains(&self.review_max_turns) {
+            return Err(format!(
+                "review max turns must be {MIN_REVIEW_MAX_TURNS}-{MAX_REVIEW_MAX_TURNS}"
             )
             .into());
         }
@@ -176,6 +202,15 @@ pub fn profile_budget_tokens(root: &Path) -> usize {
         .map_or(DEFAULT_PROFILE_BUDGET_TOKENS, |settings| {
             settings.profile_budget_tokens
         })
+}
+
+/// Project reviewer turn budget, fail-soft like [`profile_budget_tokens`]: a
+/// missing or unreadable `setup.json` reads as the default.
+pub fn review_max_turns(root: &Path) -> u32 {
+    load(root)
+        .ok()
+        .flatten()
+        .map_or(DEFAULT_MAX_TURNS, |settings| settings.review_max_turns)
 }
 
 pub fn profile_access(root: &Path, client: &str) -> Result<bool, Error> {
@@ -337,5 +372,75 @@ mod tests {
         assert!(!serde_json::to_string(&settings)
             .unwrap()
             .contains("profile_budget_tokens"));
+    }
+
+    #[test]
+    fn review_turns_fall_back_to_the_default_on_a_missing_or_unreadable_file() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path().canonicalize().unwrap();
+        assert_eq!(review_max_turns(&root), DEFAULT_MAX_TURNS);
+
+        std::fs::create_dir(root.join(".mastermind")).unwrap();
+        std::fs::write(root.join(".mastermind/setup.json"), b"not json").unwrap();
+        assert!(load(&root).is_err());
+        assert_eq!(review_max_turns(&root), DEFAULT_MAX_TURNS);
+    }
+
+    #[test]
+    fn review_turns_outside_one_to_one_hundred_are_invalid() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path().canonicalize().unwrap();
+        let mut settings = Settings::local(&root);
+        for valid in [1, 100] {
+            settings.review_max_turns = valid;
+            assert!(settings.validate(&root).is_ok(), "{valid}");
+        }
+        for invalid in [0, 101] {
+            settings.review_max_turns = invalid;
+            assert!(settings.validate(&root).is_err(), "{invalid}");
+        }
+    }
+
+    #[test]
+    fn a_configured_review_turn_budget_is_read_back_and_the_default_is_never_written() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path().canonicalize().unwrap();
+        std::fs::create_dir(root.join(".mastermind")).unwrap();
+        let mut settings = Settings::local(&root);
+        assert!(!serde_json::to_string(&settings)
+            .unwrap()
+            .contains("review_max_turns"));
+        settings.review_max_turns = 25;
+        std::fs::write(
+            root.join(".mastermind/setup.json"),
+            serde_json::to_vec(&settings).unwrap(),
+        )
+        .unwrap();
+        assert_eq!(review_max_turns(&root), 25);
+    }
+
+    #[test]
+    fn old_setup_file_without_the_review_turn_key_loads_as_the_default() {
+        let dir = tempfile::tempdir().unwrap();
+        let root = dir.path().canonicalize().unwrap();
+        std::fs::create_dir(root.join(".mastermind")).unwrap();
+        let legacy = serde_json::json!({
+            "schema_version": 1,
+            "project_root": root,
+            "clients": [],
+            "mining": "off",
+            "provider": null,
+            "max_calls": 64,
+            "max_runtime": 3600,
+            "refiner": false,
+            "profile_access": false,
+            "workflow": true,
+        });
+        std::fs::write(
+            root.join(".mastermind/setup.json"),
+            serde_json::to_vec(&legacy).unwrap(),
+        )
+        .unwrap();
+        assert_eq!(review_max_turns(&root), DEFAULT_MAX_TURNS);
     }
 }

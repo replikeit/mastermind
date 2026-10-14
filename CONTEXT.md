@@ -30,6 +30,18 @@ See [Architecture](docs/architecture.md) for components and trust boundaries.
 - **Source:** Implementation and verification recorded on 2026-07-19.
 - **Reusable lesson:** Separate mechanical observations from reviewed guidance.
 
+### 2026-10-14 — The native reviewer answers through a schema-validated structured output
+
+- **Decision:** `review-task run` passes Claude Code `--json-schema` with the closed `NativeAssessment` schema. The reviewer answers through Claude Code's `StructuredOutput` tool, which re-prompts the same model when the answer does not match. Mastermind still parses `result` strictly and requires it to equal `structured_output`; a rejected `StructuredOutput` attempt is not a tool error. New review receipts use policy v2 (Claude Code 2.1.290 or later); v1 stays frozen for historical admission.
+- **Why:** Prompt-only output rules failed in practice. A reviewer fenced its JSON and added a field, and the whole paid review was discarded.
+- **Status:** active
+- **Supersedes:** none
+- **Provenance:** A collaborator's report of a lost native review; the captured stream matched the receipt digests.
+- **Evidence:** [invocation.rs](mcp/servers/mmcg/src/invocation.rs), [review_invocation.rs](mcp/servers/mmcg/src/review_invocation.rs), [task-runtime.md](docs/reference/task-runtime.md), and their tests.
+- **Alternatives rejected:** Stripping a Markdown fence (contradicts the documented assessment-source rule and leaves extra fields), a repair pass by a second model (can change verdicts while the record names the first reviewer), and prompt-only rules (already present and ignored).
+- **Source:** Implementation and verification recorded on 2026-10-14.
+- **Reusable lesson:** Enforce a model's output shape where the answer is generated, keep the strict parse as a second check, and version any contract that stored receipts depend on.
+
 ## Domain glossary
 
 | Term | Meaning |
