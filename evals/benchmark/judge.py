@@ -26,7 +26,7 @@ from .review_io import Root, sha
 from evals.shared.process import run_bounded
 
 
-VERSION = "mastermind-judge-v2"
+VERSION = "mastermind-judge-v3"
 
 # An allow rule for Read would also lift the CLI's working-directory confinement,
 # so permissions come only from dontAsk mode.
@@ -240,7 +240,7 @@ def run(export: Path, config: dict, output: Path, key: str) -> dict:
         check = checker(template, config, seal, packet, answers, sources)
         output.mkdir(mode=0o700)
         artifact_io.write_new(output / "judge.json", config_record(seal, config))
-        attempts, accepted, receipt, failure = [], [], None, None
+        attempts, accepted, receipt, binding_audit, failure = [], [], None, None, None
         try:
             for position, item in enumerate(template["reviews"], start=1):
                 reviewed = assess(root, config, key, output, position, template, item, check, attempts)
@@ -254,13 +254,17 @@ def run(export: Path, config: dict, output: Path, key: str) -> dict:
                 # The importer re-verifies the export and assessment under its own lock;
                 # another reviewer's receipt is not input drift for this judge.
                 receipt = str(review.import_assessment(export, output / "assessment.json"))
+                report = review.audit_bindings(export, output / "binding-audit.json")
+                binding_audit = {"path": str(report),
+                                 "sha256": sha(artifact_io.read_file(report, review.OUTPUT_LIMIT))}
         except BaseException as error:
             failure = {"code": getattr(error, "code", "judge_error"), "message": str(error)}
             raise
         finally:
-            summary = {"kind": "mastermind-judge-run", "schema_version": 2, "export_id": seal["export_id"],
+            summary = {"kind": "mastermind-judge-run", "schema_version": 3, "export_id": seal["export_id"],
                        "reviewer": config["reviewer"], "answers": len(template["reviews"]),
                        "assessed_answers": len(accepted), "attempts": attempts, "receipt": receipt,
+                       "binding_audit": binding_audit,
                        "error": failure, "semantics": "model_declared_not_human_calibrated",
                        "comparison_accepted": False, "quality_uplift": None}
             artifact_io.write_new(output / "judge-run.json", summary)

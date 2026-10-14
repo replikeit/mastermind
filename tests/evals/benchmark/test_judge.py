@@ -64,6 +64,10 @@ class JudgeTests(unittest.TestCase):
     def assert_retained(self, summary, output=None):
         output = output or self.output
         self.assertEqual(artifact_io.load_json(output / "judge-run.json"), summary)
+        audit = summary["binding_audit"]
+        if audit is not None:
+            self.assertEqual(Path(audit["path"]), output / "binding-audit.json")
+            self.assertEqual(hashlib.sha256(Path(audit["path"]).read_bytes()).hexdigest(), audit["sha256"])
         for record in summary["attempts"]:
             self.assertEqual(artifact_io.load_json(output / f"{record['name']}.json"), record)
             stdout = (output / f"{record['name']}.stdout").read_bytes()
@@ -83,6 +87,8 @@ class JudgeTests(unittest.TestCase):
         self.assertEqual(summary["attempts"][0]["error"]["code"], "review_quote")
         self.assertEqual((summary["answers"], summary["assessed_answers"], summary["error"]), (3, 3, None))
         self.assert_retained(summary)
+        audit = artifact_io.load_json(Path(summary["binding_audit"]["path"]))
+        self.assertEqual(audit["summary"]["claims"], {"valid": 0, "invalid": 0, "unverifiable": 3})
         self.assertEqual(review.review_status(self.export)["reviewers"], [{"reviewer": "judge", "reviewed": 3}])
         recorded = artifact_io.load_json(self.output / "judge.json")
         self.assertEqual(recorded["instruction_sha256"], hashlib.sha256(self.instruction.read_bytes()).hexdigest())
@@ -116,6 +122,59 @@ class JudgeTests(unittest.TestCase):
                                   ("--output-format", "stream-json"), ("--system-prompt", "Assess the answers.\n")):
                 self.assertEqual(argv[argv.index(option) + 1], value)
 
+    def test_source_quotes_are_audited_without_repairing_declarations_or_changing_grades(self):
+        packet = artifact_io.load_json(self.export / "reviewer/packet.json")
+        source = next(row for row in packet["source_files"] if row["path"] == "src/service.py")
+        declared = []
+        for position, quote in ((1, "    return 7\n"), (2, "def value():\n"), (3, None)):
+            options = {} if quote is None else {"source_quotes": [{"anchor": "src/service.py:2",
+                "source_sha256": source["sha256"], "quote": quote}]}
+            reply = self.review(position, **options)
+            declared.append(json.loads(reply)["reviews"][0])
+            self.respond(position, reply)
+        code, out, err = self.main()
+        self.assertEqual(code, 0, err)
+        summary = json.loads(out)
+        self.assert_retained(summary)
+        receipt = artifact_io.load_json(Path(summary["receipt"]))
+        self.assertEqual(receipt["assessment"]["reviews"], declared)
+        audit = artifact_io.load_json(Path(summary["binding_audit"]["path"]))
+        self.assertEqual(audit["summary"]["claims"], {"valid": 1, "invalid": 1, "unverifiable": 1})
+        self.assertEqual(audit["summary"]["anchors"], {"valid": 1, "invalid": 1, "unverifiable": 1})
+        self.assertEqual(audit["assessments"][0]["assessment_sha256"], receipt["assessment_sha256"])
+        claims = [row["claims"][0] for row in audit["assessments"][0]["reviews"]]
+        self.assertEqual([(row["status"], row["anchors"][0]["reason"]) for row in claims],
+                         [("valid", "quote_bound"), ("invalid", "source_quote_outside_span"),
+                          ("unverifiable", "source_quote_missing")])
+        self.assertFalse(audit["comparison_accepted"])
+        self.assertIsNone(audit["quality_uplift"])
+
+    def test_failed_post_import_audit_keeps_the_receipt_and_can_be_recovered_without_model_calls(self):
+        self.respond_valid(1, (1, 2, 3))
+        with patch.object(review, "audit_bindings",
+                          side_effect=artifact_io.BenchmarkError("review_path", "audit publication failed")):
+            code, _, err = self.main()
+        self.assertEqual(code, 2)
+        self.assertTrue(err.startswith("review_path:"), err)
+        summary_path = self.output / "judge-run.json"
+        summary_body = summary_path.read_bytes()
+        summary = artifact_io.load_json(summary_path)
+        self.assertEqual(summary["error"]["code"], "review_path")
+        self.assertIsNone(summary["binding_audit"])
+        receipt = Path(summary["receipt"])
+        receipt_body = receipt.read_bytes()
+        self.assertEqual(review.review_status(self.export)["reviewers"], [{"reviewer": "judge", "reviewed": 3}])
+        self.assertEqual(artifact_io.load_json(receipt)["assessment"],
+                         artifact_io.load_json(self.output / "assessment.json"))
+        recovered = review.audit_bindings(self.export, self.output / "binding-audit-recovery.json")
+        self.assertEqual(artifact_io.load_json(recovered)["summary"]["claims"]["unverifiable"], 3)
+        self.assertEqual(summary_path.read_bytes(), summary_body)
+        self.assertEqual(receipt.read_bytes(), receipt_body)
+        retry, _, err = self.main(output=self.root / "another-judge-run")
+        self.assertEqual(retry, 2)
+        self.assertTrue(err.startswith("review_exists:"), err)
+        self.assertEqual(len(self.calls()), 3)
+
     def test_typographic_retyping_is_repaired_only_to_a_unique_exact_span(self):
         self.respond(1, self.review_with_quote(1, "It's "))
         self.respond(2, self.review_with_quote(1, "It's fixed."))
@@ -138,6 +197,7 @@ class JudgeTests(unittest.TestCase):
         self.assertEqual(code, 2, err)
         summary = json.loads(out)
         self.assertIsNone(summary["receipt"])
+        self.assertIsNone(summary["binding_audit"])
         self.assertEqual(summary["assessed_answers"], 0)
         self.assertEqual([row["error"]["code"] for row in summary["attempts"]],
                          ["judge_output_invalid", "judge_output_invalid", "review_inventory"])

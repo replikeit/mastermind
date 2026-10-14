@@ -274,8 +274,9 @@ model name, so the served model remains unverified.
 | Observed runtime | The stream's init event must report `Read` only, no MCP servers, the copy as cwd, `dontAsk`, the pinned CLI version and the requested model. Plugins and permission denials are recorded |
 | Attempts | Same prompt each time, at most 3 per answer; an answer stops at its first review that passes the import checks for that answer |
 | Quote repair | A quote or excerpt that matches the answer only after mapping curly quotes, dashes and non-breaking spaces to ASCII is replaced by the unique exact answer span before validation; `quotes_repaired` records the count. Ambiguous or paraphrased passages stay rejected |
+| Source quotes | The starting instruction requests a literal source excerpt and the packet's file digest for every cited anchor. Source quotes are never reconstructed or repaired; older assessments without them remain readable and audit as `unverifiable` |
 | Rejected attempt | Unclean exit, timeout, output cap, runtime mismatch, error result, another model, no JSON, not exactly one review or a rejected review; retained with its error code |
-| Output | `judge.json`, `answer-K-attempt-N.{stdout,stderr,json}`, `assessment.json` when every answer is reviewed, and `judge-run.json` on every path, with `error` when the run stopped early. Exit 0 only after import |
+| Output | `judge.json`, `answer-K-attempt-N.{stdout,stderr,json}`, `assessment.json` when every answer is reviewed, and `judge-run.json` when the assessment loop completes or fails, with `error` when it stopped early. After import, `binding-audit.json` records literal source checks; `judge-run.json` binds its path and SHA-256 in `binding_audit`. Exit 0 only after import and audit publication |
 | Answer without a valid review | The run stops, no receipt is written and the export's outcomes stay unresolved |
 
 Another reviewer may import during a judge run; the importer rechecks the export
@@ -284,6 +285,14 @@ plugins still load under `--bare`. Judge output quotes answers and keys, so keep
 it with the review export. If the import fails after a valid attempt, import the
 retained `assessment.json` with `review import`. The importer checks quotes,
 anchors and outcome consistency, not semantic truth.
+
+After import, the runner automatically audits every receipt currently in the
+export. Invalid or missing literal bindings stay diagnostic; they do not change
+reviewer support, acceptance or outcome. If audit publication fails, exit 2 and
+`judge-run.json.error` record the failure while `receipt` still identifies the
+admitted immutable assessment. Keep that receipt and rerun `review audit-bindings`
+to a new output path. Do not rerun the model or replace the receipt. The original
+run summary remains unchanged; retain the recovery report beside it.
 
 ## Calibrate the judge with seeded defects
 

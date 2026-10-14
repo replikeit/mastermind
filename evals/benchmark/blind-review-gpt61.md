@@ -18,6 +18,12 @@ Fill the supplied template for every retained answer. Preserve `export_id`,
 `gpt-6-1-sol-blind`. Return a complete assessment JSON with claim support, known
 coverage, unknown handling, acceptance criteria and outcome, using the supplied
 schema. Quote exact answer substrings and anchor evidence to the supplied source.
+For every cited anchor, include `claims[].source_quotes` entries with `anchor`,
+the file's actual `source_sha256` from `packet.json` `source_files`, and a literal
+source `quote` within the cited line range. Preserve whitespace and punctuation;
+do not reconstruct excerpts or digests. If a source quote is unavailable, leave
+it absent and explain the limitation. The separate literal binding audit does
+not decide support, acceptance or outcome.
 
 Judge whether the original request was fulfilled. For each central factual
 claim, open its cited source location and check that those lines support that
