@@ -8,7 +8,7 @@ import secrets
 import sys
 import uuid
 
-from . import analysis, efficiency
+from . import analysis, efficiency, evidence_binding
 from . import assessment as review_assessment
 from . import review_contracts
 from .review_io import Root, OUTPUT_LIMIT, encoded, sha
@@ -584,6 +584,32 @@ def compare_review(export: Path, baseline: str, candidate: str):
                 "comparison_accepted": False, "quality_uplift": None}
 
 
+def audit_bindings(export: Path, output: Path):
+    """Publish a new diagnostic report outside an intact review export."""
+    destination = output.absolute()
+    with Root(export) as root, Root(destination.parent) as target:
+        review_contracts.require(not destination.is_relative_to(root.path),
+                                 "binding report must be outside the review export", "review_path")
+        seal, packet, coordinator, answers, sources = load_export(root)
+        assessments = review_assessment.read_assessments(root, seal, packet, answers, sources)
+        bodies, _ = read_sources(root, "reviewer/source/", list(sources.values()), check_mode=False)
+        report = {"kind": "mastermind-source-binding-audit", "schema_version": 1,
+                  "export_id": seal["export_id"], "packet_sha256": seal["packet_sha256"],
+                  "coordinator_sha256": seal["coordinator_sha256"],
+                  "source_revision": packet["task"]["revision"],
+                  "source_files": packet["source_files"],
+                  "attempts": analysis.attempt_counts(coordinator["slots"]),
+                  "answers_without_assessment": len(answers) if not assessments else 0,
+                  "semantics": "literal_source_binding_not_claim_support",
+                  "comparison_accepted": False, "quality_uplift": None,
+                  **evidence_binding.audit(assessments, sources, bodies)}
+        body = artifact_io.canonical(report) + b"\n"
+        review_contracts.require(len(body) <= OUTPUT_LIMIT, "binding report exceeds its byte cap", "review_limit")
+        root.recheck()
+        target.write_new(destination.name, body)
+    return destination
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="command", required=True)
@@ -599,6 +625,9 @@ def main(argv=None):
     compare.add_argument("export", type=Path)
     compare.add_argument("--baseline", required=True)
     compare.add_argument("--candidate", required=True)
+    bindings = sub.add_parser("audit-bindings", help="check literal source quotes without changing semantic grades")
+    bindings.add_argument("export", type=Path)
+    bindings.add_argument("--output", type=Path, required=True)
     args = parser.parse_args(argv)
     try:
         if args.command == "export":
@@ -607,6 +636,8 @@ def main(argv=None):
             print(import_assessment(args.export, args.assessment))
         elif args.command == "compare":
             print(artifact_io.canonical(compare_review(args.export, args.baseline, args.candidate)).decode())
+        elif args.command == "audit-bindings":
+            print(audit_bindings(args.export, args.output))
         else:
             print(artifact_io.canonical(review_status(args.export)).decode())
         return 0

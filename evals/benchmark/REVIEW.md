@@ -83,15 +83,17 @@ Keep generated packet, answer, rubric and export hashes unchanged.
 
 | Field | Required assessment |
 |---|---|
-| `claims` | Exact excerpts, supported/unsupported/contradicted/unknown status, source anchors, material-error flag and rationale |
+| `claims` | Exact answer excerpts, supported/unsupported/contradicted/unknown status, source anchors, material-error flag and rationale |
+| `claims[].source_quotes` | Optional literal source excerpts, each with a declared anchor and the pinned file's SHA-256 |
 | `knowns` | Every required fact, with an answer excerpt or a missing value |
 | `unknowns` | Every expected unknown, with appropriate/overclaimed/omitted status and an excerpt or a missing value |
 | `outcome` | Whether the answer satisfies the original task: `satisfied`, `unsatisfied` or `unknown`, with a rationale |
 
 Supported and contradicted claims require source anchors. A material error must
 be unsupported or contradicted. The importer checks excerpt membership and
-anchor ranges. The reviewer is responsible for semantic judgment and complete
-material-claim selection.
+anchor ranges. It validates the shape of optional source quotes; the separate
+binding audit below checks their bytes and file digests. Neither check verifies
+the reviewer's semantic judgment or complete material-claim selection.
 
 The version 2 form requires an explicit task outcome. `satisfied` must agree
 with covered required facts, appropriate unknown handling and supported selected
@@ -119,6 +121,79 @@ Multiple reviewers do not increase the number of experiments.
 For a corpus-wide campaign, repeat import in every case directory under the
 review set. Use the same reviewer label only for the same reviewer. The campaign
 comparison checks each export against its original batch, task and key.
+
+## Audit literal source bindings
+
+Use this audit to check whether reviewer-declared source excerpts occur in the
+frozen source ranges. It makes no model calls and leaves imported assessments,
+`support`, acceptance criteria and task outcomes unchanged.
+
+For each claim, `quote` remains an exact excerpt from the retained answer. To
+check source evidence, add `source_quotes` to the editable assessment before
+importing it:
+
+```json
+"source_quotes": [
+  {"anchor": "src/file.py:2-3",
+   "source_sha256": "<SHA-256 from reviewer/packet.json source_files for src/file.py>",
+   "quote": "<literal excerpt from reviewer/source/src/file.py lines 2-3>"}
+]
+```
+
+Replace both placeholders with the actual values. Each source quote must use a
+distinct anchor already listed in that claim's `anchors`. A claim can declare at
+most 16 source quotes, each at most 16 KiB of UTF-8 text. Older assessments remain
+readable without this field.
+
+Prerequisites: an intact sealed review export and its imported assessment
+receipts. An export without receipts can also be audited; its retained answers
+remain pending. Use canonical paths without symlinks. The output parent must
+exist, and the report must be a new file outside the export.
+
+```sh
+python3 -m evals.benchmark.review audit-bindings /absolute/path/to/review-export \
+  --output /absolute/path/to/new-binding-audit.json
+```
+
+| Binding status | Meaning |
+|---|---|
+| `valid` | The declared digest matches the pinned file, and the exact UTF-8 quote occurs within the anchor's inclusive line range |
+| `invalid` | A declared digest, quote or source range fails its binding check |
+| `unverifiable` | An anchor has no explicit source quote, or a claim has no anchors |
+
+Lines are numbered by LF. Quotes are literal substrings: whitespace, CRLF and
+Unicode characters are not normalized. A claim is `valid` only when every anchor
+is valid. Any invalid anchor makes the claim invalid, even if other anchors have
+missing quotes; otherwise missing bindings keep it unverifiable.
+
+| Anchor reason | Interpretation |
+|---|---|
+| `quote_bound` | Digest and literal range checks passed |
+| `source_digest_mismatch` | The declared digest differs from the pinned file |
+| `source_quote_outside_span` | The quote is absent from the declared line range |
+| `source_quote_missing` | This anchor has no explicit source quote |
+
+The JSON report binds the export, packet, coordinator and source revision. It
+includes all planned attempt states, `answers_without_assessment`, claim and
+anchor counts by status, and results for every claim in every imported receipt.
+`answers_without_assessment` counts retained answers when no assessment has been
+imported; complete receipts cover all retained answers. Claims selected by
+different reviewers are separate records, not additional independent attempts.
+
+Exit 0 confirms publication, including reports with invalid bindings. Exit 2
+reports an integrity, schema or publication error.
+
+Changed packet or source files, invalid receipts and unsafe paths fail the
+command without publishing a report. Restore the original sealed artifacts or
+create a new export from intact inputs. For a declaration mistake, correct the
+editable assessment before import. An admitted receipt is immutable: retain a
+corrected assessment under a new reviewer label with an explanation, then write
+the next audit to another new path.
+
+A valid binding establishes literal evidence identity. It does not establish
+that the source entails the claim, that all material claims were selected, that
+the source matches the current checkout, that a reviewer is human, or that an arm
+improves quality or token use.
 
 ## Assign reference and blind reviewers
 

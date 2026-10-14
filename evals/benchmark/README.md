@@ -46,6 +46,7 @@ flowchart LR
 | `qualify` | Pre-registered promote/experimental/reject rule over sealed qualification review sets |
 | `qualify_calibration` | Simulated size and power of that rule; calibrates `t_star`, `t_upper` and the material-error veto |
 | `assessment` | Reviewer evidence and receipt validation |
+| `evidence_binding` | Literal source-quote and pinned file checks, separate from semantic assessments |
 | `analysis` | Paired outcomes, uncertainty and all-attempt resource totals |
 | `efficiency` | Useful outcomes per measured resource, by task and corpus |
 | `retrieval`, `retrieval_analysis` | Per-trial returned-range ledger and all-attempt campaign accounting |

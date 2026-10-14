@@ -6,6 +6,7 @@ import re
 
 from . import review_contracts
 from . import intent
+from . import evidence_binding
 from .review_io import sha
 from evals.benchmark import artifacts as artifact_io
 from evals.benchmark import corpus
@@ -38,7 +39,8 @@ def check_assessment(value, seal, packet, answers, sources):
         review_contracts.require(isinstance(item["claims"], list) and 1 <= len(item["claims"]) <= 64, "review needs bounded claim-level evidence")
         quotes = set()
         for claim in item["claims"]:
-            review_contracts.fields(claim, ("quote", "support", "anchors", "material_error", "rationale"))
+            review_contracts.fields(claim, ("quote", "support", "anchors", "material_error", "rationale"),
+                                    ("source_quotes",))
             quote = review_contracts.text(claim["quote"])
             review_contracts.require(quote in answer and quote not in quotes, "claim must quote a distinct passage of the retained answer", "review_quote")
             quotes.add(quote)
@@ -52,6 +54,7 @@ def check_assessment(value, seal, packet, answers, sources):
             review_contracts.require(len(set(claim["anchors"])) == len(claim["anchors"]), "duplicate claim evidence")
             review_contracts.require(claim["anchors"] or claim["support"] in ("unsupported", "unknown"), "supported or contradicted claims require source anchors")
             corpus.validate_anchors(claim["anchors"], sources)
+            evidence_binding.validate_source_quotes(claim)
         for name, key, expected, field, choices, absent in (
                 ("knowns", "known_index", packet["rubric"]["required_knowns"], "coverage", ("covered", "partial", "missing"), "missing"),
                 ("unknowns", "unknown_index", packet["rubric"]["expected_unknowns"], "handling", ("appropriate", "overclaimed", "omitted"), "omitted")):
