@@ -268,6 +268,31 @@ class ProducerBindingTests(unittest.TestCase):
         self.assertEqual(wrong_line["status"], "invalid")
         self.assertEqual(wrong_line["reason"], "source_quote_outside_span")
 
+    def test_en_dash_range_preserves_the_reference_and_validates_the_exact_range(self):
+        reference = "src/service.py:1–2"
+        answer = quoted_answer(reference, "def value():\n    return 7")
+        row = self.binding(answer)
+        self.assertEqual(row["status"], "valid")
+        self.assertEqual(row["original_citation"], reference)
+        self.assertEqual(answer[slice(*row["answer_span"])], reference)
+        self.assertEqual(row["line_span"], "1–2")
+        self.assertEqual(row["anchor"], "src/service.py:1-2")
+        self.assertEqual(row["quote"], "def value():\n    return 7")
+
+        reversed_reference = "src/service.py:2–1"
+        reversed_row = self.binding(quoted_answer(reversed_reference, "    return 7"))
+        self.assertEqual(reversed_row["original_citation"], reversed_reference)
+        self.assertEqual(reversed_row["line_span"], "2–1")
+        self.assertEqual(reversed_row["status"], "invalid")
+        self.assertEqual(reversed_row["reason"], "corpus_anchor_range")
+        self.assertIsNone(reversed_row["anchor"])
+
+        for unsupported in ("src/service.py:1—2", "src/service.py:1-2–3"):
+            with self.subTest(unsupported=unsupported):
+                report = self.audit(quoted_answer(unsupported, "def value():\n    return 7"))
+                self.assertTrue(report["no_citations"])
+                self.assertEqual(report["summary"]["citation_count"], 0)
+
     def test_missing_blank_and_oversize_snippets_remain_unverifiable(self):
         answers = (
             ("`src/service.py:2`\n", "source_quote_missing"),

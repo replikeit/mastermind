@@ -211,7 +211,7 @@ python3 -m evals.benchmark.review audit-producer-bindings /absolute/path/to/revi
 
 | Input or rule | Contract |
 |---|---|
-| Citations | `path:line` or `path:first-last` with an ASCII hyphen, outside fenced code bodies; lines are inclusive and numbered by LF. En-dash ranges (`first–last`) are outside this grammar, never partially parsed as a first-line citation |
+| Citations | `path:line` or `path:first-last`, using an ASCII hyphen (`-`) or en dash (`–`) between range bounds, outside fenced code bodies. Lines are inclusive and numbered by LF. The original token and offset remain in the report; the checked anchor uses an ASCII hyphen. Em dashes and mixed range delimiters are unsupported and never partially parsed as a first-line citation |
 | Exact paths | Match the admitted source inventory first |
 | Filename-only paths | Resolve only when exactly one admitted file has that basename; retain the original reference and resolved path |
 | Ambiguous filenames | Remain `unverifiable`, with candidates recorded; no path guessing |

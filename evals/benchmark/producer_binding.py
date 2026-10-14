@@ -15,14 +15,14 @@ from . import artifacts, evidence_binding
 from .review_io import sha
 
 
-PARSER_VERSION = "mastermind-producer-binding-v2"
+PARSER_VERSION = "mastermind-producer-binding-v3"
 ANSWER_BYTE_LIMIT = 16 * 1024 * 1024
 SNIPPET_BYTE_LIMIT = 16 * 1024
 MAX_CITATIONS = 4096
 MAX_FENCES = 4096
 
 PARSER_CONTRACT = {
-    "citations": "whitespace-free inventory path/basename or filelike path:line or path:first-last; LF source line numbering",
+    "citations": "whitespace-free inventory path/basename or filelike path:line or path:first-last (ASCII hyphen or en dash); LF source line numbering",
     "fences": "backticks or tildes, zero to three leading spaces; closing marker has the same kind and at least the opening length",
     "adjacency": "citation-before-fence preferred within punctuation-adjacent runs; one citation and one fence per pair; reverse fallback never reuses a preceding fence",
     "framing": "remove up to the opening indentation per body line and one final LF or CRLF",
@@ -39,8 +39,8 @@ _LINE = re.compile(r"[^\n]*\n|[^\n]+\Z")
 _OPEN = re.compile(r"(?P<indent> {0,3})(?P<marker>`{3,}|~{3,})(?P<info>[^\n]*)\Z")
 _CLOSE = re.compile(r" {0,3}(?P<marker>`{3,}|~{3,})[ \t]*\Z")
 _TOKEN = re.compile(r"[^\s`\[\](){}*<>\"',;]+")
-_SPAN = re.compile(r"[0-9]+(?:-[0-9]+)?\Z")
-_BOUNDS = re.compile(r"[1-9][0-9]{0,9}(?:-[1-9][0-9]{0,9})?\Z")
+_SPAN = re.compile(r"[0-9]+(?:[-–][0-9]+)?\Z")
+_BOUNDS = re.compile(r"[1-9][0-9]{0,9}(?:[-–][1-9][0-9]{0,9})?\Z")
 _INDENTED = re.compile(r" {4}| {0,3}\t")
 
 
@@ -172,7 +172,7 @@ def _resolve(path, sources, basenames, prefix):
 def _bounds_reason(span):
     if not _BOUNDS.fullmatch(span):
         return "corpus_anchor_invalid"
-    bounds = [int(value) for value in span.split("-")]
+    bounds = [int(value) for value in span.replace("–", "-").split("-")]
     return "corpus_anchor_range" if bounds[0] > bounds[-1] else None
 
 
@@ -242,7 +242,7 @@ def audit_answer(answer: str, sources: dict, source_bodies: dict, *, source_pref
         elif status is not None:
             row.update(status=status, reason=resolution["reason"])
         else:
-            anchor = path + ":" + reference["line_span"]
+            anchor = path + ":" + reference["line_span"].replace("–", "-")
             row["anchor"] = anchor
             if len(anchor.encode("utf-8")) > 1024:
                 row.update(status="invalid", reason="producer_source_path_limit")
