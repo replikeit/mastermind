@@ -195,6 +195,53 @@ that the source entails the claim, that all material claims were selected, that
 the source matches the current checkout, that a reviewer is human, or that an arm
 improves quality or token use.
 
+## Audit citations in producer answers
+
+Use this check for existing Markdown answers. It reads a sealed review export,
+needs no assessment receipts and makes no model calls. It does not require
+producers to add snippets or change their answer format.
+
+Prerequisites: the intact export from `review export`, its pinned source files,
+and an existing output parent. Publish to a new file outside the export:
+
+```sh
+python3 -m evals.benchmark.review audit-producer-bindings /absolute/path/to/review-export \
+  --output /absolute/path/to/new-producer-binding-audit.json
+```
+
+| Input or rule | Contract |
+|---|---|
+| Citations | `path:line` or `path:first-last` with an ASCII hyphen, outside fenced code bodies; lines are inclusive and numbered by LF. En-dash ranges (`first–last`) are outside this grammar, never partially parsed as a first-line citation |
+| Exact paths | Match the admitted source inventory first |
+| Filename-only paths | Resolve only when exactly one admitted file has that basename; retain the original reference and resolved path |
+| Ambiguous filenames | Remain `unverifiable`, with candidates recorded; no path guessing |
+| Unknown or unsafe paths | Report an invalid reference; do not search the checkout for replacements |
+| Fences | Closed backtick or tilde fences with at least three markers and up to three opening spaces; closing markers must match and be at least as long |
+| Quote association | Prefer a citation immediately before its snippet; a citation after a snippet is a fallback only when that block is unused and the citation has no following block. Several citations or snippets competing for one association remain unverifiable; intervening prose breaks association |
+| Literal bytes | Remove only fence framing and Markdown indentation belonging to the opening fence; preserve source indentation, CRLF and Unicode |
+| Unsupported code regions | Exclude references on lines beginning with four or more spaces or a tab; these lines also prevent association across them |
+| Bounds | Answer: 16 MiB; snippet: 16 KiB; at most 4,096 citations and 4,096 fenced blocks per answer |
+| Missing snippets | Remain `unverifiable`; an answer without citations is explicitly counted and cannot establish source coverage |
+
+The JSON binds the export, source revision, source inventory and each answer.
+It records the parser version, citation spans, path resolution, associated
+snippets and `valid`/`invalid`/`unverifiable` counts. Source digests come from the
+pinned inventory, not from a producer declaration. A valid citation establishes
+only that a literal snippet occurs within its resolved range. It does not
+establish support for the surrounding assertion, complete claim coverage or
+acceptance.
+
+Exit 0 means the diagnostic report was published, including invalid and
+unverifiable references. Exit 2 means input integrity or publication failed.
+Use a new output path to repeat an audit. If sealed inputs changed, restore the
+original artifacts or export again from intact trials. Neither producer audits
+nor parser upgrades rewrite reviewer receipts, task outcomes or old reports.
+
+The pure `producer_binding.audit_answer` API also accepts a `source_prefix`
+from a caller-verified frozen request for absolute source references. The export
+CLI has no prefix override. The parser is intentionally bounded to the rules
+above; it is not a full Markdown renderer.
+
 ## Assign reference and blind reviewers
 
 Purpose: keep the human reference separate from model assessments. For new
