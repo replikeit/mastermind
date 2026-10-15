@@ -269,7 +269,7 @@ command observations from reported results and semantic judgments.
 | `--auto-repair` | With `--exec`, retry eligible fresh failed checks under the same structured contract and a finite 1–20 iteration budget. |
 | `--auto-review` | Run one semantic review after a held audit, or resume review of an existing pending held task without `--exec`. |
 | `--auto-follow-up` | With `--exec --auto-review`, allow one concrete negative-criterion repair, new checks and review within the shared iteration budget. |
-| `--review-timeout N`, `--review-max-turns N` | Independent reviewer limits: 1–7,200 seconds and 1–100 turns. Defaults 600 and 20. |
+| `--review-timeout N`, `--review-max-turns N` | Independent reviewer limits: 1–7,200 seconds and 1–100 turns. Defaults 600 and 30, or the project default set by `init --review-max-turns`. |
 
 `--auto-repair` requires structured acceptance and observed checks. It rejects
 `--force-iteration`, `--pre-only` and `--post-only`. Scope drift, missing evidence
@@ -306,7 +306,7 @@ mmcg review-task submit .mastermind/tasks/042-feature/spec.md \
   --report .mastermind/tasks/042-feature/review-input.json --json
 mmcg review-task status .mastermind/tasks/042-feature/spec.md --json
 mmcg review-task follow-up .mastermind/tasks/042-feature/spec.md --json
-mmcg review-task run .mastermind/tasks/042-feature/spec.md --timeout 600 --max-turns 20 --json
+mmcg review-task run .mastermind/tasks/042-feature/spec.md --timeout 600 --max-turns 30 --json
 mmcg run-task .mastermind/tasks/042-feature/spec.md --auto-review
 ```
 
@@ -331,7 +331,8 @@ with no writes, checks or model call. Exit 0 means a packet was produced, not
 approval. Stale, missing or revoked evidence yields no actionable packet.
 Review reasons remain untrusted data and do not expand task scope or permissions.
 
-`review-task run` invokes a separate native reviewer with Read/Grep/Glob only.
+`review-task run` invokes a separate native reviewer with Read/Grep/Glob only
+(plus the StructuredOutput answer tool, which needs Claude Code 2.1.290 or later).
 It revokes old approval before preparation and binds input/result hashes in
 `review-invocation.json`, separately from the executor receipt. Missing or
 replaced native evidence blocks completion. The adapter requests safe/restricted
@@ -374,6 +375,7 @@ and habit review. See the authoritative [capture](persona.md#native-capture),
 ```bash
 mmcg init
 mmcg init --client codex --workflow off --mining capture
+mmcg init --review-max-turns 40
 mmcg status --json
 mmcg doctor --json
 mmcg workflow audit --root . --json
@@ -383,6 +385,11 @@ mmcg setup codex --scope user --write
 mmcg setup continue --scope project --root . --write
 mmcg setup generic --scope project --config ./mcp.json
 ```
+
+`init --review-max-turns N` (1–100) stores the reviewer turn default for
+`review-task run` and `run-task --auto-review` as `review_max_turns` in
+`.mastermind/setup.json`; the default 30 is not written, and an explicit flag
+wins. Commit `setup.json` only if the team accepts that it changes reviewer cost.
 
 `init` saves project choices and reconciles scaffolding, the code/document index,
 selected client integrations and mining. Unattended runs without a selected

@@ -21,6 +21,10 @@ const FILE_LIMIT: u64 = 4 * 1024 * 1024;
 const TOTAL_LIMIT: u64 = 64 * 1024 * 1024;
 const PATH_LIMIT: usize = 10_000;
 
+/// Reviewer turns when neither a flag nor the project setting names a budget.
+/// The StructuredOutput answer costs one turn on top of the inspection.
+pub const DEFAULT_MAX_TURNS: u32 = 30;
+
 #[derive(Debug, Clone)]
 pub struct Options {
     pub timeout_secs: u64,
@@ -31,7 +35,7 @@ impl Default for Options {
     fn default() -> Self {
         Self {
             timeout_secs: 600,
-            max_turns: 20,
+            max_turns: DEFAULT_MAX_TURNS,
         }
     }
 }
@@ -669,6 +673,7 @@ impl std::io::Write for Patch {
 #[cfg(all(test, unix))]
 mod tests {
     use super::*;
+    use serde_json::{json, Value};
     use std::fs;
     use std::os::unix::fs::PermissionsExt;
     use std::process::Command;
@@ -781,5 +786,145 @@ mod tests {
             !marker.exists(),
             "read-only review must disable the repository hook"
         );
+    }
+
+    fn sample_assessment() -> NativeAssessment {
+        let assessment = Assessment {
+            status: task_review::Judgment::Satisfied,
+            reason: "reason".into(),
+            evidence: vec!["evidence".into()],
+        };
+        let decision = crate::history_disposition::Assessment {
+            decision: crate::history_disposition::Decision::NoChange,
+            reason: "reason".into(),
+            evidence: vec!["evidence".into()],
+        };
+        NativeAssessment {
+            schema_version: 1,
+            target_revision: "target".into(),
+            expected_review_revision: Some("expected".into()),
+            criteria: vec![CriterionAssessment {
+                id: "criterion".into(),
+                status: task_review::Judgment::Unknown,
+                reason: "reason".into(),
+                evidence: vec!["evidence".into()],
+            }],
+            verification_quality: assessment.clone(),
+            scope_control: assessment.clone(),
+            proportionality: assessment,
+            history: crate::history_disposition::Decisions {
+                context: decision.clone(),
+                lessons: decision,
+            },
+        }
+    }
+
+    fn json_type(value: &Value) -> &'static str {
+        match value {
+            Value::Null => "null",
+            Value::Bool(_) => "boolean",
+            Value::Number(_) => "integer",
+            Value::String(_) => "string",
+            Value::Array(_) => "array",
+            Value::Object(_) => "object",
+        }
+    }
+
+    fn assert_schema_describes(value: &Value, schema: &Value, defs: &Value, path: &str) {
+        if let Some(reference) = schema.get("$ref").and_then(Value::as_str) {
+            let name = reference.strip_prefix("#/$defs/").unwrap();
+            return assert_schema_describes(value, &defs[name], defs, path);
+        }
+        if let Some(options) = schema.get("anyOf").and_then(Value::as_array) {
+            let types: Vec<_> = options.iter().map(|option| &option["type"]).collect();
+            assert!(types.contains(&&json!(json_type(value))), "{path}");
+            return;
+        }
+        assert_eq!(schema["type"], json_type(value), "{path}");
+        if let Some(allowed) = schema.get("enum").and_then(Value::as_array) {
+            assert!(allowed.contains(value), "{path}");
+        }
+        if let Some(constant) = schema.get("const") {
+            assert_eq!(constant, value, "{path}");
+        }
+        if let Value::Array(items) = value {
+            assert!(!items.is_empty(), "{path}: sample must exercise the items");
+            for item in items {
+                assert_schema_describes(item, &schema["items"], defs, path);
+            }
+        }
+        let Value::Object(object) = value else {
+            return;
+        };
+        let properties = schema["properties"].as_object().unwrap();
+        let required: BTreeSet<_> = schema["required"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|name| name.as_str().unwrap())
+            .collect();
+        let declared: BTreeSet<_> = properties.keys().map(String::as_str).collect();
+        let serialized: BTreeSet<_> = object.keys().map(String::as_str).collect();
+        assert_eq!(schema["additionalProperties"], json!(false), "{path}");
+        assert_eq!(required, declared, "{path}");
+        assert_eq!(serialized, declared, "{path}");
+        for (name, child) in properties {
+            assert_schema_describes(&object[name], child, defs, &format!("{path}/{name}"));
+        }
+    }
+
+    #[test]
+    fn output_schema_matches_the_native_assessment_shape() {
+        let schema: Value = serde_json::from_str(invocation::REVIEW_OUTPUT_SCHEMA).unwrap();
+        let sample = serde_json::to_value(sample_assessment()).unwrap();
+        assert_schema_describes(&sample, &schema, &schema["$defs"], "");
+    }
+
+    #[test]
+    fn output_schema_enums_list_every_judgment_and_decision() {
+        use crate::history_disposition::Decision;
+        use task_review::Judgment;
+        let judgments = [
+            Judgment::Satisfied,
+            Judgment::Unsatisfied,
+            Judgment::Unknown,
+        ];
+        for judgment in judgments {
+            match judgment {
+                Judgment::Satisfied | Judgment::Unsatisfied | Judgment::Unknown => {}
+            }
+        }
+        let decisions = [
+            Decision::NoChange,
+            Decision::UpdateRequired,
+            Decision::Unknown,
+        ];
+        for decision in decisions {
+            match decision {
+                Decision::NoChange | Decision::UpdateRequired | Decision::Unknown => {}
+            }
+        }
+        let schema: Value = serde_json::from_str(invocation::REVIEW_OUTPUT_SCHEMA).unwrap();
+        assert_eq!(
+            schema["$defs"]["judgment"]["enum"],
+            serde_json::to_value(judgments).unwrap()
+        );
+        assert_eq!(
+            schema["$defs"]["decision"]["properties"]["decision"]["enum"],
+            serde_json::to_value(decisions).unwrap()
+        );
+    }
+
+    #[test]
+    fn output_schema_text_is_pinned_so_an_edit_is_a_contract_change() {
+        assert_eq!(
+            sha(invocation::REVIEW_OUTPUT_SCHEMA.as_bytes()),
+            "1f61619955db2cd641467d4974895c450aefd493a90a1292028a2eac0875b9aa"
+        );
+    }
+
+    #[test]
+    fn reviewer_defaults_to_thirty_turns() {
+        assert_eq!(Options::default().max_turns, 30);
     }
 }
