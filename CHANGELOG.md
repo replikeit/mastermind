@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.3.1] - 2026-10-15
+
+### Added
+
+- Opt-in graph ranking for repo-maps with `--ranking graph`. Lexical ranking
+  remains the default; graph ranking is an experiment without a quality claim.
+- Offline source-quote binding audits for judge and producer assessments against
+  pinned snapshots, including raw and rendered Markdown framing diagnostics.
+
 ### Fixed
 
 - Native review (`review-task run`, `run-task --auto-review`) is no longer lost
@@ -15,7 +24,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- The native reviewer needs Claude Code 2.1.290 or later and records review
+- The native reviewer needs Claude Code 2.1.290 or later in the 2.1 series and
+  records review
   policy v2 (Read, Grep, Glob and StructuredOutput). Completed reviews recorded
   under policy v1 stay valid.
 - The reviewer has 30 turns by default, configurable per project with
@@ -201,7 +211,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Give each Mastermind native hook an event-specific label in the client review
   screen. Re-running hook setup updates previous labels without duplicate hooks.
 
-[Unreleased]: https://github.com/xcrft/mastermind/compare/npm-v3.3.0...HEAD
+[Unreleased]: https://github.com/xcrft/mastermind/compare/npm-v3.3.1...HEAD
+[3.3.1]: https://github.com/xcrft/mastermind/releases/tag/npm-v3.3.1
 [3.3.0]: https://github.com/xcrft/mastermind/releases/tag/npm-v3.3.0
 [3.2.4]: https://github.com/xcrft/mastermind/releases/tag/npm-v3.2.4
 [3.2.3]: https://github.com/xcrft/mastermind/releases/tag/npm-v3.2.3
