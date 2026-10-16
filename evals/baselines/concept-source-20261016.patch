@@ -1,0 +1,990 @@
+diff --git a/docs/reference/mmcg.md b/docs/reference/mmcg.md
+--- a/docs/reference/mmcg.md
++++ b/docs/reference/mmcg.md
+@@ -446,7 +446,7 @@
+ 
+ ### Local symbol concept search
+ 
+-`mmcg_concept` and `mastermind concept` use one schema-v2 query builder over a
++`mmcg_concept` and `mastermind concept` use one schema-v3 query builder over a
+ private derived corpus. Searchable fields are normalized symbol names,
+ repository-relative paths, bounded declaration shapes, and owned documentation
+ for an explicit first language set. Source bodies and raw comments/docstrings
+@@ -479,21 +479,43 @@
+ The query is plain text up to 256 UTF-8 bytes. Shared normalization applies
+ Unicode lowercase without claiming canonical equivalence, splits punctuation,
+ paths, snake/kebab/camel/acronym transitions and letter/digit boundaries, and
+-admits at most 16 terms of 64 bytes each. Every term is escaped, quoted, and
+-joined by a fixed `AND`, so callers cannot supply FTS syntax, column selectors,
+-boolean operators, or prefix wildcards. `top` is an integer from 1 through 50.
++admits at most 16 terms of 64 bytes each. SQLite FTS5 applies Porter stemming
++with `unicode61 remove_diacritics 0 tokenchars '_'` to both the corpus and
++query. Terms with the same FTS token sequence count once; the first spelling
++is retained in `query_terms`. This prevents variants such as `concept concepts`
++from supplying two matches toward a partial-match threshold. Porter stemming
++is an English lexical heuristic and does not establish semantic equivalence.
++Every term is escaped and quoted, so callers cannot supply FTS syntax, column
++selectors, boolean operators, or prefix wildcards. `top` is an integer from 1
++through 50.
++
++Let `n` be the number of query terms after tokenizer-equivalent deduplication.
++
++| `match_mode` | Selection | `minimum_matched_terms` |
++|---|---|---|
++| `all_terms` | All terms must match. Used whenever any full match exists, and for queries with fewer than three distinct terms. | `n` |
++| `partial_terms` | Used only when the full query has zero indexed matches and `n >= 3`. A candidate must match at least the stated number of different terms. | `max(2, ceil(n / 2))` |
++
++The fallback never supplements a nonempty full-match result set. Each candidate
++reports its `matched_terms` using the retained query spellings, including when
++only their stems match. The response reports the selected mode and threshold
++even if that mode returns no candidates.
+ 
+ SQLite FTS5 ranks with fixed BM25 weights: name 10, path 4, declaration shape
+-2, and documentation 1. The total tie order is score,
++2, and documentation 1. Partial results sort first by matched-term count,
++descending. The remaining total tie order is score,
+ lowercase repository path, line, kind, name, then symbol ID. Scores are local
+ to one query, lower is better, and they are not confidence values. Each
+ candidate contains `name`, `kind`, `language`, `path`, `line`, a declaration
+-`signature_shape` capped at 256 bytes, `matched_fields`, `citation`, and
++`signature_shape` capped at 256 bytes, `matched_fields`, `matched_terms`, `citation`, and
+ `score`. The envelope reports exact `indexed_total`, returned `count`,
+ `result_truncated`, observed `unsafe_candidates_omitted`, overall `truncated`
+-and `truncation_reason`, plus normalized `query_terms`, requested top,
++and `truncation_reason`, plus effective `query_terms`, `match_mode`,
++`minimum_matched_terms`, requested top,
+ freshness, limits, and precision notes. The count and ranked page are read from
+-one SQLite snapshot. The default text format reports the same coverage,
++one SQLite snapshot, with the partial-match floor applied before count and
++page limit. Output-safety omissions do not trigger relaxation. The default
++text format reports the same match policy, coverage,
+ omissions, reason, freshness contracts, and limits before listing candidates.
+ It does not reduce a bounded or safety-filtered page to its returned count.
+ 
+@@ -504,10 +526,18 @@
+ writes from older schema-v7 binaries. Managed queries may perform one bounded
+ full refresh and retry when the extractor or concept contract drifts.
+ Finalization checks symbol/concept parity and FTS integrity before stamping the
+-extractor and normalization contracts current. Custom external indexes open
++extractor and normalization contracts current. The active normalization
++contract is `mmcg-concepts-v4`; its tokenizer change invalidates older concept
++corpora. Custom external indexes open
+ read-only, are never migrated, and return `index_stale` or
+-`schema_incompatible` when the required corpus is unavailable. Stable query
+-failures also include `invalid_arguments`, `snapshot_changed`,
++`schema_incompatible` when the required corpus is unavailable. To rebuild an
++older custom index, supply its path and repository root explicitly, then retry:
++
++```bash
++mmcg --index /path/to/index.db index /path/to/repository --force
++```
++
++Stable query failures also include `invalid_arguments`, `snapshot_changed`,
+ `work_limit_exceeded`, `cancelled`, and `internal_error`.
+ 
+ This is deterministic local retrieval, not semantic inference: no embeddings,
+@@ -1501,7 +1531,7 @@
+ | `mmcg_change_class` | `file` | Classify a file's last change as `structural`, `cosmetic`, or `first-seen`. Backed by an FNV-1a 64-bit hash of the file's parsed structural shape — line numbers and whitespace excluded. Pre-edit signal for planner and auditor: large diffs that are mostly cosmetic have smaller real scope than line count suggests. |
+ | `mmcg_unreferenced` | optional `kind`, `language`, `top` (default 100, max 500) | Symbols with no indexed reference candidates, with per-symbol precision and explicit `precision_notes`. MCP responses expose the exact filtered `total`, returned `count`, `truncated`, and `row_limit`. Narrow by kind or language when truncated. The CLI retains its complete local listing. These are not proven dead code. **Review manually** — see Limitations for false-positive scenarios. |
+ | `mmcg_api_surface` | `prefix`, optional `language`, `top` (default 100, max 500) | Symbols under the literal `prefix` with at least one outside syntactic name-and-kind reference candidate. MCP responses expose the exact filtered `total`, returned `count`, `truncated`, `row_limit`, per-symbol edge precision, and response precision notes. Narrow the prefix or add language when truncated. The CLI retains its complete local listing. Same-named definitions may be false-positive boundary candidates, so this empirical map is not compiler-resolved identity or declared visibility. |
+-| `mmcg_concept` | `query`, optional `top` (default 10, max 50) | Deterministic schema-v2 symbol candidates from normalized names, repository paths, declaration shapes, and owned Rust/Python/JavaScript/TypeScript documentation tokens. Plain terms are escaped and fixed-AND joined. No raw FTS syntax, embeddings, model calls, network, source bodies, raw comments/docstrings, literals, or defaults. The response reports exact indexed-match coverage, bounded-page truncation, and observed safety omissions from one SQLite snapshot. BM25 score is query-local and lower-is-better, not confidence. Managed drift gets at most one refresh/retry. Custom indexes remain read-only and fail closed. |
++| `mmcg_concept` | `query`, optional `top` (default 10, max 50) | Deterministic schema-v3 symbol candidates from normalized names, repository paths, declaration shapes, and owned Rust/Python/JavaScript/TypeScript documentation tokens. Plain terms are escaped, Porter-stemmed, and deduplicated by FTS token sequence. AND matches take precedence; only a zero-match query of at least three distinct terms relaxes to `max(2, ceil(n / 2))` term matches. The response discloses match mode, threshold, matched terms, exact qualified coverage, page truncation and safety omissions from one SQLite snapshot. No raw FTS syntax, embeddings, model calls, network, source bodies, raw comments/docstrings, literals, or defaults. BM25 score is query-local and lower-is-better, not confidence. Managed drift gets at most one refresh/retry. Custom indexes remain read-only and fail closed. |
+ 
+ ### Architecture and change analysis
+ 
+diff --git a/evals/benchmark/README.md b/evals/benchmark/README.md
+--- a/evals/benchmark/README.md
++++ b/evals/benchmark/README.md
+@@ -247,7 +247,7 @@
+     "index_contract": {
+       "schema_version": "9",
+       "extractor_contract_version": "mmcg-extractors-v10",
+-      "concept_normalization_version": "mmcg-concepts-v3"
++      "concept_normalization_version": "mmcg-concepts-v4"
+     }
+   },
+   "limits": {
+@@ -798,3 +798,30 @@
+ 
+ These checks exercise real disposable files/processes and fixture adapters.
+ They make no model calls and do not measure model quality.
++
++## Plan development resource repetitions
++
++Before running a resource screen, simulate its exact task-level sign-flip test:
++
++```sh
++python3 -m evals.benchmark.resource_power \
++  --output /absolute/path/to/new-resource-power.json \
++  --simulations 20000 --seed 20261015
++```
++
++This standard-library calculation makes no model calls. It evaluates eight
++independent tasks, a true token ratio of 0.90, paired run log-ratio SD 0.25,
++task SDs 0.03/0.05/0.08 and even repetitions from 8 through 64 per arm. The
++output includes exact-test rejection fractions, Monte Carlo intervals, a null
++size check, input hashes and producer-attempt costs for two or four arms. It
++also evaluates 12 and 16 tasks with eight repetitions under task SDs 0.05/0.08.
++It selects the first tested repetition count whose marginal Wilson lower bound
++reaches 80%; nuisance uncertainty remains separate. Existing outputs are never
++replaced; use a new path when changing inputs or the simulation.
++
++The primary contrast is low-effort lexical map on versus map off. Four-arm costs
++assume equal repetitions in every effort × map cell; the interaction needs its
++own variance and effect-size plan. These are Normal-model development planning
++estimates. Detection at an assumed 10% reduction does not establish a reduction
++of at least 10%, acceptance non-inferiority or product qualification. Inspect
++the sensitivity results before freezing a design.
+diff --git a/mcp/servers/mmcg/README.md b/mcp/servers/mmcg/README.md
+--- a/mcp/servers/mmcg/README.md
++++ b/mcp/servers/mmcg/README.md
+@@ -75,6 +75,18 @@
+ Supported languages: Python and type stubs, TypeScript/TSX, JavaScript/JSX,
+ Vue SFC, Rust, C#, Go, Java, PHP and C/C++.
+ 
++Concept search returns schema-v3 retrieval candidates with Porter stemming.
++Terms with the same stem count once. Full matches take precedence; a query
++with zero full matches and at least three distinct terms falls back to matching
++at least half the terms, rounded up, with a minimum of two. Results disclose
++`match_mode`, `minimum_matched_terms` and each candidate's `matched_terms`.
++Read the cited source to decide relevance. The `mmcg-concepts-v4` corpus
++contract refreshes managed indexes once when needed. Custom indexes remain
++read-only; rebuild an older custom index with
++`mmcg --index /path/to/index.db index /path/to/repository --force` before retrying.
++See the [concept search contract](https://github.com/xcrft/mastermind/blob/main/docs/reference/mmcg.md#local-symbol-concept-search)
++for limits, ordering and coverage semantics.
++
+ `repo-map` returns a JSON navigation payload using `focused_shortlist_v3`: weighted
+ task-term overlap, grouped file locations, at most three files and three definitions
+ per file. It leaves spare budget unused and excludes declared test functions. It
+diff --git a/mcp/servers/mmcg/src/commands/query.rs b/mcp/servers/mmcg/src/commands/query.rs
+--- a/mcp/servers/mmcg/src/commands/query.rs
++++ b/mcp/servers/mmcg/src/commands/query.rs
+@@ -1527,7 +1527,7 @@
+     }
+ 
+     let mut output = format!(
+-        "mastermind concept\nschema: v{}\nrepository content: {}\nquery terms: {}\ncoverage: {}/{} ({})\nresult truncated: {}\nunsafe candidates omitted: {}\ntruncation reason: {}\ntop: {}\nfreshness: {}\nextractor contract: {}\nnormalization contract: {}\nlimits: query bytes {} · query terms {} · term bytes {} · top {} · signature shape bytes {}\n\n",
++        "mastermind concept\nschema: v{}\nrepository content: {}\nquery terms: {}\nmatch mode: {}\nminimum matched terms: {}\ncoverage: {}/{} ({})\nresult truncated: {}\nunsafe candidates omitted: {}\ntruncation reason: {}\ntop: {}\nfreshness: {}\nextractor contract: {}\nnormalization contract: {}\nlimits: query bytes {} · query terms {} · term bytes {} · top {} · signature shape bytes {}\n\n",
+         response.schema_version,
+         if response.repository_content_untrusted {
+             "untrusted"
+@@ -1540,6 +1540,11 @@
+             .map(|term| concept_text_field(term))
+             .collect::<Vec<_>>()
+             .join(" "),
++        match response.match_mode {
++            queries::ConceptMatchMode::AllTerms => "all_terms",
++            queries::ConceptMatchMode::PartialTerms => "partial_terms",
++        },
++        response.minimum_matched_terms,
+         response.count,
+         response.indexed_total,
+         if response.truncated {
+@@ -1566,7 +1571,7 @@
+     output.push_str("candidates\n");
+     for candidate in &response.candidates {
+         output.push_str(&format!(
+-            "name={} kind={} language={} line={} score={}\npath={}\nsignature={}\nmatched={}\ncitation={}\n\n",
++            "name={} kind={} language={} line={} score={}\npath={}\nsignature={}\nmatched={}\nmatched terms={}\ncitation={}\n\n",
+             concept_text_field(&candidate.name),
+             concept_text_field(&candidate.kind),
+             concept_text_field(&candidate.language),
+@@ -1578,6 +1583,12 @@
+                 .matched_fields
+                 .iter()
+                 .map(|field| concept_text_field(field))
++                .collect::<Vec<_>>()
++                .join(" "),
++            candidate
++                .matched_terms
++                .iter()
++                .map(|term| concept_text_field(term))
+                 .collect::<Vec<_>>()
+                 .join(" "),
+             concept_text_field(&candidate.citation),
+@@ -2147,9 +2158,11 @@
+             "\\u00005d\\u000028https\\u00003a\\u00002f\\u00002fevil\\u00002eexample\\u000029\\u00003ca\\u00003e\\u000060file\\u00003a\\u00002f\\u00002f\\u00001b\\u000007\\u00202e\\u00000d\\u00000a"
+         );
+         let response = queries::ConceptResponse {
+-            schema_version: 2,
++            schema_version: 3,
+             repository_content_untrusted: true,
+             query_terms: vec!["handler".to_string()],
++            match_mode: queries::ConceptMatchMode::AllTerms,
++            minimum_matched_terms: 1,
+             indexed_total: 1,
+             count: 1,
+             result_truncated: false,
+@@ -2178,6 +2191,7 @@
+                 line: 7,
+                 signature_shape: hostile.to_string(),
+                 matched_fields: vec!["path".to_string()],
++                matched_terms: vec!["handler".to_string()],
+                 citation: format!("{hostile}:7"),
+                 score: -1.0,
+             }],
+@@ -2207,7 +2221,9 @@
+         partial.truncated = true;
+         partial.truncation_reason = Some("top_and_unsafe_candidates");
+         let text = render_concept(&partial, crate::ConceptFormat::Text).unwrap();
+-        assert!(text.contains("schema: v2\nrepository content: untrusted"));
++        assert!(text.contains("schema: v3\nrepository content: untrusted"));
++        assert!(text.contains("match mode: all_terms\nminimum matched terms: 1"));
++        assert!(text.contains("matched terms=handler"));
+         assert!(text.contains("coverage: 1/7 (partial)"));
+         assert!(text.contains("result truncated: true\nunsafe candidates omitted: 2"));
+         assert!(text.contains("truncation reason: top\\u00005fand\\u00005funsafe"));
+diff --git a/mcp/servers/mmcg/src/evidence/junit.rs b/mcp/servers/mmcg/src/evidence/junit.rs
+--- a/mcp/servers/mmcg/src/evidence/junit.rs
++++ b/mcp/servers/mmcg/src/evidence/junit.rs
+@@ -12,6 +12,10 @@
+     pub deadline_reached: bool,
+ }
+ 
++/// A JUnit testcase with its passed, failed, error, or skipped outcome.
++///
++/// Duration is stored in milliseconds. File and class are optional, and parsed
++/// names and diagnostic messages are truncated before the record is returned.
+ pub(super) struct JunitCase {
+     pub file: Option<String>,
+     pub name: String,
+@@ -84,6 +88,11 @@
+     }
+ }
+ 
++/// Parse JUnit XML testcases, including outcome details and elapsed times.
++///
++/// XML reader failures and input with no suite or testcase element return
++/// `InvalidFormat`. Limits and incomplete testcase records are reported through
++/// the partial, invalid-record, work-limit, and deadline flags.
+ pub(super) fn parse(bytes: &[u8], deadline: Option<Instant>) -> Result<ParsedJunit, SourceFailure> {
+     let mut reader = Reader::from_reader(bytes);
+     reader.config_mut().trim_text(true);
+diff --git a/mcp/servers/mmcg/src/evidence/otel.rs b/mcp/servers/mmcg/src/evidence/otel.rs
+--- a/mcp/servers/mmcg/src/evidence/otel.rs
++++ b/mcp/servers/mmcg/src/evidence/otel.rs
+@@ -11,6 +11,10 @@
+     pub deadline_reached: bool,
+ }
+ 
++/// One OpenTelemetry span with trace and span identifiers and an optional parent.
++///
++/// File provenance is available only when an explicit code path attribute was
++/// present; the span name does not establish a source-file binding.
+ pub(super) struct OtelSpan {
+     pub trace_id: String,
+     pub span_id: String,
+@@ -19,6 +23,12 @@
+     pub file: Option<String>,
+ }
+ 
++/// Parse OpenTelemetry OTLP JSON resource and scope spans into runtime evidence.
++///
++/// Malformed JSON or a missing `resourceSpans` array returns `InvalidFormat`.
++/// Legacy `instrumentationLibrarySpans` containers are accepted. Spans without
++/// nonempty trace and span identifiers are omitted with invalid/partial flags;
++/// fact and deadline limits stop collection with explicit partial-result flags.
+ pub(super) fn parse(bytes: &[u8], deadline: Option<Instant>) -> Result<ParsedOtel, SourceFailure> {
+     let value: Value = serde_json::from_slice(bytes).map_err(|_| SourceFailure::InvalidFormat)?;
+     let Some(resource_spans) = value.get("resourceSpans").and_then(Value::as_array) else {
+diff --git a/mcp/servers/mmcg/src/mcp.rs b/mcp/servers/mmcg/src/mcp.rs
+--- a/mcp/servers/mmcg/src/mcp.rs
++++ b/mcp/servers/mmcg/src/mcp.rs
+@@ -2426,7 +2426,7 @@
+                     "type": "string",
+                     "minLength": 1,
+                     "maxLength": 256,
+-                    "description": "Plain text only. Terms are normalized, quoted, and joined with fixed AND semantics; raw FTS syntax is never accepted."
++                    "description": "Plain text only. Quoted normalized terms use Porter stemming and same-stem deduplication. Full AND matches take precedence. Only when none exist and at least three distinct terms remain, partial matches require at least half of the terms (rounded up, minimum two). The response discloses match mode and matched terms. Raw FTS syntax is never accepted."
+                 },
+                 "top": {
+                     "type": "integer",
+@@ -5598,6 +5598,62 @@
+     }
+ 
+     #[test]
++    fn concept_tokenizer_migration_repairs_managed_and_preserves_custom_indexes() {
++        let (root, store) = impact_fixture("concept-tokenizer-migration");
++        let db = store.db_path().to_path_buf();
++        drop(store);
++        let connection = rusqlite::Connection::open(&db).unwrap();
++        connection
++            .execute_batch(
++                "DROP TABLE symbol_concepts_fts;
++                 CREATE VIRTUAL TABLE symbol_concepts_fts USING fts5(
++                     name_search, path_search, signature_search, documentation_search,
++                     content='symbol_concepts', content_rowid='symbol_id',
++                     tokenize = \"unicode61 remove_diacritics 0 tokenchars '_'\"
++                 );
++                 INSERT INTO symbol_concepts_fts(symbol_concepts_fts) VALUES ('rebuild');
++                 UPDATE meta SET value = 'mmcg-concepts-v3'
++                 WHERE key = 'concept_normalization_version';",
++            )
++            .unwrap();
++        drop(connection);
++
++        let before = std::fs::read(&db).unwrap();
++        let mut custom = crate::store::Store::open_for_serve(&db, None).unwrap();
++        let refused = handle_tools_call(
++            ProtocolVersion::Current,
++            &mut custom,
++            &json!({ "name": "mmcg_concept", "arguments": { "query": "values" } }),
++        )
++        .unwrap();
++        assert_eq!(refused["isError"], true);
++        assert_eq!(unwrap_content(&refused)["code"], "index_stale");
++        assert_eq!(std::fs::read(&db).unwrap(), before);
++        drop(custom);
++
++        let mut managed = crate::store::Store::open_for_serve(&db, Some(&root)).unwrap();
++        assert!(managed.concept_schema_objects_current().unwrap());
++        assert!(!managed.concept_contract_current().unwrap());
++        let refreshed = handle_tools_call(
++            ProtocolVersion::Current,
++            &mut managed,
++            &json!({ "name": "mmcg_concept", "arguments": { "query": "values" } }),
++        )
++        .unwrap();
++        assert_eq!(refreshed["isError"], false);
++        let payload = unwrap_content(&refreshed);
++        assert_eq!(payload["schema_version"], 3);
++        assert_eq!(
++            payload["freshness"]["normalization_contract"],
++            "mmcg-concepts-v4"
++        );
++        assert_eq!(payload["candidates"][0]["name"], "value");
++        assert_eq!(payload["candidates"][0]["matched_terms"], json!(["values"]));
++        assert!(managed.concept_contract_current().unwrap());
++        std::fs::remove_dir_all(root).ok();
++    }
++
++    #[test]
+     fn concept_shadow_table_drift_repairs_managed_indexes_and_blocks_custom_indexes() {
+         let (root, store) = impact_fixture("concept-shadow-drift");
+         let db = store.db_path().to_path_buf();
+diff --git a/mcp/servers/mmcg/src/miner/access.rs b/mcp/servers/mmcg/src/miner/access.rs
+--- a/mcp/servers/mmcg/src/miner/access.rs
++++ b/mcp/servers/mmcg/src/miner/access.rs
+@@ -22,7 +22,11 @@
+     Ok(())
+ }
+ 
+-/// Update the existing root/client grant without printing CLI output.
++/// Grant or revoke profile read access for one repository root and MCP client.
++///
++/// Validates the client identifier and canonicalizes a UTF-8 directory root
++/// before updating the global profile store. Revoking access is a no-op when
++/// no store exists. Filesystem and store failures propagate; nothing is printed.
+ pub fn configure(
+     root: &Path,
+     client_id: &str,
+diff --git a/mcp/servers/mmcg/src/miner/store.rs b/mcp/servers/mmcg/src/miner/store.rs
+--- a/mcp/servers/mmcg/src/miner/store.rs
++++ b/mcp/servers/mmcg/src/miner/store.rs
+@@ -737,6 +737,11 @@
+             .map(|value| value.unwrap_or(false))
+     }
+ 
++    /// Persist or remove a profile reader grant for the supplied root/client pair.
++    ///
++    /// Inserts are idempotent and revocation deletes only the matching pair.
++    /// The caller validates the client identifier and canonicalizes the root.
++    /// SQLite failures propagate to the caller.
+     pub fn set_reader_grant(
+         &mut self,
+         target_root: &str,
+diff --git a/mcp/servers/mmcg/src/queries.rs b/mcp/servers/mmcg/src/queries.rs
+--- a/mcp/servers/mmcg/src/queries.rs
++++ b/mcp/servers/mmcg/src/queries.rs
+@@ -2070,8 +2070,9 @@
+     pub schema_version: u32,
+     pub repository_content_untrusted: bool,
+     pub query_terms: Vec<String>,
+-    /// Exact FTS matches in the checked derived corpus before output-safety
+-    /// validation of the bounded ranked page.
++    pub match_mode: ConceptMatchMode,
++    pub minimum_matched_terms: u32,
++    /// Exact qualifying FTS matches before output-safety validation and LIMIT.
+     pub indexed_total: u32,
+     pub count: u32,
+     pub result_truncated: bool,
+@@ -2085,6 +2086,13 @@
+     pub candidates: Vec<ConceptCandidate>,
+ }
+ 
++#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
++#[serde(rename_all = "snake_case")]
++pub enum ConceptMatchMode {
++    AllTerms,
++    PartialTerms,
++}
++
+ #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+ pub struct ConceptFreshness {
+     pub status: String,
+@@ -2110,6 +2118,7 @@
+     pub line: u32,
+     pub signature_shape: String,
+     pub matched_fields: Vec<String>,
++    pub matched_terms: Vec<String>,
+     pub citation: String,
+     pub score: f64,
+ }
+@@ -2148,12 +2157,33 @@
+     expected_data_version: u64,
+     freshness: ConceptFreshness,
+ ) -> Result<ConceptResponse, ConceptError> {
+-    let query_terms = validate_concept_request(query, top)?;
++    let query_terms =
++        crate::store::distinct_concept_query_terms(&validate_concept_request(query, top)?)
++            .map_err(|_| ConceptError::Internal)?;
+     let match_query = concept_match_query(&query_terms);
+     store
+         .begin_read_snapshot()
+         .map_err(|_| ConceptError::SnapshotChanged)?;
+-    let search = store.search_concepts_bounded(&match_query, top);
++    let search = store
++        .search_concepts_bounded(&match_query, top)
++        .and_then(|(total, mut hits)| {
++            if total == 0 && query_terms.len() >= 3 {
++                let minimum = brief_u32(query_terms.len().div_ceil(2)).max(2);
++                return store
++                    .search_concepts_partial_bounded(&query_terms, minimum, top)
++                    .map(|(total, hits)| (total, hits, ConceptMatchMode::PartialTerms, minimum));
++            }
++            let mask = (1u32 << query_terms.len()) - 1;
++            for hit in &mut hits {
++                hit.matched_term_mask = mask;
++            }
++            Ok((
++                total,
++                hits,
++                ConceptMatchMode::AllTerms,
++                brief_u32(query_terms.len()),
++            ))
++        });
+     let documentation_stats = store.concept_documentation_stats();
+     let end = store.end_read_snapshot();
+     let data_version_after = store.data_version().map_err(|_| {
+@@ -2167,7 +2197,7 @@
+     if data_version_after != expected_data_version {
+         return Err(ConceptError::SnapshotChanged);
+     }
+-    let (indexed_total, hits) = search.map_err(|_| {
++    let (indexed_total, hits, match_mode, minimum_matched_terms) = search.map_err(|_| {
+         if store.interrupt_source().is_some() {
+             ConceptError::WorkLimitExceeded
+         } else {
+@@ -2215,6 +2245,12 @@
+             line: hit.line,
+             signature_shape: hit.signature_shape,
+             matched_fields,
++            matched_terms: query_terms
++                .iter()
++                .enumerate()
++                .filter(|(index, _)| hit.matched_term_mask & (1u32 << index) != 0)
++                .map(|(_, term)| term.clone())
++                .collect(),
+             citation: format!("{}:{}", hit.path, hit.line),
+             score: hit.score,
+         });
+@@ -2222,6 +2258,8 @@
+     let mut precision_notes = vec![
+         "bm25_score_is_query_local_lower_is_better_not_confidence".to_string(),
+         "unicode_lowercase_without_canonical_equivalence".to_string(),
++        "porter_stemming_not_semantic_equivalence".to_string(),
++        "query_terms_deduplicated_by_fts_token_sequence_first_spelling_retained".to_string(),
+         format!(
+             "documentation_search_supported_languages:{}",
+             crate::store::CONCEPT_DOCUMENTATION_SUPPORTED_LANGUAGES
+@@ -2250,9 +2288,11 @@
+         (false, false) => None,
+     };
+     Ok(ConceptResponse {
+-        schema_version: 2,
++        schema_version: 3,
+         repository_content_untrusted: true,
+         query_terms,
++        match_mode,
++        minimum_matched_terms,
+         indexed_total,
+         count: brief_u32(candidates.len()),
+         result_truncated,
+@@ -6997,6 +7037,147 @@
+         }
+     }
+ 
++    fn concept_symbols(names: &[&str]) -> Store {
++        let store = Store::open_ephemeral().unwrap();
++        for (index, name) in names.iter().enumerate() {
++            store
++                .insert_symbol(
++                    name,
++                    "function",
++                    &format!("src/p{index}.rs"),
++                    1,
++                    2,
++                    None,
++                    None,
++                )
++                .unwrap();
++        }
++        store.finalize_index_contracts_current().unwrap();
++        store
++    }
++
++    #[test]
++    fn concept_stemming_keeps_full_matches_ahead_of_relaxation() {
++        let store = concept_symbols(&["serve_concept_handler", "serve_handler", "other_concept"]);
++        let response = concept_verified(
++            &store,
++            "serving concepts",
++            10,
++            store.data_version().unwrap(),
++            verified_concept_freshness(),
++        )
++        .unwrap();
++        assert_eq!(response.match_mode, ConceptMatchMode::AllTerms);
++        assert_eq!(response.minimum_matched_terms, 2);
++        assert_eq!(response.indexed_total, 1);
++        assert_eq!(response.candidates[0].name, "serve_concept_handler");
++        assert_eq!(
++            response.candidates[0].matched_terms,
++            ["serving", "concepts"]
++        );
++
++        let strict = concept_verified(
++            &store,
++            "serving concepts handler",
++            10,
++            store.data_version().unwrap(),
++            verified_concept_freshness(),
++        )
++        .unwrap();
++        assert_eq!(strict.match_mode, ConceptMatchMode::AllTerms);
++        assert_eq!(strict.indexed_total, 1);
++        assert_eq!(strict.candidates[0].matched_terms.len(), 3);
++    }
++
++    #[test]
++    fn concept_partial_matches_apply_floor_and_count_before_the_ranked_limit() {
++        let store = concept_symbols(&["amber_birch_cedar", "amber_birch", "amber_cedar", "amber"]);
++        let response = concept_verified(
++            &store,
++            "amber birch cedar quartz",
++            2,
++            store.data_version().unwrap(),
++            verified_concept_freshness(),
++        )
++        .unwrap();
++        assert_eq!(response.match_mode, ConceptMatchMode::PartialTerms);
++        assert_eq!(response.minimum_matched_terms, 2);
++        assert_eq!(response.indexed_total, 3);
++        assert_eq!(response.count, 2);
++        assert_eq!(response.truncation_reason, Some("top"));
++        assert_eq!(response.candidates[0].name, "amber_birch_cedar");
++        assert_eq!(
++            response.candidates[0].matched_terms,
++            ["amber", "birch", "cedar"]
++        );
++        assert!(response
++            .candidates
++            .iter()
++            .all(|candidate| candidate.matched_terms.len() >= 2));
++
++        let stricter = concept_verified(
++            &store,
++            "amber birch cedar dogwood quartz",
++            10,
++            store.data_version().unwrap(),
++            verified_concept_freshness(),
++        )
++        .unwrap();
++        assert_eq!(stricter.minimum_matched_terms, 3);
++        assert_eq!(stricter.indexed_total, 1);
++        assert_eq!(stricter.candidates[0].name, "amber_birch_cedar");
++        assert!(!stricter.truncated);
++    }
++
++    #[test]
++    fn concept_same_stem_terms_cannot_inflate_the_fallback_floor() {
++        let store = concept_symbols(&["concept_handler"]);
++        let response = concept_verified(
++            &store,
++            "concept concepts missing",
++            10,
++            store.data_version().unwrap(),
++            verified_concept_freshness(),
++        )
++        .unwrap();
++        assert_eq!(response.query_terms, ["concept", "missing"]);
++        assert_eq!(response.minimum_matched_terms, 2);
++        assert_eq!(response.match_mode, ConceptMatchMode::AllTerms);
++        assert_eq!(response.indexed_total, 0);
++        assert!(response.candidates.is_empty());
++
++        let partial = concept_verified(
++            &store,
++            "concept concepts absent missing",
++            10,
++            store.data_version().unwrap(),
++            verified_concept_freshness(),
++        )
++        .unwrap();
++        assert_eq!(partial.query_terms, ["concept", "absent", "missing"]);
++        assert_eq!(partial.match_mode, ConceptMatchMode::PartialTerms);
++        assert_eq!(partial.minimum_matched_terms, 2);
++        assert_eq!(partial.indexed_total, 0);
++        assert!(partial.candidates.is_empty());
++    }
++
++    #[test]
++    fn concept_operator_words_remain_literal_in_fts_matches() {
++        let store = concept_symbols(&["amber_or_quartz", "amber", "quartz"]);
++        let response = concept_verified(
++            &store,
++            "amber OR quartz",
++            10,
++            store.data_version().unwrap(),
++            verified_concept_freshness(),
++        )
++        .unwrap();
++        assert_eq!(response.match_mode, ConceptMatchMode::AllTerms);
++        assert_eq!(response.query_terms, ["amber", "or", "quartz"]);
++        assert_eq!(response.indexed_total, 1);
++        assert_eq!(response.candidates[0].name, "amber_or_quartz");
++    }
++
+     #[test]
+     fn concept_ranking_applies_exact_path_sort_before_limit() {
+         let path = tmp_db("concept_path_sort");
+@@ -7024,7 +7205,7 @@
+             verified_concept_freshness(),
+         )
+         .unwrap();
+-        assert_eq!(response.schema_version, 2);
++        assert_eq!(response.schema_version, 3);
+         assert_eq!(response.indexed_total, 100);
+         assert_eq!(response.count, 10);
+         assert!(response.result_truncated);
+@@ -7153,21 +7334,23 @@
+                 .unwrap();
+         }
+         store.finalize_index_contracts_current().unwrap();
+-        assert!(!store.push_work_budget(crate::store::WorkBudget {
+-            deadline: None,
+-            op_ticks: Some(1),
+-        }));
+-        let result = concept_verified(
+-            &store,
+-            "common",
+-            50,
+-            store.data_version().unwrap(),
+-            verified_concept_freshness(),
+-        );
+-        assert_eq!(result, Err(ConceptError::WorkLimitExceeded));
+-        assert!(store.interrupt_source().is_some());
+-        store.pop_work_budget();
+-        let _ = store.take_interrupt_source();
++        for query in ["common", "common handler missing"] {
++            assert!(!store.push_work_budget(crate::store::WorkBudget {
++                deadline: None,
++                op_ticks: Some(1),
++            }));
++            let result = concept_verified(
++                &store,
++                query,
++                50,
++                store.data_version().unwrap(),
++                verified_concept_freshness(),
++            );
++            assert_eq!(result, Err(ConceptError::WorkLimitExceeded));
++            assert!(store.interrupt_source().is_some());
++            store.pop_work_budget();
++            let _ = store.take_interrupt_source();
++        }
+         std::fs::remove_file(path).ok();
+     }
+ 
+diff --git a/mcp/servers/mmcg/src/store.rs b/mcp/servers/mmcg/src/store.rs
+--- a/mcp/servers/mmcg/src/store.rs
++++ b/mcp/servers/mmcg/src/store.rs
+@@ -26,7 +26,7 @@
+ 
+ const SCHEMA_VERSION: &str = "9";
+ pub const CONCEPT_NORMALIZATION_META_KEY: &str = "concept_normalization_version";
+-pub const CONCEPT_NORMALIZATION_VERSION: &str = "mmcg-concepts-v3";
++pub const CONCEPT_NORMALIZATION_VERSION: &str = "mmcg-concepts-v4";
+ pub const CONCEPT_DOCUMENTATION_SUPPORTED_LANGUAGES: &str = "javascript,python,rust,tsx,typescript";
+ pub const CONCEPT_DOCUMENTATION_INDEXED_META_KEY: &str = "concept_documentation_indexed_count";
+ pub const CONCEPT_DOCUMENTATION_SECRET_OMITTED_META_KEY: &str =
+@@ -82,7 +82,7 @@
+         documentation_search,
+         content='symbol_concepts',
+         content_rowid='symbol_id',
+-        tokenize = "unicode61 remove_diacritics 0 tokenchars '_'"
++        tokenize = "porter unicode61 remove_diacritics 0 tokenchars '_'"
+     );
+     CREATE TRIGGER symbol_concepts_ai
+     AFTER INSERT ON symbol_concepts BEGIN
+@@ -798,6 +798,32 @@
+     pub signature_matched: bool,
+     pub documentation_matched: bool,
+     pub score: f64,
++    pub matched_term_mask: u32,
++}
++
++const CONCEPT_HIT_COLUMNS: &str = "s.name, s.kind, s.language, s.file_path,
++    s.line_start, c.signature_search,
++    instr(highlight(symbol_concepts_fts, 0, char(30), char(31)), char(30)) > 0,
++    instr(highlight(symbol_concepts_fts, 1, char(30), char(31)), char(30)) > 0,
++    instr(highlight(symbol_concepts_fts, 2, char(30), char(31)), char(30)) > 0,
++    instr(highlight(symbol_concepts_fts, 3, char(30), char(31)), char(30)) > 0,
++    bm25(symbol_concepts_fts, 10.0, 4.0, 2.0, 1.0) AS score";
++
++fn concept_store_hit(row: &rusqlite::Row<'_>) -> SqlResult<ConceptStoreHit> {
++    Ok(ConceptStoreHit {
++        name: row.get(0)?,
++        kind: row.get(1)?,
++        language: row.get(2)?,
++        path: row.get(3)?,
++        line: row.get(4)?,
++        signature_shape: row.get(5)?,
++        name_matched: row.get(6)?,
++        path_matched: row.get(7)?,
++        signature_matched: row.get(8)?,
++        documentation_matched: row.get(9)?,
++        score: row.get(10)?,
++        matched_term_mask: row.get(11)?,
++    })
+ }
+ 
+ #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+@@ -916,6 +942,47 @@
+ /// lowercase rules but additionally admit CR/LF/tab as declaration separators.
+ pub(crate) fn concept_terms(value: &str) -> Option<Vec<String>> {
+     normalized_concept_terms(value, false)
++}
++
++/// Use SQLite's index tokenizer to collapse equivalent query terms. A bounded
++/// scratch database keeps this available when the serving index is read-only.
++pub(crate) fn distinct_concept_query_terms(terms: &[String]) -> SqlResult<Vec<String>> {
++    let tokenizer = Connection::open_in_memory()?;
++    tokenizer.execute_batch(
++        "CREATE TABLE symbols(id INTEGER PRIMARY KEY);
++         CREATE TABLE meta(key TEXT PRIMARY KEY, value TEXT NOT NULL);",
++    )?;
++    tokenizer.execute_batch(CONCEPT_SCHEMA_DDL)?;
++    tokenizer.execute_batch(
++        "CREATE VIRTUAL TABLE query_tokens USING fts5vocab(symbol_concepts_fts, instance);",
++    )?;
++    for (index, term) in terms.iter().enumerate() {
++        tokenizer.execute("INSERT INTO symbols(id) VALUES (?1)", [(index + 1) as u32])?;
++        tokenizer.execute(
++            "INSERT INTO symbol_concepts(
++                 symbol_id, name_search, path_search, path_sort,
++                 signature_search, documentation_search
++             ) VALUES (?1, ?2, '', '', '', '')",
++            params![(index + 1) as u32, term],
++        )?;
++    }
++    let mut tokens = vec![Vec::<String>::new(); terms.len()];
++    let mut statement =
++        tokenizer.prepare("SELECT doc, term FROM query_tokens ORDER BY doc, offset")?;
++    let mut rows = statement.query([])?;
++    while let Some(row) = rows.next()? {
++        let document: u32 = row.get(0)?;
++        tokens[document as usize - 1].push(row.get(1)?);
++    }
++    let mut seen = HashSet::new();
++    Ok(terms
++        .iter()
++        .zip(tokens)
++        .filter_map(|(term, tokens)| {
++            // A term with no FTS tokens must remain an unmet query condition.
++            (tokens.is_empty() || seen.insert(tokens)).then(|| term.clone())
++        })
++        .collect())
+ }
+ 
+ fn concept_index_terms(value: &str) -> Option<Vec<String>> {
+@@ -7429,30 +7496,8 @@
+         match_query: &str,
+         top: u32,
+     ) -> SqlResult<Vec<ConceptStoreHit>> {
+-        let mut statement = self.conn.prepare(
+-            "SELECT s.name,
+-                    s.kind,
+-                    s.language,
+-                    s.file_path,
+-                    s.line_start,
+-                    c.signature_search,
+-                    instr(
+-                        highlight(symbol_concepts_fts, 0, char(30), char(31)),
+-                        char(30)
+-                    ) > 0 AS name_matched,
+-                    instr(
+-                        highlight(symbol_concepts_fts, 1, char(30), char(31)),
+-                        char(30)
+-                    ) > 0 AS path_matched,
+-                    instr(
+-                        highlight(symbol_concepts_fts, 2, char(30), char(31)),
+-                        char(30)
+-                    ) > 0 AS signature_matched,
+-                    instr(
+-                        highlight(symbol_concepts_fts, 3, char(30), char(31)),
+-                        char(30)
+-                    ) > 0 AS documentation_matched,
+-                    bm25(symbol_concepts_fts, 10.0, 4.0, 2.0, 1.0) AS score
++        let mut statement = self.conn.prepare(&format!(
++            "SELECT {CONCEPT_HIT_COLUMNS}, 0 AS matched_term_mask
+              FROM symbol_concepts_fts
+              JOIN symbol_concepts c ON c.symbol_id = symbol_concepts_fts.rowid
+              JOIN symbols s ON s.id = c.symbol_id
+@@ -7463,23 +7508,9 @@
+                       s.kind COLLATE BINARY ASC,
+                       s.name COLLATE BINARY ASC,
+                       s.id ASC
+-            LIMIT ?2",
+-        )?;
+-        let rows = statement.query_map(params![match_query, top], |row| {
+-            Ok(ConceptStoreHit {
+-                name: row.get(0)?,
+-                kind: row.get(1)?,
+-                language: row.get(2)?,
+-                path: row.get(3)?,
+-                line: row.get(4)?,
+-                signature_shape: row.get(5)?,
+-                name_matched: row.get(6)?,
+-                path_matched: row.get(7)?,
+-                signature_matched: row.get(8)?,
+-                documentation_matched: row.get(9)?,
+-                score: row.get(10)?,
+-            })
+-        })?;
++            LIMIT ?2"
++        ))?;
++        let rows = statement.query_map(params![match_query, top], concept_store_hit)?;
+         rows.collect()
+     }
+ 
+@@ -7501,6 +7532,79 @@
+             |row| row.get(0),
+         )?;
+         let hits = self.search_concepts(match_query, top)?;
++        Ok((total, hits))
++    }
++
++    pub(crate) fn search_concepts_partial_bounded(
++        &self,
++        terms: &[String],
++        minimum_matched_terms: u32,
++        top: u32,
++    ) -> SqlResult<(u32, Vec<ConceptStoreHit>)> {
++        if !(3..=16).contains(&terms.len())
++            || minimum_matched_terms < 2
++            || minimum_matched_terms as usize > terms.len()
++        {
++            return Err(rusqlite::Error::InvalidQuery);
++        }
++        let quoted = terms
++            .iter()
++            .map(|term| format!("\"{}\"", term.replace('"', "\"\"")))
++            .collect::<Vec<_>>();
++        let mut parameters = vec![
++            SqlValue::Text(quoted.join(" OR ")),
++            SqlValue::Integer(i64::from(minimum_matched_terms)),
++            SqlValue::Integer(i64::from(top)),
++        ];
++        parameters.extend(quoted.into_iter().map(SqlValue::Text));
++        let term_queries = (0..terms.len())
++            .map(|index| {
++                format!(
++                    "SELECT rowid, {index} AS term_index FROM symbol_concepts_fts
++                     WHERE symbol_concepts_fts MATCH ?{}",
++                    index + 4
++                )
++            })
++            .collect::<Vec<_>>()
++            .join(" UNION ALL ");
++        let qualified = format!(
++            "WITH term_matches AS ({term_queries}),
++             qualified AS (
++                 SELECT rowid, COUNT(*) AS matched_term_count,
++                        SUM(1 << term_index) AS matched_term_mask
++                 FROM term_matches GROUP BY rowid HAVING COUNT(*) >= ?2
++             )"
++        );
++        // Count the same qualified corpus as the ranked page, before LIMIT.
++        // Every MATCH uses the serving connection's work budget and snapshot.
++        let total = self.conn.query_row(
++            &format!(
++                "{qualified} SELECT COUNT(*) FROM qualified q
++                 JOIN symbol_concepts c ON c.symbol_id = q.rowid
++                 JOIN symbols s ON s.id = c.symbol_id"
++            ),
++            rusqlite::params_from_iter(&parameters),
++            |row| row.get(0),
++        )?;
++        if total == 0 {
++            return Ok((0, Vec::new()));
++        }
++        let mut statement = self.conn.prepare(&format!(
++            "{qualified}
++             SELECT {CONCEPT_HIT_COLUMNS}, q.matched_term_mask
++             FROM symbol_concepts_fts
++             JOIN qualified q ON q.rowid = symbol_concepts_fts.rowid
++             JOIN symbol_concepts c ON c.symbol_id = q.rowid
++             JOIN symbols s ON s.id = c.symbol_id
++             WHERE symbol_concepts_fts MATCH ?1
++             ORDER BY q.matched_term_count DESC, score ASC,
++                      c.path_sort COLLATE BINARY ASC, s.line_start ASC,
++                      s.kind COLLATE BINARY ASC, s.name COLLATE BINARY ASC, s.id ASC
++             LIMIT ?3"
++        ))?;
++        let hits = statement
++            .query_map(rusqlite::params_from_iter(&parameters), concept_store_hit)?
++            .collect::<SqlResult<Vec<_>>>()?;
+         Ok((total, hits))
+     }
+ 
+@@ -11937,6 +12041,38 @@
+     }
+ 
+     #[test]
++    fn concept_empty_partial_result_completes_within_a_bounded_vm_allowance() {
++        let store = Store::open_ephemeral().unwrap();
++        for line in 1..=4096 {
++            store
++                .insert_symbol("common", "function", "src/lib.rs", line, line, None, None)
++                .unwrap();
++        }
++        store.finalize_index_contracts_current().unwrap();
++        // One frequent word is insufficient evidence. Re-ranking its broad
++        // posting list after finding no qualified rows exhausts this allowance.
++        assert!(!store.push_work_budget(WorkBudget {
++            deadline: None,
++            op_ticks: Some(200),
++        }));
++        let result = store.search_concepts_partial_bounded(
++            &[
++                "common".to_string(),
++                "absent".to_string(),
++                "missing".to_string(),
++            ],
++            2,
++            10,
++        );
++        let interrupted = store.take_interrupt_source();
++        store.pop_work_budget();
++        let (total, hits) = result.expect("empty partial results must fit the VM allowance");
++        assert_eq!(total, 0);
++        assert!(hits.is_empty());
++        assert_eq!(interrupted, None);
++    }
++
++    #[test]
+     fn concept_insert_symbol_savepoint_nests_and_rolls_back_both_rows() {
+         let path = tmp_db("concept_nested_savepoint");
+         let store = Store::open(&path).unwrap();

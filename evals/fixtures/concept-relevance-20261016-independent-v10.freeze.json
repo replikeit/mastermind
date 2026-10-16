@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "frozen_at_utc": "2026-10-16T16:12:28.282276+00:00",
+  "source_head": "f418b380bf191877f5903f5c85f483f5e0e86632",
+  "source_root": "/private/var/folders/21/xj6nw_bs4rn6l5s3h8b9m3t80000gn/T/mmcg-concept-repair-gx6h652k/source",
+  "retrieval_performed_before_freeze": false,
+  "create_only": true,
+  "files_sha256": {
+    "evals/fixtures/concept-relevance-20261016-independent-v10.json": "406c09a843473e3335fbde0e7a2a711af6597e57779b33e98750f5faeda74320",
+    "evals/fixtures/concept-relevance-20261016-independent-v10.source-evidence.json": "7f34fc80a52b5a72c2810bb12217ec197e7fb097961504cd8352a0b98066aa3d",
+    ".mastermind/research/concept-mcp-independent-20261016/owner-exclusions.json": "a464c38375cee748dc81b381ea26f3a86384449332abb7bc21df80449252f888"
+  },
+  "source_files_sha256": {
+    "mcp/servers/mmcg/src/commands/init.rs": "2bae3c80e6923958c0b686f7d7947b708d4ebd6372da46be9b53cd5b93ff8fec",
+    "mcp/servers/mmcg/src/context_doctor.rs": "cb462f8556bcacc05949b20021dfc8f6100c75a8d3aa137fecd9992822cca5d2",
+    "mcp/servers/mmcg/src/doctor.rs": "c740b0b7ae18394069a68a851d2e1a1632a25b913c991a4e8fcf2cc0c4263103",
+    "mcp/servers/mmcg/src/indexer/cpp.rs": "46c4981a218c95b5035bcd7513c5de967f61f152cd5e6c03a6f7bb43fdf39aae",
+    "mcp/servers/mmcg/src/indexer/python.rs": "93fbdfdd008b4b9b1bec398a4845099925f8bdd309472e41f6310868074190e1",
+    "mcp/servers/mmcg/src/indexer/rust_lang.rs": "f8fd587882a511e3d7d0d202b8054a92003b31e007dd6341cf66e4681cf3cfb0",
+    "mcp/servers/mmcg/src/indexer/typescript.rs": "b29c4b959a57fd7139c373ad58923360a20eefd2339c74b5699220a6f0b39bda",
+    "mcp/servers/mmcg/src/invocation.rs": "eb331db8d581bfec1d89e7e723c256508d0c0c31da62acbfaa1c335697068bd4",
+    "mcp/servers/mmcg/src/miner/feedback.rs": "fa84ca2cc4b822c44f1a9cb91e674507ba9bfd186df3719b316a371598e18651",
+    "mcp/servers/mmcg/src/miner/hooks/profile_context.rs": "e9b7be71ac2ba02ba3a73fa8d7ec9e99e0ed52095d6399372d86b8188a63a1f8",
+    "mcp/servers/mmcg/src/miner/hooks/semantic.rs": "0256fe512071eef8baebace5f3c1ea7428c0bb5936e81ae31bd013a0a7a7e97a",
+    "mcp/servers/mmcg/src/miner/profile.rs": "c4a239b38d5466d4148ee61d7471e5bf6bd460ebb4d8adba1e66c81e0a4cfecc",
+    "mcp/servers/mmcg/src/miner/range.rs": "d04396e2551ff3057553c52902ba70d2be512b209da92cb3901ee364ea506d34",
+    "mcp/servers/mmcg/src/miner/store/supersession.rs": "7934906c4d48939722fa1458bf43387535651629523af048e730117f5a96045e",
+    "mcp/servers/mmcg/src/miner/workflow.rs": "6216490a5182ec664a7e1b12a22c163a15b090750e4796c70840d0a2b93c8f2b",
+    "mcp/servers/mmcg/src/policy/evidence.rs": "b2e72cadf273dd84bffc3a073aa3a5858e9a3e25dce350ed324984902415a873",
+    "mcp/servers/mmcg/src/setup.rs": "cea9682e2189ecf1407db3a2edab71b7fcbf45286594f2e5ac2f58bbe4c7c076",
+    "mcp/servers/mmcg/src/templates.rs": "cedc114fb9a88a174053a3f051ad92649cdc8cc1fd3403fdb5ae09d8e4b5ffc2"
+  },
+  "case_counts": {
+    "positive": 16,
+    "negative": 8,
+    "total": 24
+  },
+  "distinct_positive_owner_count": 16,
+  "excluded_positive_owner_overlap_count": 0,
+  "query_constraints": {
+    "word_count_min": 7,
+    "word_count_max": 11,
+    "utf8_bytes_max": 80,
+    "distinct_alphanumeric_terms_max": 10,
+    "top": 5
+  },
+  "freeze_scope": "This manifest hashes the authored fixture, source evidence, supplied metadata, and every read source file. Its own digest is reported separately after writing to avoid a self referential hash."
+}

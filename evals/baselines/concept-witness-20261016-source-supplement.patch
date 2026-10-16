@@ -1,0 +1,244 @@
+diff --git a/mcp/servers/mmcg/src/declared_files.rs b/mcp/servers/mmcg/src/declared_files.rs
+--- a/mcp/servers/mmcg/src/declared_files.rs
++++ b/mcp/servers/mmcg/src/declared_files.rs
+@@ -1,4 +1,7 @@
+-//! Shared admission for declared files, without reading their contents.
++//! Admission checks for file declarations in task specifications.
++//!
++//! Validate declared paths before task work and retain receipts for later
++//! verification. Inspect filesystem metadata without reading file contents.
+ 
+ use crate::bounded_fs::{self, BoundedReadError, ReadControl, RootCapability, StableFileIdentity};
+ use crate::spec::ParsedSpec;
+@@ -141,6 +144,12 @@
+     )
+ }
+ 
++/// Validate task file declarations during preflight or postflight admission.
++///
++/// Normalize contained repository paths and reject conflicting file roles.
++/// Inspect regular-file metadata without reading file contents; postflight also
++/// checks creations against the baseline and changed-file inventory. Retain
++/// receipts for reinspection, charging work and cancellation limits throughout.
+ fn check(
+     spec: &ParsedSpec,
+     root: &Path,
+diff --git a/mcp/servers/mmcg/src/evidence/otel.rs b/mcp/servers/mmcg/src/evidence/otel.rs
+--- a/mcp/servers/mmcg/src/evidence/otel.rs
++++ b/mcp/servers/mmcg/src/evidence/otel.rs
+@@ -11,8 +11,11 @@
+     pub deadline_reached: bool,
+ }
+ 
+-/// One OpenTelemetry span with trace and span identifiers and an optional parent.
++/// One OpenTelemetry OTLP span with trace, span and optional parent span IDs.
+ ///
++/// Trace and span identifiers are retained as nonempty strings; `parentSpanId`
++/// is optional and retained only when nonempty. Identifier widths, hexadecimal
++/// encoding and the existence of the referenced parent are not validated here.
+ /// File provenance is available only when an explicit code path attribute was
+ /// present; the span name does not establish a source-file binding.
+ pub(super) struct OtelSpan {
+diff --git a/mcp/servers/mmcg/src/executor_claims.rs b/mcp/servers/mmcg/src/executor_claims.rs
+--- a/mcp/servers/mmcg/src/executor_claims.rs
++++ b/mcp/servers/mmcg/src/executor_claims.rs
+@@ -91,6 +91,13 @@
+     pub deadline: Instant,
+ }
+ 
++/// Evaluate executor claims against the supplied declaration diff and source.
++///
++/// Preserve every claim's position and outcome in report order. An incomplete
++/// diff, more than 256 claims, unavailable or changed index, unreadable or stale
++/// indexed source, parse failure, or exhausted deadline yields unresolved
++/// checks. Added declarations and integration calls use separate evidence;
++/// a compatible call candidate does not establish runtime integration behavior.
+ pub(crate) fn evaluate(report: &ExecutorReport, context: &Context<'_>) -> Vec<ClaimCheck> {
+     evaluate_with_hook(report, context, || {})
+ }
+@@ -215,6 +222,14 @@
+     result
+ }
+ 
++/// Check one executor claim for an added declaration or a compatible call.
++///
++/// Function additions require a resolved function, method or constructor whose
++/// current source matches the index, optional signature matches, and declaration
++/// belongs to this diff's added set. Unavailable or ambiguous additions remain
++/// unresolved. Integration claims support only `calls` between declarations in
++/// the same language with one compatible call candidate. Cache file freshness
++/// checks for this evaluation; resolution and source failures are not evidence.
+ fn check(
+     index: usize,
+     claim: &Claim,
+diff --git a/mcp/servers/mmcg/src/fact_signature.rs b/mcp/servers/mmcg/src/fact_signature.rs
+--- a/mcp/servers/mmcg/src/fact_signature.rs
++++ b/mcp/servers/mmcg/src/fact_signature.rs
+@@ -280,6 +280,13 @@
+     })
+ }
+ 
++/// Sign a validated fact manifest with Ed25519 and publish detached signature JSON.
++///
++/// Read the manifest and a private key containing one Base64-encoded 32-byte
++/// seed. Sign the domain-separated statement binding the canonical manifest
++/// digest and public-key ID, then atomically write the signature to its output
++/// path. Invalid inputs, unsafe writes and output paths aliasing either input
++/// return errors. Signing does not apply a verifier's trust or revocation policy.
+ pub fn sign(
+     manifest_path: &Path,
+     private_key_path: &Path,
+diff --git a/mcp/servers/mmcg/src/find_checks.rs b/mcp/servers/mmcg/src/find_checks.rs
+--- a/mcp/servers/mmcg/src/find_checks.rs
++++ b/mcp/servers/mmcg/src/find_checks.rs
+@@ -30,6 +30,13 @@
+     bytes: u64,
+ }
+ 
++/// Check literal FIND preconditions against current repository file contents.
++///
++/// Blocks must name contained regular UTF-8 files and nonempty literal text.
++/// A literal absent from the file yields a mismatch. Invalid targets, read
++/// failures, cancellation and exhausted limits yield unavailable findings.
++/// Inspected files are read again to reject changed identities or bytes before
++/// returning the findings.
+ pub(crate) fn check(blocks: &[FindBlock], root: &Path, control: ReadControl<'_>) -> Vec<Finding> {
+     if blocks.is_empty() {
+         return Vec::new();
+@@ -125,6 +132,12 @@
+         Ok(file)
+     }
+ 
++    /// Read each target and record whether its literal FIND text occurs.
++    ///
++    /// Normalize and contain paths within the retained root, charging work and
++    /// byte limits for each read. Invalid blocks and unreadable or non-UTF-8 files
++    /// produce unavailable findings. Retain identity and digest receipts for
++    /// both matches and mismatches; `finish` owns their later freshness recheck.
+     fn collect(&mut self, blocks: &[FindBlock]) -> Collected {
+         let mut collected = Collected {
+             findings: Vec::with_capacity(blocks.len()),
+diff --git a/mcp/servers/mmcg/src/indexer/vue.rs b/mcp/servers/mmcg/src/indexer/vue.rs
+--- a/mcp/servers/mmcg/src/indexer/vue.rs
++++ b/mcp/servers/mmcg/src/indexer/vue.rs
+@@ -1,4 +1,4 @@
+-//! Vue SFC extractor — the file is the component; its script re-parses as TS/JS.
++//! Vue SFC extractor — the file is the component; its script re-parses as TypeScript or JavaScript.
+ 
+ use super::common::{node_text, push_call_with_type};
+ use super::{IndexError, LanguageExtractor};
+@@ -42,6 +42,11 @@
+     out
+ }
+ 
++/// Add the Vue file's component symbol, named from its filename in PascalCase.
++///
++/// The component inherits the module's line range and uses that module as its
++/// parent. An empty component name leaves the module as the extraction parent
++/// and returns its index without adding a component.
+ fn push_component_symbol(pending: &mut PendingFile, module_index: usize) -> usize {
+     let stem = pending
+         .path
+@@ -68,6 +73,12 @@
+     pending.symbols.len() - 1
+ }
+ 
++/// Extract declarations and references from the first Vue script's inline body.
++///
++/// Reparse with TypeScript when `lang` starts with `ts`, otherwise JavaScript,
++/// preserving source offsets by blanking bytes outside the script. Missing
++/// bodies or parser failures add no script symbols. Error nodes in a returned
++/// tree are not rejected here; baseline validation checks them separately.
+ fn extract_script(
+     root: &Node,
+     source: &[u8],
+diff --git a/mcp/servers/mmcg/src/miner/store.rs b/mcp/servers/mmcg/src/miner/store.rs
+--- a/mcp/servers/mmcg/src/miner/store.rs
++++ b/mcp/servers/mmcg/src/miner/store.rs
+@@ -737,9 +737,9 @@
+             .map(|value| value.unwrap_or(false))
+     }
+ 
+-    /// Persist or remove a profile reader grant for the supplied root/client pair.
++    /// Grant or revoke profile reader access for one repository/client pair.
+     ///
+-    /// Inserts are idempotent and revocation deletes only the matching pair.
++    /// Inserts are idempotent; revoking an existing grant deletes only that pair.
+     /// The caller validates the client identifier and canonicalizes the root.
+     /// SQLite failures propagate to the caller.
+     pub fn set_reader_grant(
+diff --git a/mcp/servers/mmcg/src/onboarding.rs b/mcp/servers/mmcg/src/onboarding.rs
+--- a/mcp/servers/mmcg/src/onboarding.rs
++++ b/mcp/servers/mmcg/src/onboarding.rs
+@@ -192,9 +192,10 @@
+     Ok(read_at(&capability, root)?.map(|(settings, _)| settings))
+ }
+ 
+-/// Project profile-delivery budget, fail-soft: a missing or unreadable
+-/// `setup.json` must never block profile delivery, so any load error reads as
+-/// the default rather than propagating.
++/// Read the project onboarding profile-delivery budget from existing settings.
++///
++/// Missing or unreadable `setup.json` uses the in-memory default rather than
++/// blocking profile delivery. Loading never creates onboarding state.
+ pub fn profile_budget_tokens(root: &Path) -> usize {
+     load(root)
+         .ok()
+diff --git a/mcp/servers/mmcg/src/sarif_export.rs b/mcp/servers/mmcg/src/sarif_export.rs
+--- a/mcp/servers/mmcg/src/sarif_export.rs
++++ b/mcp/servers/mmcg/src/sarif_export.rs
+@@ -1,7 +1,8 @@
+-//! Deterministic SARIF 2.1 export for architectural risks observed by Mastermind.
++//! Deterministic SARIF 2.1 export for architectural risks and policy violations.
+ //!
+-//! The exporter reports only evidence already returned by bounded map/impact
+-//! queries. It never upgrades a partial graph into a claim of completeness.
++//! The exporter projects bounded map/impact query results and architecture
++//! policy reports. It preserves partial graph state and emits incomplete policy
++//! evidence as error results rather than a claim of completeness.
+ 
+ use crate::policy::PolicyReport;
+ use crate::queries::{ChangeImpactResponse, ProjectMapResponse};
+@@ -365,6 +366,12 @@
+     })
+ }
+ 
++/// Build a SARIF reporting descriptor for an architecture policy rule.
++///
++/// Copy the supplied ID, name and description into rule metadata, using the
++/// description for both short and full text. The descriptor has fixed policy
++/// remediation help, default error severity, medium precision and architecture,
++/// policy and Mastermind tags.
+ fn policy_rule(id: &str, name: &str, description: &str) -> Value {
+     json!({
+         "id": id,
+diff --git a/mcp/servers/mmcg/src/spec_symbols.rs b/mcp/servers/mmcg/src/spec_symbols.rs
+--- a/mcp/servers/mmcg/src/spec_symbols.rs
++++ b/mcp/servers/mmcg/src/spec_symbols.rs
+@@ -91,6 +91,12 @@
+     resolve(store, &claim.name, &snapshot_scopes(spec, claim))
+ }
+ 
++/// Resolve a qualified declaration name under supplied file and language scopes.
++///
++/// `.` and `::` qualify lexical parents; empty scopes allow unscoped lookup.
++/// Invalid qualification or scope, missing or ambiguous declarations, query or
++/// ancestry failures, and index data-version changes return `Unresolved`.
++/// This checks index consistency, not whether indexed files match the worktree.
+ pub(crate) fn resolve(
+     store: &Store,
+     name: &str,
+@@ -118,6 +124,13 @@
+     result
+ }
+ 
++/// Match indexed declarations to qualified lexical ancestry and scope.
++///
++/// Query each scope's leaf name and language, constrain its normalized file,
++/// and require ancestry to satisfy both the requested and scoped names. Modules
++/// and impl containers are not declaration targets. Return the unique symbol,
++/// or `Unresolved` for invalid input, query or ancestry failures, missing
++/// declarations or ambiguity. The caller checks the index data-version.
+ fn resolve_candidates(
+     store: &Store,
+     name: &str,

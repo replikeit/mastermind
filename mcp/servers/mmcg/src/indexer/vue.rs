@@ -1,4 +1,4 @@
-//! Vue SFC extractor — the file is the component; its script re-parses as TS/JS.
+//! Vue SFC extractor — the file is the component; its script re-parses as TypeScript or JavaScript.
 
 use super::common::{node_text, push_call_with_type};
 use super::{IndexError, LanguageExtractor};
@@ -42,6 +42,11 @@ pub(super) fn pascal_case(raw: &str) -> String {
     out
 }
 
+/// Add the Vue file's component symbol, named from its filename in PascalCase.
+///
+/// The component inherits the module's line range and uses that module as its
+/// parent. An empty component name leaves the module as the extraction parent
+/// and returns its index without adding a component.
 fn push_component_symbol(pending: &mut PendingFile, module_index: usize) -> usize {
     let stem = pending
         .path
@@ -68,6 +73,12 @@ fn push_component_symbol(pending: &mut PendingFile, module_index: usize) -> usiz
     pending.symbols.len() - 1
 }
 
+/// Extract declarations and references from the first Vue script's inline body.
+///
+/// Reparse with TypeScript when `lang` starts with `ts`, otherwise JavaScript,
+/// preserving source offsets by blanking bytes outside the script. Missing
+/// bodies or parser failures add no script symbols. Error nodes in a returned
+/// tree are not rejected here; baseline validation checks them separately.
 fn extract_script(
     root: &Node,
     source: &[u8],

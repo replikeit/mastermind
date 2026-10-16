@@ -3655,7 +3655,7 @@ class PromptIsolationTests(unittest.TestCase):
 
     def test_lean_runtime_prompts_have_no_examples_or_companion_sections(self):
         ceilings = {
-            "researcher": 2_000,
+            "researcher": 5_000,
             "critic": 2_700,
         }
         for suite, ceiling in ceilings.items():

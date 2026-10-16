@@ -1,0 +1,376 @@
+{
+  "schema_version": 1,
+  "source_head": "f418b380bf191877f5903f5c85f483f5e0e86632",
+  "source_files_sha256": {
+    "mcp/servers/mmcg/src/commands/new_spec.rs": "c0901b3882fd614f8405e57e88c7d1cbb259ccdfb1b6ccfc12cec4f1af751f17",
+    "mcp/servers/mmcg/src/hex.rs": "56726fd8bdbe08f32aaeeff716c21a91d14ecf02fe106a88847dcd10a85d118a",
+    "mcp/servers/mmcg/src/miner/hooks/background.rs": "173220bd7cf4925773f27e99b2d3a75926c065a2899901cf30b33502df052347",
+    "mcp/servers/mmcg/src/miner/hooks/evaluate.rs": "36dab7b1653776b80eb6a87221b46e3d15747a94f292deaa100e72723299ad76",
+    "mcp/servers/mmcg/src/miner/hooks/influence.rs": "f2f9e5489b7c6e96a20b39b524d4eac18d24608d6f0b2467ce802227a6d7fe2c",
+    "mcp/servers/mmcg/src/miner/hooks/journal/intake.rs": "08ca7da0fe454a7c5790fe85291c5503ee527058ebed5dc230bc0e5404ffc2b7",
+    "mcp/servers/mmcg/src/miner/hooks/journal/local.rs": "f227afea08aba6c0705dc2606176df935b830e5b1cddbb08f72d31bf580ad4af",
+    "mcp/servers/mmcg/src/miner/hooks/journal/task.rs": "92dccae9a9a59f32d89130dd2f4711d766148ccefe217cd3bb17c5de12b74108",
+    "mcp/servers/mmcg/src/miner/hooks/journal/task_mining.rs": "3928779942d51bd85826933c593117f0e9c5ec0613d7aa0c548248cfbcd52126",
+    "mcp/servers/mmcg/src/miner/hooks/local.rs": "679eb16210d60fb598478c0ca0351c0db29fc355319e54e7f923eefc9f6babd5",
+    "mcp/servers/mmcg/src/miner/hooks/native.rs": "05a58da1752fe9cfc73884a19aeda991ebc64ebbd0476b1f7c3865065ffd9ca2",
+    "mcp/servers/mmcg/src/miner/hooks/refiner.rs": "3a31d151a839100edba03f003a05f3f5f2151b9a278973488a003bd93a5743ec",
+    "mcp/servers/mmcg/src/miner/hooks/task_mining.rs": "2e0935dcc03b608e156c78dc6a87f6d0f038ed7ce6c26245c60a20570d20459e",
+    "mcp/servers/mmcg/src/miner/hooks/worker.rs": "998aff2c9ac6dace2ef5f7cfe4a19af58bb8bcb46e18c6b2760b20aed2feabf2",
+    "mcp/servers/mmcg/src/miner/store/curation.rs": "9b4bec031115d1dcb0c7c99d4f2339051c300d12f15b52206ae528789d233f7d",
+    "mcp/servers/mmcg/src/miner/store/habit_supersession.rs": "dced5171167fddc2f9538f75da7fc4e8d0e0fb67132a08e0ef1f52c93e830f21"
+  },
+  "cases": [
+    {
+      "id": "independent-v11-p01",
+      "split": "independent",
+      "kind": "positive",
+      "query": "Encode digest bytes into stable lowercase hexadecimal strings",
+      "top": 5,
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/hex.rs",
+          "symbol": "encode",
+          "declaration_line": 10,
+          "line_start": 10,
+          "line_end": 18,
+          "source_excerpt": "pub fn encode(bytes: &[u8]) -> String {\n    const DIGITS: &[u8; 16] = b\"0123456789abcdef\";\n    let mut out = String::with_capacity(bytes.len() * 2);\n    for &byte in bytes {\n        out.push(DIGITS[(byte >> 4) as usize] as char);\n        out.push(DIGITS[(byte & 0x0f) as usize] as char);\n    }\n    out\n}\n",
+          "reason": "The encoder maps both nibbles of every byte through fixed lowercase digits, preserving leading zeroes."
+        }
+      ]
+    },
+    {
+      "id": "independent-v11-p02",
+      "split": "independent",
+      "kind": "positive",
+      "query": "Replace reviewed habits while rejecting retired replacement endpoints",
+      "top": 5,
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/store/habit_supersession.rs",
+          "symbol": "supersede_habit",
+          "declaration_line": 188,
+          "line_start": 188,
+          "line_end": 268,
+          "source_excerpt": "    pub(crate) fn supersede_habit(\n        &mut self,\n        old: i64,\n        new: i64,\n        old_revision: &str,\n        new_revision: &str,\n    ) -> SqlResult<HabitSupersessionReceipt> {\n        if old <= 0 || new <= 0 || old == new {\n            return Err(invalid(\n                \"replacement requires two different positive habit IDs\",\n            ));\n        }\n        if !super::super::collection::valid_id(old_revision)\n            || !super::super::collection::valid_id(new_revision)\n        {\n            return Err(invalid(\n                \"both review revisions must be full 64-character keys\",\n            ));\n        }\n        let tx = self\n            .conn\n            .transaction_with_behavior(TransactionBehavior::Immediate)?;\n        if let Some(receipt) = committed_receipt(&tx, old, new, old_revision, new_revision)? {\n            return Ok(receipt);\n        }\n        let Some(old_habit) = habit_review::read_habits(&tx, Some(old))?\n            .into_iter()\n            .next()\n        else {\n            return Err(invalid(\"old habit missing\"));\n        };\n        let Some(new_habit) = habit_review::read_habits(&tx, Some(new))?\n            .into_iter()\n            .next()\n        else {\n            return Err(invalid(\"new habit missing\"));\n        };\n        if old_habit.review_revision() != old_revision\n            || new_habit.review_revision() != new_revision\n        {\n            return Err(invalid(\n                \"review revision changed; inspect both habits again\",\n            ));\n        }\n        if old_habit.scope != new_habit.scope\n            || old_habit.role != new_habit.role\n            || old_habit.workflow != new_habit.workflow\n        {\n            return Err(invalid(\n                \"replacement requires the same scope, role and workflow\",\n            ));\n        }\n        for habit in [&old_habit, &new_habit] {\n            if !matches!(habit.status.as_str(), \"candidate\" | \"stale\" | \"observed\")\n                || habit.retired_status().is_some()\n            {\n                return Err(invalid(\n                    \"rejected or superseded habits cannot take part in a new replacement\",\n                ));\n            }\n        }\n        if let Some(reason) = new_habit.observation_problem() {\n            return Err(invalid(reason));\n        }\n        // Both endpoints have no outgoing edge and the predecessor is unique.\n        // Together with no self-link, this prevents cycles without graph walks.\n        let at: i64 = tx.query_row(\"SELECT unixepoch()\", [], |r| r.get(0))?;\n        tx.execute(\"INSERT INTO persona_habit_supersession(old_id,new_id,old_revision,new_revision,reviewed_at) VALUES (?1,?2,?3,?4,?5)\",params![old,new,old_revision,new_revision,at])?;\n        tx.execute(\n            \"UPDATE persona_claim SET status='superseded' WHERE id=?1\",\n            [old],\n        )?;\n        tx.execute(\n            \"DELETE FROM persona_habit_observation WHERE claim_id=?1\",\n            [old],\n        )?;\n        tx.execute(\n            \"UPDATE persona_claim SET status='observed' WHERE id=?1\",\n            [new],\n        )?;\n        tx.execute(\"INSERT INTO persona_habit_observation(claim_id,revision) VALUES (?1,?2) ON CONFLICT(claim_id) DO UPDATE SET revision=excluded.revision\",params![new,new_revision])?;\n",
+          "reason": "This transaction validates both review revisions and matching scope, rejects retired endpoints, then marks the predecessor superseded and the successor observed."
+        }
+      ]
+    },
+    {
+      "id": "independent-v11-p03",
+      "split": "independent",
+      "kind": "positive",
+      "query": "Recover exact candidate provenance behind transferred habit evidence",
+      "top": 5,
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/store/curation.rs",
+          "symbol": "habit_candidate_binding",
+          "declaration_line": 219,
+          "line_start": 217,
+          "line_end": 242,
+          "source_excerpt": "    /// The latest explicit transfer supplies the verification mode and exact\n    /// immutable locator. Later manual re-citation cannot downgrade this mode.\n    pub(crate) fn habit_candidate_binding(\n        &self,\n        evidence_id: i64,\n    ) -> SqlResult<Option<CollectedCandidate>> {\n        if !self.has_table(\"persona_candidate_habit\")? {\n            return Ok(None);\n        }\n        let raw: Option<String> = self\n            .conn\n            .query_row(\n                \"SELECT candidate_json FROM persona_candidate_habit WHERE evidence_id=?1\n             ORDER BY rowid DESC LIMIT 1\",\n                [evidence_id],\n                |row| row.get(0),\n            )\n            .optional()?;\n        raw.map(|raw| {\n            if raw.len() > 16 * 1024 {\n                return Err(invalid(\"candidate provenance exceeds its bound\"));\n            }\n            serde_json::from_str(&raw).map_err(|_| invalid(\"invalid candidate provenance\"))\n        })\n        .transpose()\n    }\n",
+          "reason": "The evidence locator selects the latest immutable candidate snapshot for that evidence and bounds and decodes the stored provenance."
+        }
+      ]
+    },
+    {
+      "id": "independent-v11-p04",
+      "split": "independent",
+      "kind": "positive",
+      "query": "Evaluate synthetic refiner input without admitting hook context",
+      "top": 5,
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/hooks/evaluate.rs",
+          "symbol": "evaluate",
+          "declaration_line": 33,
+          "line_start": 33,
+          "line_end": 63,
+          "source_excerpt": "pub(super) fn evaluate(input_path: &Path, config: &RefinerConfig) -> Result<Value, Error> {\n    let started = Instant::now();\n    let result = (|| {\n        let input = read_input(input_path)?;\n        config.validate().map_err(|_| \"configuration_invalid\")?;\n        let _cancellation =\n            worker::Cancellation::install().map_err(|_| \"process_supervision_unavailable\")?;\n        let response =\n            refiner::process(&input, config).map_err(|_| \"processing_or_validation_failed\")?;\n        if worker::interrupted() {\n            return Err(\"interrupted\");\n        }\n        Ok(response)\n    })();\n    Ok(match result {\n        Ok(response) => json!({\n            \"schema\": 1,\n            \"status\": \"evaluated\",\n            \"admission\": false,\n            \"response\": serde_json::to_value(response)?,\n            \"elapsed_ms\": started.elapsed().as_millis(),\n        }),\n        Err(reason) => json!({\n            \"schema\": 1,\n            \"status\": \"failed\",\n            \"admission\": false,\n            \"reason\": reason,\n            \"elapsed_ms\": started.elapsed().as_millis(),\n        }),\n    })\n}\n",
+          "reason": "The offline entry point reads and validates supplied input and returns evaluation results with admission set to false."
+        }
+      ]
+    },
+    {
+      "id": "independent-v11-p05",
+      "split": "independent",
+      "kind": "positive",
+      "query": "Reject refiner responses missing explicitly required nullable fields",
+      "top": 5,
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/hooks/refiner.rs",
+          "symbol": "parse_response",
+          "declaration_line": 219,
+          "line_start": 219,
+          "line_end": 237,
+          "source_excerpt": "pub(super) fn parse_response(input: &Input, bytes: &[u8]) -> Result<Response, Error> {\n    validate_input(input)?;\n    if bytes.len() > MAX_RESPONSE_BYTES {\n        return Err(\"refiner response exceeds 64 KiB\".into());\n    }\n    let value = crate::setup::parse_json_unique(bytes)\n        .map_err(|_| \"refiner response must be one JSON object with unique keys\")?;\n    // Serde accepts missing Option fields as None. The wire protocol requires\n    // them explicitly, so absence cannot silently become a valid null.\n    if !value.as_object().is_some_and(|object| {\n        object.contains_key(\"intent_evidence\") && object.contains_key(\"refined_prompt\")\n    }) {\n        return Err(\"refiner response must include every schema-1 field\".into());\n    }\n    let response: Response = serde_json::from_value(value)\n        .map_err(|_| \"refiner response does not match the strict schema-1 contract\")?;\n    validate_response(input, &response)?;\n    Ok(response)\n}\n",
+          "reason": "The response parser explicitly requires both nullable wire fields before strict decoding and response validation."
+        }
+      ]
+    },
+    {
+      "id": "independent-v11-p06",
+      "split": "independent",
+      "kind": "positive",
+      "query": "Install cooperative cancellation handlers for interruption and termination",
+      "top": 5,
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/hooks/worker.rs",
+          "symbol": "install",
+          "declaration_line": 29,
+          "line_start": 27,
+          "line_end": 48,
+          "source_excerpt": "impl Cancellation {\n    #[cfg(unix)]\n    pub(super) fn install() -> Result<Self, Error> {\n        // SAFETY: zeroed sigaction structs are initialized through libc before\n        // registration. The handler only writes a lock-free atomic boolean.\n        unsafe {\n            let mut action: libc::sigaction = std::mem::zeroed();\n            let mut previous: [libc::sigaction; 2] = std::mem::zeroed();\n            action.sa_sigaction = interrupt as *const () as usize;\n            libc::sigemptyset(&mut action.sa_mask);\n            INTERRUPTED.store(false, Ordering::Relaxed);\n            if libc::sigaction(libc::SIGINT, &action, &mut previous[0]) != 0 {\n                return Err(std::io::Error::last_os_error().into());\n            }\n            if libc::sigaction(libc::SIGTERM, &action, &mut previous[1]) != 0 {\n                let error = std::io::Error::last_os_error();\n                libc::sigaction(libc::SIGINT, &previous[0], std::ptr::null_mut());\n                return Err(error.into());\n            }\n            Ok(Self { previous })\n        }\n    }\n",
+          "reason": "The Unix installer registers an atomic-only interruption handler for SIGINT and SIGTERM while retaining prior signal actions."
+        }
+      ]
+    },
+    {
+      "id": "independent-v11-p07",
+      "split": "independent",
+      "kind": "positive",
+      "query": "Extract explicit user statements while preserving complete conditions",
+      "top": 5,
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/hooks/local.rs",
+          "symbol": "extract",
+          "declaration_line": 40,
+          "line_start": 40,
+          "line_end": 96,
+          "source_excerpt": "pub(super) fn extract(\n    input: &semantic::EpisodeInput,\n) -> Result<Vec<semantic::SemanticDraft>, Error> {\n    let mut drafts = Vec::new();\n    let mut seen = HashSet::new();\n    for event in &input.events {\n        if event.actor != \"user\"\n            || event.kind != \"UserPromptSubmit\"\n            || event.origin != \"user_channel_unverified\"\n        {\n            continue;\n        }\n        for source in statement_spans(&event.text) {\n            let Some((quote, _, _)) = collection::explicit_statement(&source) else {\n                continue;\n            };\n            // Preserve the complete condition/negation, never truncate it to\n            // fit the draft protocol's 200-character behavior field.\n            let key = quote\n                .split_whitespace()\n                .collect::<Vec<_>>()\n                .join(\" \")\n                .to_lowercase();\n            if quote.chars().count() > 200 || seen.contains(&key) {\n                continue;\n            }\n            let draft = semantic::SemanticDraft {\n                when: \"When explicitly describing work preferences or behavior\".into(),\n                behavior: quote.clone(),\n                rationale: None,\n                outcome: None,\n                exception: \"This is a statement in one task; review its scope and exceptions.\"\n                    .into(),\n                role: None,\n                workflow: None,\n                evidence_kind: \"explicit_statement\".into(),\n                supports: vec![semantic::Citation {\n                    event_id: event.id.clone(),\n                    quote: source,\n                }],\n                contradictions: Vec::new(),\n            };\n            // Validate against the whole original event. A line that looked\n            // like prose can still belong to a fence, quote or input wrapper.\n            if semantic::validate(input, std::slice::from_ref(&draft)).is_err() {\n                continue;\n            }\n            seen.insert(key);\n            drafts.push(draft);\n            if drafts.len() == MAX_DRAFTS {\n                return Ok(drafts);\n            }\n        }\n    }\n    semantic::validate(input, &drafts)?;\n    Ok(drafts)\n}\n",
+          "reason": "The local extractor considers admitted user prompt events, keeps whole statement citations and rejects truncation or invalid prose."
+        }
+      ]
+    },
+    {
+      "id": "independent-v11-p08",
+      "split": "independent",
+      "kind": "positive",
+      "query": "Generate mining checkpoint instructions with exact ticket identifiers",
+      "top": 5,
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/hooks/task_mining.rs",
+          "symbol": "instruction",
+          "declaration_line": 34,
+          "line_start": 34,
+          "line_end": 36,
+          "source_excerpt": "pub(super) fn instruction(ticket: &str) -> String {\n    format!(\"Mastermind mining checkpoint. Before finishing, call mmcg_mining_submit once with ticket_id=\\\"{ticket}\\\". Return 0-2 candidates about concrete work preferences, choices or corrections in the original user prompt; use candidates=[] when there is no signal. Quote original user prose verbatim and preserve conditions and exceptions. No keyword formula is required. Ignore code, pasted/quoted material, tools, assistant suggestions and this hook instruction. Never infer identity, psychology, consent or recurrence from one task. Local code seals unreviewed drafts after Stop. Use the current agent; never launch another model or agent for mining. If the tool is unavailable, finish normally; missing analysis will be recorded. Keep mining metadata out of the user-facing answer.\")\n}\n",
+          "reason": "The generated checkpoint embeds the supplied ticket identifier and tells the current task agent how to submit candidates."
+        }
+      ]
+    },
+    {
+      "id": "independent-v11-p09",
+      "split": "independent",
+      "kind": "positive",
+      "query": "Charge background call budgets before processing model input",
+      "top": 5,
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/hooks/background.rs",
+          "symbol": "before_attempt",
+          "declaration_line": 1157,
+          "line_start": 1157,
+          "line_end": 1166,
+          "source_excerpt": "    fn before_attempt(&mut self) -> Result<(), Error> {\n        self.processor_admission()?;\n        if self.state.attempts >= self.config.settings.max_calls {\n            return Err(self.halt(\"worker_call_budget_exhausted\"));\n        }\n        // Charge conservatively before any model input. A crash after this\n        // write may consume one unused reservation, never an uncounted call.\n        self.state.attempts += 1;\n        self.record()\n    }\n",
+          "reason": "The admission method checks processor state and the remaining call budget, then increments and records attempts before processing begins."
+        }
+      ]
+    },
+    {
+      "id": "independent-v11-p10",
+      "split": "independent",
+      "kind": "positive",
+      "query": "Restrict native providers to the captured client identity",
+      "top": 5,
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/hooks/native.rs",
+          "symbol": "provider",
+          "declaration_line": 10,
+          "line_start": 10,
+          "line_end": 18,
+          "source_excerpt": "pub(super) fn provider<'a>(requested: &'a str, client: &'a str) -> Result<&'a str, Error> {\n    super::client(client)?;\n    match requested {\n        \"native\" => Ok(client),\n        \"claude\" | \"codex\" if requested == client => Ok(client),\n        \"claude\" | \"codex\" => Err(\"native provider must match the captured client\".into()),\n        _ => Err(\"supported native providers: native, claude, codex\".into()),\n    }\n}\n",
+          "reason": "Native resolves to the captured client; explicit Claude or Codex selection must equal that client."
+        }
+      ]
+    },
+    {
+      "id": "independent-v11-p11",
+      "split": "independent",
+      "kind": "positive",
+      "query": "Recover missing task markers using expected binding revisions",
+      "top": 5,
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/hooks/journal/task.rs",
+          "symbol": "bind",
+          "declaration_line": 277,
+          "line_start": 277,
+          "line_end": 329,
+          "source_excerpt": "pub(in crate::miner) fn bind(\n    id: &str,\n    spec: &Path,\n    repo: &Path,\n    expected: Option<&str>,\n) -> Result<Value, Error> {\n    let root = RootCapability::open(repo)?;\n    let (_, relative, _) = task_identity(&root, spec)?;\n    let state_path = crate::run_task::state_file_path(root.canonical_root(), Path::new(&relative));\n    let _controller = crate::run_task::controller_lock(root.canonical_root(), &state_path)?;\n    let identity = task_identity(&root, Path::new(&relative))?;\n    let path = marker_path(root.canonical_root(), Path::new(&relative));\n    let old = read_marker(&root, &path)?;\n    let mut db = Journal::open(true)?;\n    // A missing local marker does not erase SQL history or its compare-and-swap\n    // boundary. Only an explicit retry of the latest binding can restore it.\n    let missing_predecessor = if old.is_none() {\n        let saved: Option<String> = db.conn.query_row(\n            \"SELECT data FROM hook_task_binding WHERE project_root=?1 AND spec_path=?2 ORDER BY rowid DESC LIMIT 1\",\n            params![root.canonical_root().to_string_lossy(), relative],\n            |row| row.get(0),\n        ).optional()?;\n        saved\n            .map(|data| serde_json::from_str::<TaskBinding>(&data))\n            .transpose()?\n    } else {\n        None\n    };\n    if let Some(binding) = &missing_predecessor {\n        if binding.schema != 1\n            || binding.revision != revision(binding)?\n            || binding.project_root != root.canonical_root().to_string_lossy()\n            || binding.spec_path != relative\n        {\n            return Err(\"saved task binding is invalid\".into());\n        }\n        if expected != Some(binding.revision.as_str()) {\n            return Err(\"task intake marker is missing; recovery requires --expected-binding for the latest journal binding\".into());\n        }\n        if binding.intake_id == id {\n            validate_task(&root, binding)?;\n            write_marker(\n                &root,\n                &path,\n                &Marker {\n                    status: \"bound\".into(),\n                    binding: binding.clone(),\n                },\n                None,\n            )?;\n            return Ok(json!({\"status\":\"bound\",\"recovered\":true,\"binding\":binding}));\n        }\n    }\n",
+          "reason": "When the local marker is missing, journal history is retained and recovery requires the exact latest expected binding revision."
+        }
+      ]
+    },
+    {
+      "id": "independent-v11-p12",
+      "split": "independent",
+      "kind": "positive",
+      "query": "Record intake attempts once for each captured episode",
+      "top": 5,
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/hooks/journal/intake.rs",
+          "symbol": "begin_intake",
+          "declaration_line": 112,
+          "line_start": 112,
+          "line_end": 187,
+          "source_excerpt": "    pub fn begin_intake(\n        &mut self,\n        grant: &Grant,\n        episode: &str,\n        event_id: &str,\n        original: &str,\n    ) -> Result<Option<(Config, IntakeReceipt)>, Error> {\n        // A failed delivery may leave only its filesystem marker, before it\n        // reached SQLite. Keep bounded filesystem I/O outside the writer lock.\n        let capture_clear =\n            !crate::miner::hooks::fence::pending(&grant.client, Path::new(&grant.project_root))\n                .unwrap_or(true);\n        let ep = load_episode(&self.conn, episode)?;\n        let (session_epoch, active_task) = super::task::active(&self.conn, &ep.session)?;\n        let tx = self\n            .conn\n            .transaction_with_behavior(TransactionBehavior::Immediate)?;\n        let Some((revision, Some(config))) =\n            read_config(&tx, &grant.client, Path::new(&grant.project_root))?\n        else {\n            return Ok(None);\n        };\n        let id = hash(&json!([\"hook-intake-v1\", event_id]));\n        let exists: bool = tx.query_row(\n            \"SELECT EXISTS(SELECT 1 FROM hook_intake WHERE id=?1 OR episode=?2)\",\n            params![id, episode],\n            |r| r.get(0),\n        )?;\n        if exists {\n            return Ok(None);\n        }\n        let ep = load_episode(&tx, episode)?;\n        let prompt = ep\n            .events\n            .iter()\n            .find(|e| e.id == event_id && e.kind == \"UserPromptSubmit\")\n            .ok_or(\"intake prompt is absent from its capture episode\")?;\n        // Retain exactly the captured text. Redaction/truncation must never be\n        // undone by copying raw stdin into a second store or model request.\n        let input = Input {\n            model: ep.model.clone(),\n            id: id.clone(),\n            event_id: event_id.into(),\n            episode_id: episode.into(),\n            session_id: ep.session.clone(),\n            client: ep.client.clone(),\n            project_root: ep.project_root.clone(),\n            capture_generation: ep.generation,\n            prompt_digest: refiner::prompt_digest(&prompt.text),\n            original: prompt.text.clone(),\n            active_task: active_task.as_ref().map(|task| task.spec_path.clone()),\n        };\n        let admissible = capture_clear\n            && prompt.text == original\n            && !original.trim().is_empty()\n            && prompt.origin == \"user_channel_unverified\"\n            && current_prompt(&tx, grant, &input)?\n            && super::task::epoch(&tx, &input.session_id)? == session_epoch;\n        let receipt = IntakeReceipt {\n            schema: 1,\n            status: if admissible { \"pending\" } else { \"degraded\" }.into(),\n            input,\n            config_revision: revision,\n            response: None,\n            reason: (!admissible).then(|| \"capture_not_admitted\".into()),\n            elapsed_ms: 0,\n            session_epoch,\n            task_binding_revision: active_task.map(|task| task.revision),\n        };\n        tx.execute(\n            \"INSERT INTO hook_intake(id,episode,data) VALUES(?1,?2,?3)\",\n            params![id, episode, serde_json::to_string(&receipt)?],\n        )?;\n        tx.commit()?;\n        Ok(Some((config, receipt)))\n    }\n",
+          "reason": "The transaction rejects an already recorded intake identifier or episode before persisting a receipt bound to captured prompt bytes."
+        }
+      ]
+    },
+    {
+      "id": "independent-v11-p13",
+      "split": "independent",
+      "kind": "positive",
+      "query": "Retry queued local episodes with bounded exponential backoff",
+      "top": 5,
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/hooks/journal/local.rs",
+          "symbol": "retry_local",
+          "declaration_line": 56,
+          "line_start": 56,
+          "line_end": 63,
+          "source_excerpt": "    pub fn retry_local(&self, episode: &str) -> Result<(), Error> {\n        self.conn.execute(\n            \"UPDATE hook_local_queue SET attempts=min(attempts+1,16),\n            next_attempt=unixepoch()+min(60,1 << min(attempts,6)) WHERE episode=?1\",\n            [episode],\n        )?;\n        Ok(())\n    }\n",
+          "reason": "The retry update bounds the attempt counter and caps the exponential delay at sixty seconds."
+        }
+      ]
+    },
+    {
+      "id": "independent-v11-p14",
+      "split": "independent",
+      "kind": "positive",
+      "query": "Summarize retained task mining tickets by completion status",
+      "top": 5,
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/hooks/journal/task_mining.rs",
+          "symbol": "task_mining_summary",
+          "declaration_line": 257,
+          "line_start": 257,
+          "line_end": 306,
+          "source_excerpt": "    pub fn task_mining_summary(&self, grant: &Grant) -> Result<Value, Error> {\n        let mut query = self.conn.prepare(\"SELECT t.data,json_extract(e.data,'$.closed'),coalesce(json_extract(s.data,'$.started') AND json_extract(s.data,'$.active')=e.id,0) FROM hook_task_mining t JOIN hook_episode e ON e.id=t.episode LEFT JOIN hook_session s ON s.id=e.session WHERE json_type(e.data,'$.archive') IS NULL AND json_extract(t.data,'$.client')=?1 AND json_extract(t.data,'$.project_root')=?2 AND json_extract(t.data,'$.generation')=?3 LIMIT ?4\")?;\n        let mut rows = query.query(params![\n            grant.client,\n            grant.project_root,\n            grant.generation,\n            MAX_EPISODES + 1\n        ])?;\n        let mut tickets = 0;\n        let mut completed = 0;\n        let mut with_candidates = 0;\n        let mut no_signal = 0;\n        let mut legacy_completed = 0;\n        let mut skipped = 0;\n        let mut pending = 0;\n        let mut unreported = 0;\n        let mut reasons = BTreeMap::<String, u64>::new();\n        while let Some(row) = rows.next()? {\n            tickets += 1;\n            if tickets > MAX_EPISODES {\n                return Err(\"task mining summary exceeds the episode bound\".into());\n            }\n            let offer: Offer = serde_json::from_str(&row.get::<_, String>(0)?)?;\n            match offer.status.as_str() {\n                \"completed\" => {\n                    completed += 1;\n                    match offer.candidate_count {\n                        Some(0) => no_signal += 1,\n                        Some(_) => with_candidates += 1,\n                        None => legacy_completed += 1,\n                    }\n                }\n                \"skipped\" => {\n                    skipped += 1;\n                    if let Some(reason) = offer.reason {\n                        *reasons.entry(reason).or_default() += 1\n                    }\n                }\n                \"offered\" if row.get::<_, bool>(1)? || !row.get::<_, bool>(2)? => unreported += 1,\n                _ => pending += 1,\n            }\n        }\n        Ok(\n            json!({\"status\":if tickets == 0 {\"not_observed\"} else {\"recorded\"},\n            \"scope\":\"retained_active_episodes\",\"capture_generation\":grant.generation,\"tickets\":tickets,\"completed\":completed,\n            \"with_candidates\":with_candidates,\"no_signal\":no_signal,\"legacy_completed\":legacy_completed,\n            \"skipped\":skipped,\"pending\":pending,\"unreported\":unreported,\"skip_reasons\":reasons,\n            \"meaning\":\"Recorded task-agent reports. Counts do not establish source freshness, authorship, interpretation quality or active profile rules.\"}),\n        )\n    }\n",
+          "reason": "The summary scopes tickets to retained episodes in the granted capture generation and counts completed, skipped, pending and unreported states."
+        }
+      ]
+    },
+    {
+      "id": "independent-v11-p15",
+      "split": "independent",
+      "kind": "positive",
+      "query": "Aggregate support and contradiction exposure into evidence classes",
+      "top": 5,
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/hooks/influence.rs",
+          "symbol": "classify_sources",
+          "declaration_line": 78,
+          "line_start": 75,
+          "line_end": 94,
+          "source_excerpt": "/// Aggregate sources after normal origin and quotation validation. The caller\n/// supplies every support and contradiction, not only favorable observations.\n/// A model cannot choose the result. Empty input remains unknown.\npub(super) fn classify_sources<'a>(\n    sources: impl IntoIterator<Item = &'a Influence>,\n) -> EvidenceClass {\n    let mut found = false;\n    let mut combined = Influence::fresh();\n    for source in sources {\n        found = true;\n        combined.prior_profile_context |= source.prior_profile_context;\n        combined.prior_refiner_context |= source.prior_refiner_context;\n        combined.prior_unknown |= source.prior_unknown;\n    }\n    if found {\n        combined.class()\n    } else {\n        EvidenceClass::UnknownInfluence\n    }\n}\n",
+          "reason": "The source classifier combines all exposure flags, including uncertainty, and leaves empty source collections unknown."
+        }
+      ]
+    },
+    {
+      "id": "independent-v11-p16",
+      "split": "independent",
+      "kind": "positive",
+      "query": "Flatten task descriptions into one printable Markdown line",
+      "top": 5,
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/commands/new_spec.rs",
+          "symbol": "inline_description",
+          "declaration_line": 83,
+          "line_start": 80,
+          "line_end": 97,
+          "source_excerpt": "/// A CLI description is displayed in generated headings and list items. Keep\n/// it to one printable line so it cannot create a second Markdown section in\n/// the task contract.\nfn inline_description(description: &str) -> String {\n    description\n        .chars()\n        .map(|character| {\n            if character.is_control() {\n                ' '\n            } else {\n                character\n            }\n        })\n        .collect::<String>()\n        .split_whitespace()\n        .collect::<Vec<_>>()\n        .join(\" \")\n}\n",
+          "reason": "The task description formatter replaces control characters and collapses whitespace before the text enters generated headings and list items."
+        }
+      ]
+    },
+    {
+      "id": "independent-v11-n01",
+      "split": "independent",
+      "kind": "negative",
+      "query": "Use Gemini as the native prompt refinement provider",
+      "top": 5,
+      "relevant": []
+    },
+    {
+      "id": "independent-v11-n02",
+      "split": "independent",
+      "kind": "negative",
+      "query": "Run refiner requests with sixty second processor timeouts",
+      "top": 5,
+      "relevant": []
+    },
+    {
+      "id": "independent-v11-n03",
+      "split": "independent",
+      "kind": "negative",
+      "query": "Submit three candidates in one task mining ticket",
+      "top": 5,
+      "relevant": []
+    },
+    {
+      "id": "independent-v11-n04",
+      "split": "independent",
+      "kind": "negative",
+      "query": "Restore rejected habits by retrying earlier candidate proposals",
+      "top": 5,
+      "relevant": []
+    },
+    {
+      "id": "independent-v11-n05",
+      "split": "independent",
+      "kind": "negative",
+      "query": "Replace a habit with itself through reviewed supersession",
+      "top": 5,
+      "relevant": []
+    },
+    {
+      "id": "independent-v11-n06",
+      "split": "independent",
+      "kind": "negative",
+      "query": "Normalize whitespace while returning refiner passthrough prompt responses",
+      "top": 5,
+      "relevant": []
+    },
+    {
+      "id": "independent-v11-n07",
+      "split": "independent",
+      "kind": "negative",
+      "query": "Admit live hook context through offline refiner evaluation",
+      "top": 5,
+      "relevant": []
+    },
+    {
+      "id": "independent-v11-n08",
+      "split": "independent",
+      "kind": "negative",
+      "query": "Continue active workflow without an explicitly bound task",
+      "top": 5,
+      "relevant": []
+    }
+  ]
+}

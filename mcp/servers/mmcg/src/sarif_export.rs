@@ -1,7 +1,8 @@
-//! Deterministic SARIF 2.1 export for architectural risks observed by Mastermind.
+//! Deterministic SARIF 2.1 export for architectural risks and policy violations.
 //!
-//! The exporter reports only evidence already returned by bounded map/impact
-//! queries. It never upgrades a partial graph into a claim of completeness.
+//! The exporter projects bounded map/impact query results and architecture
+//! policy reports. It preserves partial graph state and emits incomplete policy
+//! evidence as error results rather than a claim of completeness.
 
 use crate::policy::PolicyReport;
 use crate::queries::{ChangeImpactResponse, ProjectMapResponse};
@@ -365,6 +366,12 @@ fn rule(id: &str, name: &str, description: &str, help: &str) -> Value {
     })
 }
 
+/// Build a SARIF reporting descriptor for an architecture policy rule.
+///
+/// Copy the supplied ID, name and description into rule metadata, using the
+/// description for both short and full text. The descriptor has fixed policy
+/// remediation help, default error severity, medium precision and architecture,
+/// policy and Mastermind tags.
 fn policy_rule(id: &str, name: &str, description: &str) -> Value {
     json!({
         "id": id,

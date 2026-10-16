@@ -1,0 +1,146 @@
+{
+  "ind-v12-pos-01": [
+    "portable instructions",
+    "instruction bytes",
+    "recorded hashes",
+    "file hash verification"
+  ],
+  "ind-v12-pos-02": [
+    "audit signing keys",
+    "key identifiers",
+    "abbreviated identifiers",
+    "verification"
+  ],
+  "ind-v12-pos-03": [
+    "acceptance criteria",
+    "request excerpts",
+    "original requests",
+    "criteria binding"
+  ],
+  "ind-v12-pos-04": [
+    "resource measurements",
+    "unknown measurements",
+    "condition counts",
+    "measurement accounting"
+  ],
+  "ind-v12-pos-05": [
+    "attempt percentiles",
+    "observed attempts",
+    "linear interpolation",
+    "percentile calculation"
+  ],
+  "ind-v12-pos-06": [
+    "persona candidates",
+    "duplicate candidates",
+    "collection snapshots",
+    "deduplication"
+  ],
+  "ind-v12-pos-07": [
+    "reviewer outcomes",
+    "acceptance evidence",
+    "frozen evidence",
+    "outcome validation"
+  ],
+  "ind-v12-pos-08": [
+    "profile rules",
+    "retained rules",
+    "expected text",
+    "text comparison"
+  ],
+  "ind-v12-pos-09": [
+    "adapter events",
+    "event ordering",
+    "terminal results",
+    "result records"
+  ],
+  "ind-v12-pos-10": [
+    "review artifacts",
+    "exclusive publication",
+    "existing files",
+    "file replacement"
+  ],
+  "ind-v12-pos-11": [
+    "intake files",
+    "bounded reads",
+    "concurrent replacement",
+    "file reading"
+  ],
+  "ind-v12-pos-12": [
+    "Python dependencies",
+    "project dependencies",
+    "development groups",
+    "dependency extraction"
+  ],
+  "ind-v12-pos-13": [
+    "changed folders",
+    "task folders",
+    "continuous integration",
+    "verification selection"
+  ],
+  "ind-v12-pos-14": [
+    "LCOV coverage",
+    "duplicate line hits",
+    "maximum counts",
+    "coverage merging"
+  ],
+  "ind-v12-pos-15": [
+    "transcript synchronization",
+    "future synchronization",
+    "collection evidence",
+    "synchronization disablement"
+  ],
+  "ind-v12-pos-16": [
+    "reasoning tokens",
+    "output tokens",
+    "reported tokens",
+    "token separation"
+  ],
+  "ind-v12-neg-01": [
+    "effort calibration",
+    "effort changes",
+    "role instructions",
+    "instruction changes"
+  ],
+  "ind-v12-neg-02": [
+    "acceptance criteria",
+    "criteria completion",
+    "retained answers",
+    "answer evidence"
+  ],
+  "ind-v12-neg-03": [
+    "review artifacts",
+    "symbolic directories",
+    "parent directories",
+    "artifact reading"
+  ],
+  "ind-v12-neg-04": [
+    "runtime token counts",
+    "negative counts",
+    "complete telemetry",
+    "token telemetry"
+  ],
+  "ind-v12-neg-05": [
+    "collection sources",
+    "registered sources",
+    "project roots",
+    "source movement"
+  ],
+  "ind-v12-neg-06": [
+    "intake JSON",
+    "duplicate keys",
+    "object keys",
+    "JSON parsing"
+  ],
+  "ind-v12-neg-07": [
+    "native reasoning time",
+    "tool intervals",
+    "observed intervals",
+    "time measurement"
+  ],
+  "ind-v12-neg-08": [
+    "active profile rules",
+    "unsuccessful delivery",
+    "delivery packets",
+    "rule comparison"
+  ]
+}

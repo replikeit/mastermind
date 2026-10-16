@@ -737,6 +737,11 @@ impl ProfileStore {
             .map(|value| value.unwrap_or(false))
     }
 
+    /// Grant or revoke profile reader access for one repository/client pair.
+    ///
+    /// Inserts are idempotent; revoking an existing grant deletes only that pair.
+    /// The caller validates the client identifier and canonicalizes the root.
+    /// SQLite failures propagate to the caller.
     pub fn set_reader_grant(
         &mut self,
         target_root: &str,

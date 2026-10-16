@@ -40,24 +40,23 @@ Use the lightest mode that fits the risk:
 
 Do not create a spec for Direct work.
 
-Direct work has no controller and no post-flight, so the only review it gets is
-the one you run. Once the change is finished, inspect `git diff -U0 <baseline>`
-and untracked files for added, modified, or deleted comments. Spawn
-`mastermind-comment-auditor` only when that comment delta is non-empty.
+Direct work has no controller or post-flight. After finishing, inspect
+`git diff -U0 <baseline>` and untracked files for comment additions, edits or
+deletions. Spawn `mastermind-comment-auditor` only for a non-empty comment delta.
 
 ### Grounding
 
 Call `mmcg_brief` once with the active `planner`, `executor`, or `auditor` role,
-baseline, and a 2,000-token budget before broad discovery on non-trivial work.
-Skip it only for a literal-only or already-localized Direct change. If MCP tools are deferred, load
-the required bounded set once instead of discovering tools one by one.
+baseline and a 2,000-token budget before non-trivial broad discovery. Skip only
+literal-only or already-localized Direct work. Load deferred MCP tools as one
+bounded set.
 Use the brief's aggregate `disciplines` to route frontend, QA, or migration
 evidence. They classify paths, not behavior; inspect the change and preserve any
 scope-incomplete boundary before treating a discipline as covered.
 
 Route discovery by question:
 
-- `mmcg_concept` for natural-language symbol candidates;
+- `mmcg_concept_prepare`, source inspection and `mmcg_concept_finish` for operation relevance; `mmcg_concept` for a fast lexical shortlist;
 - `mmcg_search` for symbol existence;
 - `mmcg_callers` / `mmcg_impact` for blast radius;
 - `mmcg_change_impact` and `mmcg_test_impact` for an existing diff;
@@ -65,6 +64,20 @@ Route discovery by question:
 - `mmcg_map` for unfamiliar architecture;
 - `mmcg_callers` on a component for who renders it — JSX and Vue template usage
   are call edges.
+
+Before concept retrieval, freeze a query-only `request_contract`: `operation`
+and exact quoted `constraints` with unique ids and input/state/scope/result
+kinds. Follow `operation-roles-v3`; the original query stays authoritative even
+if the ledger is incomplete. Every relevant entry needs an own-behavior typed
+`witness` and one matched, source-bound check per declared constraint. Bind
+helper/entrypoint/contract paths with `supporting_evidence`. A concrete module
+or handler branch may implement or expose the operation through delegation.
+Being mandatory or earlier alone does not make a domain helper; useful generic
+prerequisites are context. Context needs the existing operation with every
+explicit constraint. Do not substitute optional selectors for runtime binding,
+or rendered instructions for execution. Mismatches are irrelevant; uninspected
+stays unknown. Keep `supporting_context`/`query_ambiguities` outside
+`semantic_candidates`. Server validation checks consistency, not semantic truth.
 
 Do not use Bash to rediscover symbols, files, callers, imports, or impact already
 answered by a fresh, complete graph result. Use `Grep`, `Glob`, or source reads
@@ -119,12 +132,11 @@ research skill and one audit skill per detected discipline:
 | `qa` | [[mastermind-test-impact]] | [[mastermind-test-audit]] |
 | `migration` | [[mastermind-runtime-research]] | [[mastermind-architecture-review]] |
 
-`unclassified` paths are not "no discipline" — they are paths whose discipline a
-path cannot establish. A queue consumer, a migration, or an auth boundary in a
-plain `.ts` file lands there. When you judge one to be service or state work, the
-pair is [[mastermind-runtime-research]] before and
-[[mastermind-architecture-review]] after; that call is yours, not the
-classifier's. The block proposes an evidence set; it never locks one.
+`unclassified` means the path cannot establish a discipline; a plain `.ts` file
+may contain a queue consumer, migration or auth boundary. For inspected service
+or state work, use [[mastermind-runtime-research]] before and
+[[mastermind-architecture-review]] after. That decision is yours; the classifier
+proposes evidence without locking the set.
 
 A detected `migration` also raises the mode: the table above already lists
 migrations as Strict work, so a SQL file or a migrations directory in the diff
@@ -138,49 +150,41 @@ and do not replace declared verification commands.
 
 ### Role routing
 
-Keep the selected model; Claude role aliases do not select models in other
-clients. Shipped effort defaults apply when no per-invocation route is applied.
-Route by the required outcome and inspected risk, not by how short the request
-looks. Do not run every role for every task. Each handoff carries supported facts,
-citations, remaining obligations and the exact evidence gap; the controller
-keeps the original request open until those obligations are resolved.
+Keep the selected model; Claude role aliases do not select other clients' models.
+Without a per-invocation route, use shipped effort defaults. Route by outcome and
+inspected risk, not request length. Each handoff carries supported facts,
+citations, obligations and the exact gap. The controller keeps the request open
+until those obligations are resolved.
 
 - Researcher: bounded batches of repository facts.
 - Investigator: bugs whose cause is not known.
 - Critic: real design forks; mandatory for Strict.
-- Security research: what reaches the privileged operation, what statically
-  applies the guard, who reads secrets. The graph is wrong in both directions —
-  a missing edge is not absence of access, a present edge is not enforcement.
+- Security research: trace privileged operations, guards and secret readers.
+  Missing graph edges do not establish absence of access; present edges do not
+  establish enforcement.
 - Security auditor: permissions, secrets, tools, untrusted input, delegation,
   supply chain, or audit policy.
 - Executor: implementation within approved scope.
 - Auditor: independent read-only review for Strict work.
 - Comment auditor: non-empty comment delta of a finished change, in every mode;
   skip the spawn when the gate finds no changed comments.
-- Runtime research: who already consumes a service, who writes the state, which
-  boundaries the change crosses — and which invocations the graph cannot see at
-  all. Zero static callers on a handler is a gap, not an absence.
-- Test auditor: does a `direct` static candidate have a source-confirmed
-  production path, assertion, and observed relevant run — a `heuristic`
-  candidate is a filename match, not coverage.
-- Frontend auditor: React or Vue change — unrendered components, props-contract
-  breaks, duplicates, raw values. Research the component graph before writing
-  UI, not after.
-- Design intake: a design handoff becomes named components, token names, and
-  criteria that can fail. Preserve its source and human visual review in Design
-  Context. Visual fidelity is parked explicitly, never smuggled into acceptance
-  criteria.
-- Product intake: a PRD or ticket becomes behaviour, constraint, and outcome.
-  Preserve its stable source and parked outcome in Product Context of the derived
-  spec. Only behaviour and measurable constraints are acceptance criteria; a
-  success metric cannot fail at merge time, and the cases the PRD never mentions
-  are asked before approval.
-- Browser verification: record what was observed and at which viewport. The
-  accessibility tree and the console are evidence; a screenshot is not, and an
-  unchecked item is marked unchecked.
-- Feedback collector: at the end of a session in which the user corrected the
-  agent or stated a working rule. It records the user's own words, quoted
-  verbatim, in their profile.
+- Runtime research: inspect service consumers, state writers, crossed boundaries
+  and invocations the graph cannot see. Zero static callers is a gap, not absence.
+- Test auditor: confirm a `direct` candidate's production path, assertion and
+  observed relevant run. A `heuristic` filename match is not coverage.
+- Frontend auditor: React/Vue unrendered components, props contracts, duplicates
+  and raw values. Research the component graph before writing UI.
+- Design intake: name components, tokens and falsifiable criteria. Preserve
+  source and human visual review in Design Context; park visual fidelity
+  explicitly outside acceptance criteria.
+- Product intake: separate behaviour, constraints and outcomes. Preserve stable
+  source and parked outcome in the derived spec's Product Context. Acceptance
+  criteria cover behaviour and measurable constraints, not success metrics;
+  ask about cases missing from the PRD before approval.
+- Browser verification: record observations and viewport. Accessibility tree
+  and console are evidence; screenshots are not. Mark unchecked items unchecked.
+- Feedback collector: after a session with a user correction or working rule,
+  record their own words verbatim in their profile.
 
 Skip roles that add no new evidence.
 

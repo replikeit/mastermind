@@ -1,4 +1,7 @@
-//! Shared admission for declared files, without reading their contents.
+//! Admission checks for file declarations in task specifications.
+//!
+//! Validate declared paths before task work and retain receipts for later
+//! verification. Inspect filesystem metadata without reading file contents.
 
 use crate::bounded_fs::{self, BoundedReadError, ReadControl, RootCapability, StableFileIdentity};
 use crate::spec::ParsedSpec;
@@ -141,6 +144,12 @@ pub(crate) fn postflight(
     )
 }
 
+/// Validate task file declarations during preflight or postflight admission.
+///
+/// Normalize contained repository paths and reject conflicting file roles.
+/// Inspect regular-file metadata without reading file contents; postflight also
+/// checks creations against the baseline and changed-file inventory. Retain
+/// receipts for reinspection, charging work and cancellation limits throughout.
 fn check(
     spec: &ParsedSpec,
     root: &Path,

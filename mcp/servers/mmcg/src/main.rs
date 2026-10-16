@@ -23,6 +23,33 @@ use std::process::ExitCode;
 
 static BUILD_VERSION_MARKER: &str = concat!("MMCG_BUILD_VERSION=[", env!("CARGO_PKG_VERSION"), "]");
 
+fn read_concept_review_json<T: serde::de::DeserializeOwned>(
+    path: &std::path::Path,
+) -> Result<T, Box<dyn std::error::Error>> {
+    use std::io::Read;
+    if !std::fs::symlink_metadata(path)?.file_type().is_file() {
+        return Err("concept_review_input_not_regular".into());
+    }
+    let mut options = std::fs::OpenOptions::new();
+    options.read(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::OpenOptionsExt;
+        // A path replaced with a FIFO must not block before descriptor checks.
+        options.custom_flags(libc::O_NONBLOCK | libc::O_NOFOLLOW);
+    }
+    let file = options.open(path)?;
+    if !file.metadata()?.is_file() {
+        return Err("concept_review_input_not_regular".into());
+    }
+    let mut bytes = Vec::new();
+    file.take(1024 * 1024 + 1).read_to_end(&mut bytes)?;
+    if bytes.len() > 1024 * 1024 {
+        return Err("concept_review_input_limit".into());
+    }
+    Ok(serde_json::from_slice(&bytes)?)
+}
+
 #[derive(Copy, Clone, Debug, ValueEnum)]
 #[clap(rename_all = "kebab-case")]
 pub enum MapFormat {
@@ -189,6 +216,9 @@ enum Cmd {
     Brief(BriefArgs),
     /// Retrieve bounded local symbol candidates by plain concept terms.
     Concept(ConceptArgs),
+    /// Prepare source evidence and apply a caller's operation relevance review.
+    #[command(subcommand)]
+    ConceptReview(ConceptReviewCmd),
     /// Compare bounded architecture snapshots between a Git baseline and the indexed worktree.
     Temporal(TemporalArgs),
     /// Evaluate repository-owned architecture rules over bounded change evidence.
@@ -419,8 +449,36 @@ struct ConceptArgs {
     query: String,
     #[arg(long, default_value_t = 10, value_parser = clap::value_parser!(u32).range(1..=50))]
     top: u32,
+    /// Include Rust functions carrying an exact test attribute.
+    #[arg(long)]
+    include_tests: bool,
     #[arg(long, value_enum, default_value_t = ConceptFormat::Text)]
     format: ConceptFormat,
+}
+
+#[derive(clap::Subcommand)]
+enum ConceptReviewCmd {
+    /// Collect lexical candidates and operation bodies for source review.
+    Prepare {
+        query: String,
+        #[arg(long, default_value_t = 10, value_parser = clap::value_parser!(u32).range(1..=50))]
+        top: u32,
+        #[arg(long)]
+        include_tests: bool,
+        /// Extra recall vocabulary; the original query still defines relevance.
+        #[arg(long = "hint")]
+        hints: Vec<String>,
+        /// JSON operation and exact-query constraint ledger authored before retrieval.
+        #[arg(long)]
+        request_contract: Option<PathBuf>,
+    },
+    /// Validate a complete assessment against the current source packet.
+    Finish {
+        #[arg(long)]
+        packet: PathBuf,
+        #[arg(long)]
+        assessment: PathBuf,
+    },
 }
 
 #[derive(clap::Args)]
@@ -2335,7 +2393,12 @@ fn run_cli_inner(
             )?;
             println!("{}", serde_json::to_string(&packet)?);
         }
-        Cmd::Concept(ConceptArgs { query, top, format }) => {
+        Cmd::Concept(ConceptArgs {
+            query,
+            top,
+            include_tests,
+            format,
+        }) => {
             mmcg::queries::validate_concept_request(&query, top)?;
             let managed_root = if index_override.is_none() {
                 Some(std::env::current_dir()?.canonicalize()?)
@@ -2351,7 +2414,7 @@ fn run_cli_inner(
             let response = if expired {
                 Err(mmcg::queries::ConceptError::WorkLimitExceeded)
             } else {
-                mmcg::mcp::build_concept_current(&mut store, &query, top)
+                mmcg::mcp::build_concept_current_with_tests(&mut store, &query, top, include_tests)
             };
             let interrupted = store.take_interrupt_source();
             store.pop_work_budget();
@@ -2359,6 +2422,72 @@ fn run_cli_inner(
                 return Err(mmcg::queries::ConceptError::WorkLimitExceeded.into());
             }
             print!("{}", commands::query::render_concept(&response?, format)?);
+        }
+        Cmd::ConceptReview(command) => {
+            let root = std::env::current_dir()?.canonicalize()?;
+            let request_contract = match &command {
+                ConceptReviewCmd::Prepare {
+                    query,
+                    request_contract: Some(path),
+                    ..
+                } => {
+                    let contract = read_concept_review_json(path)?;
+                    mmcg::concept_review::validate_request_contract(query, &contract)?;
+                    Some(contract)
+                }
+                _ => None,
+            };
+            let mut store = match &command {
+                ConceptReviewCmd::Prepare {
+                    query, top, hints, ..
+                } => {
+                    mmcg::concept_review::validate_request(query, *top, hints)?;
+                    Store::open_for_serve(&index_path, Some(&root))?
+                }
+                ConceptReviewCmd::Finish { .. } => {
+                    Store::open_read_only_for_root(&index_path, &root)?
+                }
+            };
+            store.set_default_work_budget_ms(mmcg::store::query_budget_ms_from_env(
+                mmcg::store::DEFAULT_CLI_BUDGET_MS,
+            ));
+            let budget = store.default_work_budget();
+            store.push_work_budget(budget);
+            let result = match command {
+                ConceptReviewCmd::Prepare {
+                    query,
+                    top,
+                    include_tests,
+                    hints,
+                    ..
+                } => mmcg::mcp::build_concept_review_current_with_contract(
+                    &mut store,
+                    &query,
+                    top,
+                    include_tests,
+                    &hints,
+                    request_contract.as_ref(),
+                )
+                .and_then(|packet| {
+                    serde_json::to_value(packet)
+                        .map_err(|_| "concept_review_serialization_failed".into())
+                }),
+                ConceptReviewCmd::Finish { packet, assessment } => {
+                    let packet = read_concept_review_json(&packet)?;
+                    let assessment = read_concept_review_json(&assessment)?;
+                    mmcg::mcp::finish_concept_review_current(&mut store, &packet, &assessment)
+                        .and_then(|result| {
+                            serde_json::to_value(result)
+                                .map_err(|_| "concept_review_serialization_failed".into())
+                        })
+                }
+            };
+            let interrupted = store.take_interrupt_source();
+            store.pop_work_budget();
+            if interrupted.is_some() {
+                return Err("concept_review_work_limit_exceeded".into());
+            }
+            println!("{}", serde_json::to_string_pretty(&result?)?);
         }
         Cmd::Temporal(TemporalArgs {
             since,
@@ -4076,14 +4205,90 @@ mod tests {
             Cmd::Concept(ConceptArgs {
                 query,
                 top: 7,
+                include_tests: false,
                 format: ConceptFormat::Json,
             }) if query == "request handler"
+        ));
+        let with_tests = Cli::try_parse_from([
+            "mastermind",
+            "concept",
+            "request handler",
+            "--include-tests",
+        ])
+        .unwrap();
+        assert!(matches!(
+            with_tests.cmd,
+            Cmd::Concept(ConceptArgs {
+                include_tests: true,
+                ..
+            })
         ));
         for top in ["0", "51", "1.0", "true"] {
             assert!(
                 Cli::try_parse_from(["mastermind", "concept", "handler", "--top", top,]).is_err()
             );
         }
+    }
+
+    #[test]
+    fn concept_review_cli_requires_both_bound_inputs_for_finish() {
+        let prepare = Cli::try_parse_from([
+            "mastermind",
+            "concept-review",
+            "prepare",
+            "reject stale observations",
+            "--top",
+            "5",
+            "--include-tests",
+            "--request-contract",
+            "request.json",
+        ])
+        .unwrap();
+        assert!(matches!(
+            prepare.cmd,
+            Cmd::ConceptReview(ConceptReviewCmd::Prepare {
+                top: 5,
+                include_tests: true,
+                request_contract: Some(_),
+                ..
+            })
+        ));
+        assert!(Cli::try_parse_from([
+            "mastermind",
+            "concept-review",
+            "finish",
+            "--packet",
+            "packet.json",
+        ])
+        .is_err());
+        let finish = Cli::try_parse_from([
+            "mastermind",
+            "concept-review",
+            "finish",
+            "--packet",
+            "packet.json",
+            "--assessment",
+            "assessment.json",
+        ])
+        .unwrap();
+        assert!(matches!(
+            finish.cmd,
+            Cmd::ConceptReview(ConceptReviewCmd::Finish { .. })
+        ));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn concept_review_cli_rejects_fifo_input() {
+        use std::os::unix::ffi::OsStrExt;
+
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("packet.fifo");
+        let native_path = std::ffi::CString::new(path.as_os_str().as_bytes()).unwrap();
+        // No writer is opened: a blocking open would never reach JSON parsing.
+        assert_eq!(unsafe { libc::mkfifo(native_path.as_ptr(), 0o600) }, 0);
+        let error = read_concept_review_json::<serde_json::Value>(&path).unwrap_err();
+        assert_eq!(error.to_string(), "concept_review_input_not_regular");
     }
 
     #[test]

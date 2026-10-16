@@ -1,0 +1,623 @@
+{
+  "schema_version": 1,
+  "kind": "frozen_v12_exact_anchor_and_emitted_audit_join",
+  "summary": {
+    "planned_cases": 24,
+    "completed_cases": 24,
+    "failed_cases": 0,
+    "planned_positive_cases": 16,
+    "positive_exact_anchor_hits": 13,
+    "positive_independently_semantic_anchor_hits": 13,
+    "planned_negative_cases": 8,
+    "negative_full_pages_empty": 8,
+    "negative_semantic_pages_empty": 8,
+    "point_estimates_withheld": false
+  },
+  "criteria": {
+    "all_cases_valid": true,
+    "all_positive_anchors_independently_semantic": false,
+    "all_negative_full_pages_empty": true,
+    "independent_emitted_source_gate": false
+  },
+  "status": "failed",
+  "bindings": {
+    "/Users/alinaglumova/Documents/personal/mastermind/.mastermind/research/concept-witness-20261016/score_v12.py": "b34deaef7b00fb93b10e130c078e5962bb4e3346b841d97fea660db92cc72c70",
+    "/Users/alinaglumova/Documents/personal/mastermind/evals/fixtures/concept-relevance-20261016-independent-v12.json": "8afc609cec54e7bcf9a6b932ef0c6901cb201aa3ac6611235a4d59106a6d361f",
+    ".mastermind/research/concept-witness-20261016/v12-mcp-results/results.json": "3b4573b0cd2579437f8c538d932657478f603445252202ee2e445bd83a099b6c",
+    ".mastermind/research/concept-witness-20261016/v12-independent-source-audit.json": "106f3a7fc614aaf4d2933e1ddad47819c5f5e623590b03a642bb7da11992fefe"
+  },
+  "cases": [
+    {
+      "case_id": "ind-v12-pos-01",
+      "kind": "positive",
+      "query": "Verify portable instruction bytes against recorded file hashes",
+      "top": 5,
+      "status": "completed",
+      "returned_rows": 4,
+      "semantic_rows": 4,
+      "anchors": [
+        {
+          "path": "evals/benchmark/conditions.py",
+          "symbol": "verify_instruction",
+          "declaration_line": 122
+        }
+      ],
+      "exact_anchor_hits": [
+        {
+          "path": "evals/benchmark/conditions.py",
+          "symbol": "verify_instruction",
+          "declaration_line": 122
+        }
+      ],
+      "independently_semantic_anchor_hits": [
+        {
+          "path": "evals/benchmark/conditions.py",
+          "symbol": "verify_instruction",
+          "declaration_line": 122
+        }
+      ],
+      "negative_full_page_empty": false,
+      "negative_semantic_page_empty": false
+    },
+    {
+      "case_id": "ind-v12-pos-02",
+      "kind": "positive",
+      "query": "Reject abbreviated audit signing key identifiers before verification",
+      "top": 5,
+      "status": "completed",
+      "returned_rows": 4,
+      "semantic_rows": 3,
+      "anchors": [
+        {
+          "path": "mcp/servers/mmcg/src/commands/audit.rs",
+          "symbol": "validate_key_ids",
+          "declaration_line": 93
+        }
+      ],
+      "exact_anchor_hits": [],
+      "independently_semantic_anchor_hits": [],
+      "negative_full_page_empty": false,
+      "negative_semantic_page_empty": false
+    },
+    {
+      "case_id": "ind-v12-pos-03",
+      "kind": "positive",
+      "query": "Bind acceptance criteria to excerpts from original requests",
+      "top": 5,
+      "status": "completed",
+      "returned_rows": 5,
+      "semantic_rows": 2,
+      "anchors": [
+        {
+          "path": "evals/benchmark/intent.py",
+          "symbol": "validate_criteria",
+          "declaration_line": 8
+        }
+      ],
+      "exact_anchor_hits": [
+        {
+          "path": "evals/benchmark/intent.py",
+          "symbol": "validate_criteria",
+          "declaration_line": 8
+        }
+      ],
+      "independently_semantic_anchor_hits": [
+        {
+          "path": "evals/benchmark/intent.py",
+          "symbol": "validate_criteria",
+          "declaration_line": 8
+        }
+      ],
+      "negative_full_page_empty": false,
+      "negative_semantic_page_empty": false
+    },
+    {
+      "case_id": "ind-v12-pos-04",
+      "kind": "positive",
+      "query": "Count unknown resource measurements separately for each condition",
+      "top": 5,
+      "status": "completed",
+      "returned_rows": 5,
+      "semantic_rows": 4,
+      "anchors": [
+        {
+          "path": "evals/benchmark/analysis.py",
+          "symbol": "resource_summary",
+          "declaration_line": 52
+        }
+      ],
+      "exact_anchor_hits": [
+        {
+          "path": "evals/benchmark/analysis.py",
+          "symbol": "resource_summary",
+          "declaration_line": 52
+        }
+      ],
+      "independently_semantic_anchor_hits": [
+        {
+          "path": "evals/benchmark/analysis.py",
+          "symbol": "resource_summary",
+          "declaration_line": 52
+        }
+      ],
+      "negative_full_page_empty": false,
+      "negative_semantic_page_empty": false
+    },
+    {
+      "case_id": "ind-v12-pos-05",
+      "kind": "positive",
+      "query": "Calculate observed attempt percentiles with linear interpolation",
+      "top": 5,
+      "status": "completed",
+      "returned_rows": 5,
+      "semantic_rows": 4,
+      "anchors": [
+        {
+          "path": "evals/benchmark/efficiency.py",
+          "symbol": "distribution",
+          "declaration_line": 19
+        }
+      ],
+      "exact_anchor_hits": [
+        {
+          "path": "evals/benchmark/efficiency.py",
+          "symbol": "distribution",
+          "declaration_line": 19
+        }
+      ],
+      "independently_semantic_anchor_hits": [
+        {
+          "path": "evals/benchmark/efficiency.py",
+          "symbol": "distribution",
+          "declaration_line": 19
+        }
+      ],
+      "negative_full_page_empty": false,
+      "negative_semantic_page_empty": false
+    },
+    {
+      "case_id": "ind-v12-pos-06",
+      "kind": "positive",
+      "query": "Deduplicate identical persona candidates within each collection snapshot",
+      "top": 5,
+      "status": "completed",
+      "returned_rows": 5,
+      "semantic_rows": 4,
+      "anchors": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/collection.rs",
+          "symbol": "extract",
+          "declaration_line": 283
+        }
+      ],
+      "exact_anchor_hits": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/collection.rs",
+          "symbol": "extract",
+          "declaration_line": 283
+        }
+      ],
+      "independently_semantic_anchor_hits": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/collection.rs",
+          "symbol": "extract",
+          "declaration_line": 283
+        }
+      ],
+      "negative_full_page_empty": false,
+      "negative_semantic_page_empty": false
+    },
+    {
+      "case_id": "ind-v12-pos-07",
+      "kind": "positive",
+      "query": "Validate reviewer outcomes against frozen acceptance evidence",
+      "top": 5,
+      "status": "completed",
+      "returned_rows": 5,
+      "semantic_rows": 4,
+      "anchors": [
+        {
+          "path": "evals/benchmark/assessment.py",
+          "symbol": "check_assessment",
+          "declaration_line": 15
+        }
+      ],
+      "exact_anchor_hits": [
+        {
+          "path": "evals/benchmark/assessment.py",
+          "symbol": "check_assessment",
+          "declaration_line": 15
+        }
+      ],
+      "independently_semantic_anchor_hits": [
+        {
+          "path": "evals/benchmark/assessment.py",
+          "symbol": "check_assessment",
+          "declaration_line": 15
+        }
+      ],
+      "negative_full_page_empty": false,
+      "negative_semantic_page_empty": false
+    },
+    {
+      "case_id": "ind-v12-pos-08",
+      "kind": "positive",
+      "query": "Compare retained profile rules against exact expected text",
+      "top": 5,
+      "status": "completed",
+      "returned_rows": 3,
+      "semantic_rows": 3,
+      "anchors": [
+        {
+          "path": "evals/persona/delivery.py",
+          "symbol": "compare",
+          "declaration_line": 9
+        }
+      ],
+      "exact_anchor_hits": [
+        {
+          "path": "evals/persona/delivery.py",
+          "symbol": "compare",
+          "declaration_line": 9
+        }
+      ],
+      "independently_semantic_anchor_hits": [
+        {
+          "path": "evals/persona/delivery.py",
+          "symbol": "compare",
+          "declaration_line": 9
+        }
+      ],
+      "negative_full_page_empty": false,
+      "negative_semantic_page_empty": false
+    },
+    {
+      "case_id": "ind-v12-pos-09",
+      "kind": "positive",
+      "query": "Parse ordered adapter events into terminal result records",
+      "top": 5,
+      "status": "completed",
+      "returned_rows": 5,
+      "semantic_rows": 5,
+      "anchors": [
+        {
+          "path": "evals/benchmark/protocol.py",
+          "symbol": "parse_stream",
+          "declaration_line": 144
+        }
+      ],
+      "exact_anchor_hits": [
+        {
+          "path": "evals/benchmark/protocol.py",
+          "symbol": "parse_stream",
+          "declaration_line": 144
+        }
+      ],
+      "independently_semantic_anchor_hits": [
+        {
+          "path": "evals/benchmark/protocol.py",
+          "symbol": "parse_stream",
+          "declaration_line": 144
+        }
+      ],
+      "negative_full_page_empty": false,
+      "negative_semantic_page_empty": false
+    },
+    {
+      "case_id": "ind-v12-pos-10",
+      "kind": "positive",
+      "query": "Publish review artifacts exclusively without replacing existing files",
+      "top": 5,
+      "status": "completed",
+      "returned_rows": 5,
+      "semantic_rows": 4,
+      "anchors": [
+        {
+          "path": "evals/benchmark/review_io.py",
+          "symbol": "Root.write_new",
+          "declaration_line": 201
+        }
+      ],
+      "exact_anchor_hits": [],
+      "independently_semantic_anchor_hits": [],
+      "negative_full_page_empty": false,
+      "negative_semantic_page_empty": false
+    },
+    {
+      "case_id": "ind-v12-pos-11",
+      "kind": "positive",
+      "query": "Read bounded intake files while detecting concurrent replacement",
+      "top": 5,
+      "status": "completed",
+      "returned_rows": 5,
+      "semantic_rows": 4,
+      "anchors": [
+        {
+          "path": "evals/intake/harness.py",
+          "symbol": "read_regular",
+          "declaration_line": 74
+        }
+      ],
+      "exact_anchor_hits": [
+        {
+          "path": "evals/intake/harness.py",
+          "symbol": "read_regular",
+          "declaration_line": 74
+        }
+      ],
+      "independently_semantic_anchor_hits": [
+        {
+          "path": "evals/intake/harness.py",
+          "symbol": "read_regular",
+          "declaration_line": 74
+        }
+      ],
+      "negative_full_page_empty": false,
+      "negative_semantic_page_empty": false
+    },
+    {
+      "case_id": "ind-v12-pos-12",
+      "kind": "positive",
+      "query": "Extract Python dependencies across project and development groups",
+      "top": 5,
+      "status": "completed",
+      "returned_rows": 5,
+      "semantic_rows": 4,
+      "anchors": [
+        {
+          "path": "mcp/servers/mmcg/src/commands/init.rs",
+          "symbol": "pyproject_dependencies",
+          "declaration_line": 472
+        }
+      ],
+      "exact_anchor_hits": [
+        {
+          "path": "mcp/servers/mmcg/src/commands/init.rs",
+          "symbol": "pyproject_dependencies",
+          "declaration_line": 472
+        }
+      ],
+      "independently_semantic_anchor_hits": [
+        {
+          "path": "mcp/servers/mmcg/src/commands/init.rs",
+          "symbol": "pyproject_dependencies",
+          "declaration_line": 472
+        }
+      ],
+      "negative_full_page_empty": false,
+      "negative_semantic_page_empty": false
+    },
+    {
+      "case_id": "ind-v12-pos-13",
+      "kind": "positive",
+      "query": "Select changed task folders for continuous integration verification",
+      "top": 5,
+      "status": "completed",
+      "returned_rows": 3,
+      "semantic_rows": 3,
+      "anchors": [
+        {
+          "path": "mcp/servers/mmcg/src/commands/ci.rs",
+          "symbol": "changed_task_folders",
+          "declaration_line": 14
+        }
+      ],
+      "exact_anchor_hits": [
+        {
+          "path": "mcp/servers/mmcg/src/commands/ci.rs",
+          "symbol": "changed_task_folders",
+          "declaration_line": 14
+        }
+      ],
+      "independently_semantic_anchor_hits": [
+        {
+          "path": "mcp/servers/mmcg/src/commands/ci.rs",
+          "symbol": "changed_task_folders",
+          "declaration_line": 14
+        }
+      ],
+      "negative_full_page_empty": false,
+      "negative_semantic_page_empty": false
+    },
+    {
+      "case_id": "ind-v12-pos-14",
+      "kind": "positive",
+      "query": "Merge duplicate LCOV line hits using maximum counts",
+      "top": 5,
+      "status": "completed",
+      "returned_rows": 5,
+      "semantic_rows": 5,
+      "anchors": [
+        {
+          "path": "mcp/servers/mmcg/src/evidence.rs",
+          "symbol": "parse_lcov",
+          "declaration_line": 2705
+        }
+      ],
+      "exact_anchor_hits": [
+        {
+          "path": "mcp/servers/mmcg/src/evidence.rs",
+          "symbol": "parse_lcov",
+          "declaration_line": 2705
+        }
+      ],
+      "independently_semantic_anchor_hits": [
+        {
+          "path": "mcp/servers/mmcg/src/evidence.rs",
+          "symbol": "parse_lcov",
+          "declaration_line": 2705
+        }
+      ],
+      "negative_full_page_empty": false,
+      "negative_semantic_page_empty": false
+    },
+    {
+      "case_id": "ind-v12-pos-15",
+      "kind": "positive",
+      "query": "Disable future transcript synchronization while retaining collection evidence",
+      "top": 5,
+      "status": "completed",
+      "returned_rows": 5,
+      "semantic_rows": 4,
+      "anchors": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/store/collection.rs",
+          "symbol": "ProfileStore::set_source_sync_enabled",
+          "declaration_line": 234
+        }
+      ],
+      "exact_anchor_hits": [],
+      "independently_semantic_anchor_hits": [],
+      "negative_full_page_empty": false,
+      "negative_semantic_page_empty": false
+    },
+    {
+      "case_id": "ind-v12-pos-16",
+      "kind": "positive",
+      "query": "Separate reported reasoning tokens from other output tokens",
+      "top": 5,
+      "status": "completed",
+      "returned_rows": 1,
+      "semantic_rows": 1,
+      "anchors": [
+        {
+          "path": "evals/benchmark/adapters/codex_metrics.py",
+          "symbol": "output_breakdown",
+          "declaration_line": 6
+        }
+      ],
+      "exact_anchor_hits": [
+        {
+          "path": "evals/benchmark/adapters/codex_metrics.py",
+          "symbol": "output_breakdown",
+          "declaration_line": 6
+        }
+      ],
+      "independently_semantic_anchor_hits": [
+        {
+          "path": "evals/benchmark/adapters/codex_metrics.py",
+          "symbol": "output_breakdown",
+          "declaration_line": 6
+        }
+      ],
+      "negative_full_page_empty": false,
+      "negative_semantic_page_empty": false
+    },
+    {
+      "case_id": "ind-v12-neg-01",
+      "kind": "negative",
+      "query": "Calibrate effort changes while also changing role instructions",
+      "top": 5,
+      "status": "completed",
+      "returned_rows": 0,
+      "semantic_rows": 0,
+      "anchors": [],
+      "exact_anchor_hits": [],
+      "independently_semantic_anchor_hits": [],
+      "negative_full_page_empty": true,
+      "negative_semantic_page_empty": true
+    },
+    {
+      "case_id": "ind-v12-neg-02",
+      "kind": "negative",
+      "query": "Mark acceptance criteria met without retained answer evidence",
+      "top": 5,
+      "status": "completed",
+      "returned_rows": 0,
+      "semantic_rows": 0,
+      "anchors": [],
+      "exact_anchor_hits": [],
+      "independently_semantic_anchor_hits": [],
+      "negative_full_page_empty": true,
+      "negative_semantic_page_empty": true
+    },
+    {
+      "case_id": "ind-v12-neg-03",
+      "kind": "negative",
+      "query": "Read review artifacts through symbolic parent directories",
+      "top": 5,
+      "status": "completed",
+      "returned_rows": 0,
+      "semantic_rows": 0,
+      "anchors": [],
+      "exact_anchor_hits": [],
+      "independently_semantic_anchor_hits": [],
+      "negative_full_page_empty": true,
+      "negative_semantic_page_empty": true
+    },
+    {
+      "case_id": "ind-v12-neg-04",
+      "kind": "negative",
+      "query": "Treat negative runtime token counts as complete telemetry",
+      "top": 5,
+      "status": "completed",
+      "returned_rows": 0,
+      "semantic_rows": 0,
+      "anchors": [],
+      "exact_anchor_hits": [],
+      "independently_semantic_anchor_hits": [],
+      "negative_full_page_empty": true,
+      "negative_semantic_page_empty": true
+    },
+    {
+      "case_id": "ind-v12-neg-05",
+      "kind": "negative",
+      "query": "Move registered collection sources between different project roots",
+      "top": 5,
+      "status": "completed",
+      "returned_rows": 0,
+      "semantic_rows": 0,
+      "anchors": [],
+      "exact_anchor_hits": [],
+      "independently_semantic_anchor_hits": [],
+      "negative_full_page_empty": true,
+      "negative_semantic_page_empty": true
+    },
+    {
+      "case_id": "ind-v12-neg-06",
+      "kind": "negative",
+      "query": "Parse intake JSON containing duplicate object keys",
+      "top": 5,
+      "status": "completed",
+      "returned_rows": 0,
+      "semantic_rows": 0,
+      "anchors": [],
+      "exact_anchor_hits": [],
+      "independently_semantic_anchor_hits": [],
+      "negative_full_page_empty": true,
+      "negative_semantic_page_empty": true
+    },
+    {
+      "case_id": "ind-v12-neg-07",
+      "kind": "negative",
+      "query": "Measure native reasoning time from observed tool intervals",
+      "top": 5,
+      "status": "completed",
+      "returned_rows": 0,
+      "semantic_rows": 0,
+      "anchors": [],
+      "exact_anchor_hits": [],
+      "independently_semantic_anchor_hits": [],
+      "negative_full_page_empty": true,
+      "negative_semantic_page_empty": true
+    },
+    {
+      "case_id": "ind-v12-neg-08",
+      "kind": "negative",
+      "query": "Compare active profile rules from unsuccessful delivery packets",
+      "top": 5,
+      "status": "completed",
+      "returned_rows": 0,
+      "semantic_rows": 0,
+      "anchors": [],
+      "exact_anchor_hits": [],
+      "independently_semantic_anchor_hits": [],
+      "negative_full_page_empty": true,
+      "negative_semantic_page_empty": true
+    }
+  ],
+  "limitations": [
+    "Observed model source judgments are fallible; no general semantic-quality or repository-wide absence claim.",
+    "All24 planned cases stay in denominators; unknown, omissions and old failures remain in the bound input records."
+  ]
+}

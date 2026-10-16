@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "primary_schema_sampling": [
+    {
+      "reviewer": "A",
+      "exposure": "Packet schema/overview sampling incidentally displayed included ordinary unit-test snippets. No relevance fixtures, gold or prior judgments were read. Reviewer excluded test bodies from further reads and evidence."
+    },
+    {
+      "reviewer": "B",
+      "exposure": "Packet schema/overview sampling incidentally displayed included ordinary unit-test snippets. No relevance fixtures, gold or prior judgments were read. Reviewer excluded test bodies from further reads and evidence."
+    },
+    {
+      "reviewer": "C",
+      "exposure": "Packet schema/overview sampling incidentally displayed included ordinary unit-test snippets. No relevance fixtures, gold or prior judgments were read. Reviewer excluded test bodies from further reads and evidence."
+    }
+  ],
+  "author_notes_path": "v12-author-notes.json",
+  "preserve_raw_assessments": true,
+  "primary_b_additional_exposures": [
+    "miner/collection.rs 664\u2013690 test helper/start after crossing cfg(test) boundary; excluded from evidence",
+    "invocation.rs 2242\u20132246 test helper; retained unknown without citations"
+  ],
+  "independent_audit": [
+    {
+      "reviewer": "A",
+      "exposure": "none reported",
+      "test_bodies_used_as_evidence": false
+    },
+    {
+      "reviewer": "B",
+      "exposure": "Isolated test call-site lines in review_package.rs (2617,2658), cfg(test) import/declaration and adjacent finalize-hook test call; excluded from evidence.",
+      "test_bodies_used_as_evidence": false
+    },
+    {
+      "reviewer": "C",
+      "exposure": "none reported",
+      "test_bodies_used_as_evidence": false
+    }
+  ],
+  "relevance_fixtures_gold_or_prior_labels_exposed": false,
+  "raw_judgments_relabelled": false
+}

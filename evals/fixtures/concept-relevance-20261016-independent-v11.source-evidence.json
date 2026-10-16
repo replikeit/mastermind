@@ -1,0 +1,207 @@
+{
+  "schema_version": 1,
+  "source_head": "f418b380bf191877f5903f5c85f483f5e0e86632",
+  "authored_date": "2026-10-16",
+  "authorship_method": "Frozen source inspection only; source-authored purposive independent fixture.",
+  "authorship_limits": [
+    "The fixture is source-authored and purposively sampled, not drawn from observed user searches or a probability sample.",
+    "New owner paths have zero overlap with the supplied 108 exclusions; source families are not disjoint, and most owners belong to native hook, journal and persona lifecycle code.",
+    "Natural-language queries and relevance judgments were authored by one independent agent from source inspection; no independent human adjudication was performed.",
+    "Source-derived wording may resemble declarations and comments, so this fixture does not establish general semantic search quality or transfer to unrelated repositories.",
+    "Negative labels concern explicit unsupported operations or constraints in the cited inspected code. They are bounded judgments, not exhaustive repository-wide absence proofs.",
+    "No retrieval implementation, index, prior query fixture, baseline, result report, role content, agent history, model call, MCP retrieval, network operation or executable test informed the judgments.",
+    "Only query shape, source anchoring, source hashes and owner exclusion overlap were checked before freezing; no retrieval or semantic success claim follows from those checks."
+  ],
+  "positive_owner_files": [
+    "mcp/servers/mmcg/src/commands/new_spec.rs",
+    "mcp/servers/mmcg/src/hex.rs",
+    "mcp/servers/mmcg/src/miner/hooks/background.rs",
+    "mcp/servers/mmcg/src/miner/hooks/evaluate.rs",
+    "mcp/servers/mmcg/src/miner/hooks/influence.rs",
+    "mcp/servers/mmcg/src/miner/hooks/journal/intake.rs",
+    "mcp/servers/mmcg/src/miner/hooks/journal/local.rs",
+    "mcp/servers/mmcg/src/miner/hooks/journal/task.rs",
+    "mcp/servers/mmcg/src/miner/hooks/journal/task_mining.rs",
+    "mcp/servers/mmcg/src/miner/hooks/local.rs",
+    "mcp/servers/mmcg/src/miner/hooks/native.rs",
+    "mcp/servers/mmcg/src/miner/hooks/refiner.rs",
+    "mcp/servers/mmcg/src/miner/hooks/task_mining.rs",
+    "mcp/servers/mmcg/src/miner/hooks/worker.rs",
+    "mcp/servers/mmcg/src/miner/store/curation.rs",
+    "mcp/servers/mmcg/src/miner/store/habit_supersession.rs"
+  ],
+  "source_files_sha256": {
+    "mcp/servers/mmcg/src/commands/new_spec.rs": "c0901b3882fd614f8405e57e88c7d1cbb259ccdfb1b6ccfc12cec4f1af751f17",
+    "mcp/servers/mmcg/src/hex.rs": "56726fd8bdbe08f32aaeeff716c21a91d14ecf02fe106a88847dcd10a85d118a",
+    "mcp/servers/mmcg/src/miner/hooks/background.rs": "173220bd7cf4925773f27e99b2d3a75926c065a2899901cf30b33502df052347",
+    "mcp/servers/mmcg/src/miner/hooks/evaluate.rs": "36dab7b1653776b80eb6a87221b46e3d15747a94f292deaa100e72723299ad76",
+    "mcp/servers/mmcg/src/miner/hooks/influence.rs": "f2f9e5489b7c6e96a20b39b524d4eac18d24608d6f0b2467ce802227a6d7fe2c",
+    "mcp/servers/mmcg/src/miner/hooks/journal/intake.rs": "08ca7da0fe454a7c5790fe85291c5503ee527058ebed5dc230bc0e5404ffc2b7",
+    "mcp/servers/mmcg/src/miner/hooks/journal/local.rs": "f227afea08aba6c0705dc2606176df935b830e5b1cddbb08f72d31bf580ad4af",
+    "mcp/servers/mmcg/src/miner/hooks/journal/task.rs": "92dccae9a9a59f32d89130dd2f4711d766148ccefe217cd3bb17c5de12b74108",
+    "mcp/servers/mmcg/src/miner/hooks/journal/task_mining.rs": "3928779942d51bd85826933c593117f0e9c5ec0613d7aa0c548248cfbcd52126",
+    "mcp/servers/mmcg/src/miner/hooks/local.rs": "679eb16210d60fb598478c0ca0351c0db29fc355319e54e7f923eefc9f6babd5",
+    "mcp/servers/mmcg/src/miner/hooks/native.rs": "05a58da1752fe9cfc73884a19aeda991ebc64ebbd0476b1f7c3865065ffd9ca2",
+    "mcp/servers/mmcg/src/miner/hooks/refiner.rs": "3a31d151a839100edba03f003a05f3f5f2151b9a278973488a003bd93a5743ec",
+    "mcp/servers/mmcg/src/miner/hooks/task_mining.rs": "2e0935dcc03b608e156c78dc6a87f6d0f038ed7ce6c26245c60a20570d20459e",
+    "mcp/servers/mmcg/src/miner/hooks/worker.rs": "998aff2c9ac6dace2ef5f7cfe4a19af58bb8bcb46e18c6b2760b20aed2feabf2",
+    "mcp/servers/mmcg/src/miner/store/curation.rs": "9b4bec031115d1dcb0c7c99d4f2339051c300d12f15b52206ae528789d233f7d",
+    "mcp/servers/mmcg/src/miner/store/habit_supersession.rs": "dced5171167fddc2f9538f75da7fc4e8d0e0fb67132a08e0ef1f52c93e830f21"
+  },
+  "negative_source_evidence": [
+    {
+      "id": "independent-v11-n01",
+      "unsupported_operation": "Gemini native prompt refinement",
+      "judgment": "The inspected configuration accepts only native, claude or codex providers, and the native selector rejects other provider values.",
+      "scope": "Unsupported by the cited inspected implementation and its explicit constraints; not a repository-wide absence proof.",
+      "source_evidence": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/hooks/refiner.rs",
+          "symbol": "validate",
+          "declaration_line": 29,
+          "line_start": 29,
+          "line_end": 61,
+          "source_excerpt": "    pub fn validate(&self) -> Result<(), Error> {\n        if !(1..=20).contains(&self.timeout_secs) {\n            return Err(\"refiner timeout must be 1 to 20 seconds\".into());\n        }\n        match (&self.processor, self.provider.as_deref()) {\n            (Some(processor), None) => {\n                let path = processor\n                    .to_str()\n                    .ok_or(\"refiner executable path must be UTF-8\")?;\n                if path.len() > 4096\n                    || path.chars().any(char::is_control)\n                    || !processor.is_absolute()\n                    || !processor.is_file()\n                {\n                    return Err(\"refiner processor must be an absolute executable file\".into());\n                }\n                #[cfg(unix)]\n                {\n                    use std::os::unix::fs::PermissionsExt;\n                    let metadata = std::fs::metadata(processor)\n                        .map_err(|_| \"refiner executable metadata is unavailable\")?;\n                    if metadata.permissions().mode() & 0o111 == 0 {\n                        return Err(\"refiner processor file is not executable\".into());\n                    }\n                }\n            }\n            (None, Some(\"native\" | \"claude\" | \"codex\")) if self.args.is_empty() => {}\n            _ => {\n                return Err(\n                    \"select exactly one refiner executable or provider native, claude or codex, with arguments only for a custom executable\"\n                        .into(),\n                );\n            }\n",
+          "reason": "The inspected configuration accepts only native, claude or codex providers, and the native selector rejects other provider values."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/miner/hooks/native.rs",
+          "symbol": "provider",
+          "declaration_line": 10,
+          "line_start": 10,
+          "line_end": 18,
+          "source_excerpt": "pub(super) fn provider<'a>(requested: &'a str, client: &'a str) -> Result<&'a str, Error> {\n    super::client(client)?;\n    match requested {\n        \"native\" => Ok(client),\n        \"claude\" | \"codex\" if requested == client => Ok(client),\n        \"claude\" | \"codex\" => Err(\"native provider must match the captured client\".into()),\n        _ => Err(\"supported native providers: native, claude, codex\".into()),\n    }\n}\n",
+          "reason": "The inspected configuration accepts only native, claude or codex providers, and the native selector rejects other provider values."
+        }
+      ]
+    },
+    {
+      "id": "independent-v11-n02",
+      "unsupported_operation": "Sixty second refiner timeout",
+      "judgment": "The inspected refiner configuration rejects timeouts outside one through twenty seconds.",
+      "scope": "Unsupported by the cited inspected implementation and its explicit constraints; not a repository-wide absence proof.",
+      "source_evidence": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/hooks/refiner.rs",
+          "symbol": "validate",
+          "declaration_line": 29,
+          "line_start": 29,
+          "line_end": 32,
+          "source_excerpt": "    pub fn validate(&self) -> Result<(), Error> {\n        if !(1..=20).contains(&self.timeout_secs) {\n            return Err(\"refiner timeout must be 1 to 20 seconds\".into());\n        }\n",
+          "reason": "The inspected refiner configuration rejects timeouts outside one through twenty seconds."
+        }
+      ]
+    },
+    {
+      "id": "independent-v11-n03",
+      "unsupported_operation": "Three candidates in one task mining submission",
+      "judgment": "The inspected submission method rejects a candidate vector longer than two.",
+      "scope": "Unsupported by the cited inspected implementation and its explicit constraints; not a repository-wide absence proof.",
+      "source_evidence": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/hooks/journal/task_mining.rs",
+          "symbol": "submit_task_mining",
+          "declaration_line": 375,
+          "line_start": 375,
+          "line_end": 389,
+          "source_excerpt": "    pub fn submit_task_mining(\n        &mut self,\n        root: &Path,\n        client: &str,\n        ticket: &str,\n        candidates: &Value,\n    ) -> Result<Value, Error> {\n        super::super::check_id(ticket)?;\n        if serde_json::to_vec(candidates)?.len() > 8 * 1024 {\n            return Err(\"task mining submission exceeds 8 KiB\".into());\n        }\n        let candidates: Vec<Candidate> = serde_json::from_value(candidates.clone())?;\n        if candidates.len() > 2 {\n            return Err(\"task mining accepts at most two candidates\".into());\n        }\n",
+          "reason": "The inspected submission method rejects a candidate vector longer than two."
+        }
+      ]
+    },
+    {
+      "id": "independent-v11-n04",
+      "unsupported_operation": "Restoring rejected habits through candidate proposal retries",
+      "judgment": "The inspected proposal retry path rejects a rejected or superseded claim or inactive evidence rather than restoring it.",
+      "scope": "Unsupported by the cited inspected implementation and its explicit constraints; not a repository-wide absence proof.",
+      "source_evidence": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/store/curation.rs",
+          "symbol": "propose_candidate_habit",
+          "declaration_line": 25,
+          "line_start": 95,
+          "line_end": 113,
+          "source_excerpt": "            let status: String = tx.query_row(\n                \"SELECT status FROM persona_claim WHERE id=?1\",\n                [claim_id],\n                |row| row.get(0),\n            )?;\n            let active: bool = tx.query_row(\n                \"SELECT status='active' FROM persona_claim_evidence WHERE id=?1 AND claim_id=?2\",\n                params![evidence_id, claim_id],\n                |row| row.get(0),\n            )?;\n            if matches!(status.as_str(), \"rejected\" | \"superseded\")\n                || !active\n                || super::habit_supersession::has_successor(&tx, *claim_id)?\n                || super::habit_generations::has_child(&tx, *claim_id)?\n            {\n                return Err(invalid(\n                    \"habit or evidence was rejected or superseded; a proposal cannot restore it\",\n                ));\n            }\n",
+          "reason": "The inspected proposal retry path rejects a rejected or superseded claim or inactive evidence rather than restoring it."
+        }
+      ]
+    },
+    {
+      "id": "independent-v11-n05",
+      "unsupported_operation": "Habit supersession with identical endpoints",
+      "judgment": "The inspected supersession transaction requires two different positive habit identifiers.",
+      "scope": "Unsupported by the cited inspected implementation and its explicit constraints; not a repository-wide absence proof.",
+      "source_evidence": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/store/habit_supersession.rs",
+          "symbol": "supersede_habit",
+          "declaration_line": 188,
+          "line_start": 188,
+          "line_end": 199,
+          "source_excerpt": "    pub(crate) fn supersede_habit(\n        &mut self,\n        old: i64,\n        new: i64,\n        old_revision: &str,\n        new_revision: &str,\n    ) -> SqlResult<HabitSupersessionReceipt> {\n        if old <= 0 || new <= 0 || old == new {\n            return Err(invalid(\n                \"replacement requires two different positive habit IDs\",\n            ));\n        }\n",
+          "reason": "The inspected supersession transaction requires two different positive habit identifiers."
+        }
+      ]
+    },
+    {
+      "id": "independent-v11-n06",
+      "unsupported_operation": "Whitespace normalization in a passthrough response",
+      "judgment": "The inspected passthrough validator requires the returned prompt to equal the original bytes exactly.",
+      "scope": "Unsupported by the cited inspected implementation and its explicit constraints; not a repository-wide absence proof.",
+      "source_evidence": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/hooks/refiner.rs",
+          "symbol": "validate_response",
+          "declaration_line": 268,
+          "line_start": 268,
+          "line_end": 285,
+          "source_excerpt": "fn validate_response(input: &Input, response: &Response) -> Result<(), Error> {\n    validate_input(input)?;\n    if response.schema != 1\n        || response.intake_id != input.id\n        || response.prompt_digest != input.prompt_digest\n    {\n        return Err(\"refiner response does not match this intake and original digest\".into());\n    }\n    match response.action {\n        Action::Passthrough => {\n            if response.refined_prompt.as_deref() != Some(input.original.as_str())\n                || !response.questions.is_empty()\n            {\n                return Err(\n                    \"refiner passthrough must preserve exact original bytes and have no questions\"\n                        .into(),\n                );\n            }\n",
+          "reason": "The inspected passthrough validator requires the returned prompt to equal the original bytes exactly."
+        }
+      ]
+    },
+    {
+      "id": "independent-v11-n07",
+      "unsupported_operation": "Live hook admission from offline evaluation",
+      "judgment": "The inspected offline entry point reports admission false on both successful and failed evaluation, matching its documented isolation from hook publication.",
+      "scope": "Unsupported by the cited inspected implementation and its explicit constraints; not a repository-wide absence proof.",
+      "source_evidence": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/hooks/evaluate.rs",
+          "symbol": "evaluate",
+          "declaration_line": 33,
+          "line_start": 1,
+          "line_end": 5,
+          "source_excerpt": "//! Offline evaluation seam for synthetic refiner inputs, without hook admission.\n//!\n//! The selected processor still runs with normal process permissions. This path\n//! uses the production refiner protocol but never reads or publishes a journal,\n//! emits native context, binds an active task or grants workflow authority.\n",
+          "reason": "The inspected offline entry point reports admission false on both successful and failed evaluation, matching its documented isolation from hook publication."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/miner/hooks/evaluate.rs",
+          "symbol": "evaluate",
+          "declaration_line": 33,
+          "line_start": 33,
+          "line_end": 63,
+          "source_excerpt": "pub(super) fn evaluate(input_path: &Path, config: &RefinerConfig) -> Result<Value, Error> {\n    let started = Instant::now();\n    let result = (|| {\n        let input = read_input(input_path)?;\n        config.validate().map_err(|_| \"configuration_invalid\")?;\n        let _cancellation =\n            worker::Cancellation::install().map_err(|_| \"process_supervision_unavailable\")?;\n        let response =\n            refiner::process(&input, config).map_err(|_| \"processing_or_validation_failed\")?;\n        if worker::interrupted() {\n            return Err(\"interrupted\");\n        }\n        Ok(response)\n    })();\n    Ok(match result {\n        Ok(response) => json!({\n            \"schema\": 1,\n            \"status\": \"evaluated\",\n            \"admission\": false,\n            \"response\": serde_json::to_value(response)?,\n            \"elapsed_ms\": started.elapsed().as_millis(),\n        }),\n        Err(reason) => json!({\n            \"schema\": 1,\n            \"status\": \"failed\",\n            \"admission\": false,\n            \"reason\": reason,\n            \"elapsed_ms\": started.elapsed().as_millis(),\n        }),\n    })\n}\n",
+          "reason": "The inspected offline entry point reports admission false on both successful and failed evaluation, matching its documented isolation from hook publication."
+        }
+      ]
+    },
+    {
+      "id": "independent-v11-n08",
+      "unsupported_operation": "Workflow continuation with no bound active task",
+      "judgment": "The inspected response validator rejects continue_active when the host input has no active task binding.",
+      "scope": "Unsupported by the cited inspected implementation and its explicit constraints; not a repository-wide absence proof.",
+      "source_evidence": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/hooks/refiner.rs",
+          "symbol": "validate_response",
+          "declaration_line": 268,
+          "line_start": 314,
+          "line_end": 319,
+          "source_excerpt": "    if response.workflow_intent == Intent::Unclear && response.action != Action::Ask {\n        return Err(\"unclear workflow intent requires questions before routing\".into());\n    }\n    if response.workflow_intent == Intent::ContinueActive && input.active_task.is_none() {\n        return Err(\"refiner continuation requires an explicitly bound active task\".into());\n    }\n",
+          "reason": "The inspected response validator rejects continue_active when the host input has no active task binding."
+        }
+      ]
+    }
+  ]
+}

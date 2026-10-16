@@ -1,0 +1,510 @@
+{
+  "schema_version": 1,
+  "kind": "mastermind-concept-relevance",
+  "purpose": "Fresh independent qualification fixture for the final shared source corpus and unchanged frozen retrieval policy.",
+  "frozen_date": "2026-10-16",
+  "source_head": "f418b380bf191877f5903f5c85f483f5e0e86632",
+  "source_files_sha256": {
+    "evals/benchmark/adapters/bundle.py": "7d2c546cfa0e3640a9c447cad0bf879f8fa9730e305185460b483b43a0a84fea",
+    "evals/benchmark/batch.py": "120db2208c004da6b173142a0cf578932d279f063652d836c2b70f99d187bade",
+    "evals/benchmark/runtime.py": "bf3e2f6fd95fb71e04a5314464dda5def573b4724fbc419c7d7d00fa6a549a5f",
+    "evals/benchmark/source.py": "c402a862766ee65d8ac1f0ff36a9a205ef3474b00986bf281bfbbb37a475d691",
+    "evals/persona/replay.py": "032035ab270bb6b3febd755d53d7bcc6daed170c22f34f80549fbeb87fc577f0",
+    "mcp/servers/mmcg/src/lens.rs": "46bcb9cd6304320df02a2c1982da1e7b5c0d86b8312e69da21c0f547874d2f2b",
+    "mcp/servers/mmcg/src/miner/hooks/journal/archive.rs": "b55c93d5499f4fafbe4cdc102faf5244926e1e951bf28021fe3ac6118fb63163",
+    "mcp/servers/mmcg/src/spec.rs": "f73b1ae303193943376cadb021a754ebceb9ea64817fd463b0c9eee316a315d4",
+    "npm/mastermind/bin/install.js": "b1f721286cf270363202affda4ddd056e7f3de4bd25f58c8c46a51128ac36e76",
+    "npm/mastermind/bin/mastermind.js": "bdec52f052e9316ab0ab55250743596e028e116a8bf28c9d1efa2b5cf6c6a0e4"
+  },
+  "source_basis": "Dirty tracked source snapshot with truthful owned API documentation updates; source_head identifies the base Git commit only. File hashes bind inspected owners; the recorded tree digest binds the common qualification corpus.",
+  "provenance": {
+    "authorship": "model-authored local purposive sample; not human gold",
+    "author_role": "independent fixture author blind to proposed retrieval implementation and qualification outputs",
+    "selection_source": "/var/folders/21/xj6nw_bs4rn6l5s3h8b9m3t80000gn/T/mmcg-concept-repair-gx6h652k/source",
+    "source_tree_sha256": "01946de15f9f7995b470961d7dfc72c7da648ddd050a3a75f595c992d68ca851",
+    "source_tree_binding_basis": "Final common corpus digest supplied by the coordinating agent; each fixture owner hash independently computed and verified unchanged from the earlier shared corpus.",
+    "initial_owner_review_source": "/var/folders/21/xj6nw_bs4rn6l5s3h8b9m3t80000gn/T/mmcg-concept-repair-79xf9i3s/source",
+    "initial_owner_review_source_tree_sha256": "bc06d4592f8b905f545048b28b77471c0cd792f6818406ab60722cdf0006f98f",
+    "source_binding_stage": "Final source binding before first v7 retrieval output; all ten selected owner files unchanged.",
+    "spent_fixture_allowlist": [
+      "concept-relevance.json",
+      "concept-regression-20261016.json",
+      "concept-relevance-20261016.json",
+      "concept-relevance-20261016-holdout2.json",
+      "concept-relevance-20261016-holdout3.json",
+      "concept-relevance-20261016-independent-v6.json"
+    ],
+    "spent_fixture_use": "Only source_files_sha256 keys inspected to exclude owner files; no spent case text or output was consulted for v7 selection.",
+    "not_inspected": [
+      "query or ranking implementation",
+      "retrieval policy contents",
+      "retrieval outputs or raw v6 responses",
+      "baseline or relevance reports"
+    ],
+    "freeze_contract": "All queries, ids, kinds, splits, top limits and path/symbol judgments frozen before any v7 retrieval. No result-guided selection or tuning.",
+    "query_anchor_sha256": "19db80bd7c583858becd2cb9b101eec5cd3b85ee8aded8003fe4d8a6b725244c",
+    "query_anchor_digest_format": "SHA-256 of UTF-8 canonical JSON: sorted keys, compact separators, non-ASCII preserved; case-order array of id, split, kind, query, top and relevant/distractors path/symbol pairs only."
+  },
+  "selection": {
+    "method": "Purposive inspection of fresh source owner files; short ordinary lowercase task queries with no mixed-case aliases, digits or forced symbol/path identifiers.",
+    "novelty": "All selected owner files absent from the source-file key sets of the explicit spent fixture allowlist.",
+    "owner_languages": [
+      "rust",
+      "python",
+      "javascript"
+    ],
+    "scope": "Ten distinct implementation responsibilities in one repository; four plausible adjacent unsupported operations checked against the responsible source boundaries.",
+    "limitations": [
+      "Not a random sample of user requests and not a population semantic quality estimate.",
+      "Sparse model-authored source judgments leave unlisted rows unjudged.",
+      "Negative cases represent unsupported operations in the inspected owners; returned lexical rows do not establish those capabilities."
+    ]
+  },
+  "denominators": {
+    "independent_positive_queries": 10,
+    "independent_negative_queries": 4,
+    "positive_anchors": 10,
+    "total_cases": 14
+  },
+  "judgment_contract": {
+    "identity": [
+      "path",
+      "symbol"
+    ],
+    "positive": "Relevant rows must match a listed source path and symbol; exact runtime declaration line and qualified method name are retained for declaration identity audits.",
+    "distractor": "An inspected neighboring operation with a distinct responsibility; all unlisted rows remain unjudged.",
+    "negative": "No relevant anchor for the unsupported requested operation; this does not assume lexical retrieval returns an empty page.",
+    "evidence": "One-based inclusive line bounds and exact excerpts from the pinned owner bytes; each listed function name has exactly one matching source declaration in its file."
+  },
+  "cases": [
+    {
+      "id": "v7-archived-payload-integrity",
+      "split": "independent",
+      "kind": "positive",
+      "query": "verify archived episode bytes before reading journal payloads",
+      "top": 5,
+      "family": "cold journal payload integrity",
+      "owner_language": "rust",
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/hooks/journal/archive.rs",
+          "symbol": "read",
+          "line_start": 27,
+          "line_end": 40,
+          "source_excerpt": "pub(super) fn read(conn: &Connection, expected: &str) -> Result<Episode, Error> {\n    let (root, path) = bounded_fs::open_file_target(&target(conn, expected)?)?;\n    let file = bounded_fs::read_regular_file_with_capability(\n        &root,\n        &path,\n        MAX_EPISODE_BYTES as u64,\n        MAX_EPISODE_BYTES as u64,\n        ReadControl::default(),\n    )?;\n    if digest(&file.bytes) != expected {\n        return Err(\"episode archive digest changed\".into());\n    }\n    Ok(serde_json::from_slice(&file.bytes)?)\n}",
+          "reason": "This runtime reader opens the local archive as a bounded regular file and rejects a digest mismatch before deserializing the episode.",
+          "declaration_line": 27
+        }
+      ],
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/hooks/journal/archive.rs",
+          "symbol": "target",
+          "line_start": 12,
+          "line_end": 25,
+          "source_excerpt": "fn target(conn: &Connection, digest: &str) -> Result<PathBuf, Error> {\n    if !super::super::collection::valid_id(digest) {\n        return Err(\"invalid episode archive digest\".into());\n    }\n    let database = conn\n        .path()\n        .ok_or(\"episode archive requires a persistent journal\")?;\n    let parent = Path::new(database)\n        .parent()\n        .ok_or(\"journal parent unavailable\")?;\n    Ok(parent\n        .join(\"persona-archive\")\n        .join(format!(\"{digest}.json\")))\n}",
+          "reason": "This chooses a local digest-based archive path but does not read or verify payload bytes.",
+          "declaration_line": 12
+        }
+      ],
+      "reason": "Find the integrity boundary for reading cold journal evidence."
+    },
+    {
+      "id": "v7-local-review-origin",
+      "split": "independent",
+      "kind": "positive",
+      "query": "reject cross origin browser requests to the local review server",
+      "top": 5,
+      "family": "local web origin boundary",
+      "owner_language": "rust",
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/lens.rs",
+          "symbol": "validate",
+          "line_start": 2376,
+          "line_end": 2418,
+          "source_excerpt": "    fn validate(&self, authority: &str) -> Result<(), RequestRejection> {\n        if self.method != \"GET\" && self.method != \"HEAD\" {\n            return Err(RequestRejection::new(\n                405,\n                \"Method Not Allowed\",\n                \"Lens is read-only; only GET and HEAD are accepted\",\n            ));\n        }\n        let hosts = self.header_values(\"host\");\n        if hosts.len() != 1 || hosts[0] != authority {\n            return Err(RequestRejection::new(\n                421,\n                \"Misdirected Request\",\n                \"request Host does not match the Lens loopback origin\",\n            ));\n        }\n        let origins = self.header_values(\"origin\");\n        let expected_origin = format!(\"http://{authority}\");\n        if origins.len() > 1\n            || origins\n                .first()\n                .is_some_and(|origin| *origin != expected_origin)\n        {\n            return Err(RequestRejection::new(\n                403,\n                \"Forbidden\",\n                \"cross-origin requests are not accepted\",\n            ));\n        }\n        let fetch_sites = self.header_values(\"sec-fetch-site\");\n        if fetch_sites.len() > 1\n            || fetch_sites\n                .first()\n                .is_some_and(|site| *site != \"same-origin\" && *site != \"none\")\n        {\n            return Err(RequestRejection::new(\n                403,\n                \"Forbidden\",\n                \"cross-site requests are not accepted\",\n            ));\n        }\n        Ok(())\n    }",
+          "reason": "This request method accepts read methods only and rejects incorrect host, origin or cross-site fetch headers.",
+          "qualified_symbol": "HttpRequest.validate",
+          "declaration_line": 2376
+        }
+      ],
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/lens.rs",
+          "symbol": "parse",
+          "line_start": 2333,
+          "line_end": 2374,
+          "source_excerpt": "impl HttpRequest {\n    fn parse(raw: &[u8]) -> Result<Self, &'static str> {\n        let text = std::str::from_utf8(raw).map_err(|_| \"request headers must be UTF-8\")?;\n        let headers_end = text\n            .find(\"\\r\\n\\r\\n\")\n            .ok_or(\"request headers are incomplete\")?;\n        let mut lines = text[..headers_end].split(\"\\r\\n\");\n        let mut start = lines\n            .next()\n            .ok_or(\"request line is missing\")?\n            .split_whitespace();\n        let method = start.next().ok_or(\"method is missing\")?;\n        let target = start.next().ok_or(\"target is missing\")?;\n        let version = start.next().ok_or(\"HTTP version is missing\")?;\n        if start.next().is_some() || version != \"HTTP/1.1\" {\n            return Err(\"only HTTP/1.1 requests are accepted\");\n        }\n        if !target.starts_with('/') || target.starts_with(\"//\") {\n            return Err(\"request target must be origin-form\");\n        }\n        let path = target.split_once('?').map_or(target, |(path, _)| path);\n        let mut headers = Vec::new();\n        for line in lines {\n            let (name, value) = line.split_once(':').ok_or(\"malformed request header\")?;\n            if name.is_empty()\n                || !name\n                    .bytes()\n                    .all(|byte| byte.is_ascii_alphanumeric() || byte == b'-')\n            {\n                return Err(\"malformed request header name\");\n            }\n            if value.chars().any(char::is_control) {\n                return Err(\"request header contains control characters\");\n            }\n            headers.push((name.to_ascii_lowercase(), value.trim().to_string()));\n        }\n        Ok(Self {\n            method: method.to_string(),\n            path: path.to_string(),\n            headers,\n        })\n    }",
+          "reason": "This parses request syntax and headers but does not enforce same-origin authority.",
+          "qualified_symbol": "HttpRequest.parse",
+          "declaration_line": 2334
+        }
+      ],
+      "reason": "Find the runtime request admission method for the loopback review interface."
+    },
+    {
+      "id": "v7-command-obligations",
+      "split": "independent",
+      "kind": "positive",
+      "query": "collect executable verification commands while ignoring labels and shell comments",
+      "top": 5,
+      "family": "spec command obligations",
+      "owner_language": "rust",
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/spec.rs",
+          "symbol": "declared_verify_commands",
+          "line_start": 53,
+          "line_end": 68,
+          "source_excerpt": "impl ParsedSpec {\n    /// Explicit command obligations, in declaration order with duplicates\n    /// removed. Labels, empty commands and ordinary shell fences are excluded.\n    /// Only outside whitespace is normalized.\n    pub fn declared_verify_commands(&self) -> Vec<&str> {\n        let mut seen = HashSet::new();\n        self.frontmatter\n            .iter()\n            .flat_map(|fm| fm.verify.iter())\n            .filter_map(VerifyEntry::command)\n            .chain(self.verify_commands.iter().map(String::as_str))\n            .map(str::trim)\n            .filter(|cmd| is_command_declaration(cmd) && seen.insert(*cmd))\n            .collect()\n    }\n}",
+          "reason": "This combines explicit command obligations, removes duplicates in declaration order, and filters labels, empty commands and comment-only commands.",
+          "qualified_symbol": "ParsedSpec.declared_verify_commands",
+          "declaration_line": 57
+        }
+      ],
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/spec.rs",
+          "symbol": "extract_mentioned_files",
+          "line_start": 715,
+          "line_end": 725,
+          "source_excerpt": "/// Every backticked token that looks like a path — directory separator OR file\n/// extension. Deduplicated, stably ordered. audit-spec compares against\n/// `git diff --name-only`.\nfn extract_mentioned_files(body: &str) -> Vec<String> {\n    let mut out: Vec<String> = Vec::new();\n    let mut seen: std::collections::HashSet<String> = std::collections::HashSet::new();\n    for line in crate::context_doctor::prose_lines(body) {\n        extract_mentioned_files_from_line(line.text, &mut out, &mut seen);\n    }\n    out\n}",
+          "reason": "This collects path tokens from prose, not executable verification obligations.",
+          "declaration_line": 718
+        }
+      ],
+      "reason": "Find the owner that turns parsed task metadata into executable verification obligations."
+    },
+    {
+      "id": "v7-prepared-adapter-integrity",
+      "split": "independent",
+      "kind": "positive",
+      "query": "detect changes to a prepared adapter bundle before trial execution",
+      "top": 5,
+      "family": "prepared runtime integrity",
+      "owner_language": "python",
+      "relevant": [
+        {
+          "path": "evals/benchmark/adapters/bundle.py",
+          "symbol": "verify_runtime",
+          "line_start": 53,
+          "line_end": 77,
+          "source_excerpt": "def verify_runtime(trial: Path, adapter: dict, bundle_sources: dict) -> None:\n    expected = {key: value for key, value in adapter.items() if key != \"runtime_sha256\"}\n    if artifact_io.load_json(trial / \"adapter-runtime.json\") != expected or artifact_io.digest(expected) != adapter[\"runtime_sha256\"]:\n        raise artifact_io.BenchmarkError(\"adapter_runtime_changed\", \"adapter runtime descriptor changed\")\n    runtime = trial / \"runtime\"\n    allowed_directories = {parent.as_posix() for path in bundle_sources\n                           for parent in Path(path).parents if parent != Path(\".\")}\n    observed = set()\n    if runtime.is_symlink() or runtime.resolve() != runtime:\n        raise artifact_io.BenchmarkError(\"adapter_bundle_changed\", \"adapter bundle inventory changed\")\n    for directory, directories, files in os.walk(runtime, followlinks=False):\n        for name in directories:\n            path = Path(directory) / name\n            if path.is_symlink() or path.relative_to(runtime).as_posix() not in allowed_directories:\n                raise artifact_io.BenchmarkError(\"adapter_bundle_changed\", \"adapter bundle directory changed\")\n        observed.update((Path(directory) / name).relative_to(runtime).as_posix() for name in files)\n    if observed != set(bundle_sources):\n        raise artifact_io.BenchmarkError(\"adapter_bundle_changed\", \"adapter bundle inventory changed\")\n    if adapter[\"path\"] != str(runtime / \"launch.py\") or set(adapter[\"bundle\"]) != set(bundle_sources):\n        raise artifact_io.BenchmarkError(\"adapter_bundle_changed\", \"adapter entry point or bundle changed\")\n    for name in bundle_sources:\n        if hashlib.sha256(artifact_io.read_file(runtime / name)).hexdigest() != adapter[\"bundle\"][name]:\n            raise artifact_io.BenchmarkError(\"adapter_bundle_changed\", \"adapter implementation bytes changed\")\n    runtime_identity.runtime_pin(adapter[\"cli\"], adapter[\"kind\"])\n    runtime_identity.runtime_pin(adapter[\"python\"], \"python\")",
+          "reason": "This rechecks the saved descriptor, exact bundle inventory, implementation file bytes, and pinned executables of an already prepared adapter.",
+          "declaration_line": 53
+        }
+      ],
+      "distractors": [
+        {
+          "path": "evals/benchmark/adapters/bundle.py",
+          "symbol": "prepare_runtime",
+          "line_start": 25,
+          "line_end": 49,
+          "source_excerpt": "def prepare_runtime(trial: Path, spec: dict, *, kind: str, version: str,\n                    bundle_sources: dict, settings: dict | None = None) -> dict:\n    cli = runtime_identity.runtime_pin(spec[\"cli\"], kind)\n    python_path = Path(sys.executable).resolve(strict=True)\n    python = runtime_identity.runtime_pin({\"path\": str(python_path),\n        \"sha256\": artifact_io.hash_file(python_path, artifact_io.BINARY_BYTE_LIMIT)[\"sha256\"],\n        \"version\": sys.version.split()[0], \"origin\": \"preparation interpreter; dependencies not attested\"}, \"python\")\n    runtime = trial / \"runtime\"\n    runtime.mkdir(mode=0o700)\n    bundle = {}\n    repository = Path(__file__).resolve().parents[3]\n    for name, source in bundle_sources.items():\n        body = artifact_io.read_file(repository / source)\n        destination = runtime / name\n        destination.parent.mkdir(parents=True, exist_ok=True, mode=0o700)\n        artifact_io.write_new_bytes(destination, body, mode=0o555)\n        bundle[name] = hashlib.sha256(body).hexdigest()\n    adapter = {\"kind\": kind, \"path\": str(runtime / \"launch.py\"),\n               \"sha256\": bundle[\"launch.py\"], \"version\": version,\n               \"origin\": \"frozen benchmark implementation bytes\", \"bundle\": bundle,\n               \"cli\": cli, \"python\": python}\n    adapter.update(settings or {})\n    artifact_io.write_new(trial / \"adapter-runtime.json\", adapter, mode=0o444)\n    adapter[\"runtime_sha256\"] = artifact_io.digest(adapter)\n    return adapter",
+          "reason": "This creates a new frozen adapter runtime; it does not inspect a previously prepared runtime for later changes.",
+          "declaration_line": 25
+        }
+      ],
+      "reason": "Find the post-preparation integrity check for a native benchmark adapter."
+    },
+    {
+      "id": "v7-source-export-permissions",
+      "split": "independent",
+      "kind": "positive",
+      "query": "export selected source files with their original executable permissions",
+      "top": 5,
+      "family": "pinned source projection",
+      "owner_language": "python",
+      "relevant": [
+        {
+          "path": "evals/benchmark/source.py",
+          "symbol": "export_source",
+          "line_start": 76,
+          "line_end": 106,
+          "source_excerpt": "def export_source(repo: Path, revision: str, paths: list[str], destination: Path,\n                  env: dict[str, str]) -> tuple[list[dict], str]:\n    resolved = git(repo, [\"rev-parse\", \"--verify\", f\"{revision}^{{commit}}\"], env).decode().strip()\n    if resolved != revision:\n        raise artifact_io.BenchmarkError(\"source_revision_mismatch\", \"source revision is not the requested commit\")\n    destination.mkdir()\n    files, total = [], 0\n    for path in sorted(paths):\n        body, mode = git_regular_blob(\n            repo, revision, path, env, role=\"source\", byte_limit=artifact_io.FILE_BYTE_LIMIT,\n        )\n        total += len(body)\n        if total > condition_contract.SOURCE_BYTE_LIMIT:\n            raise artifact_io.BenchmarkError(\"source_limit\", \"source projection exceeds its total byte limit\")\n        target = destination / path\n        target.parent.mkdir(parents=True, exist_ok=True)\n        target.write_bytes(body)\n        target.chmod(0o755 if mode == \"100755\" else 0o644)\n        files.append({\"path\": path, \"git_mode\": mode, \"bytes\": len(body), \"sha256\": hashlib.sha256(body).hexdigest()})\n    template = destination.parent / \"empty-git-template\"\n    template.mkdir()\n    git(destination, [\"init\", \"-q\", \"-b\", \"benchmark\", f\"--template={template}\"], env)\n    git(destination, [\"config\", \"core.autocrlf\", \"false\"], env)\n    # Preserve raw allowed blobs even when a supplied .gitignore or\n    # .gitattributes would exclude files or transform their contents on add.\n    for item in files:\n        oid = git(destination, [\"hash-object\", \"-w\", \"--no-filters\", \"--\", item[\"path\"]], env).decode().strip()\n        git(destination, [\"update-index\", \"--add\", \"--cacheinfo\", item[\"git_mode\"], oid, item[\"path\"]], env)\n    git(destination, [\"commit\", \"-qm\", \"Allowlisted source projection\"], env)\n    projection_revision = git(destination, [\"rev-parse\", \"HEAD\"], env).decode().strip()\n    return files, projection_revision",
+          "reason": "This exports allowlisted regular Git blobs, restores executable modes, and preserves those raw modes and bytes in the new Git inventory.",
+          "declaration_line": 76
+        }
+      ],
+      "distractors": [
+        {
+          "path": "evals/benchmark/source.py",
+          "symbol": "verify_tool_commit",
+          "line_start": 33,
+          "line_end": 45,
+          "source_excerpt": "def verify_tool_commit(repo: Path, revision: str, env: dict[str, str]) -> None:\n    try:\n        resolved = git(repo, [\"rev-parse\", \"--verify\", f\"{revision}^{{commit}}\"], env).decode(\"ascii\").strip()\n    except (artifact_io.BenchmarkError, UnicodeError) as error:\n        raise artifact_io.BenchmarkError(\n            \"tool_revision_unavailable\",\n            \"tool revision must be an available exact commit in the selected tool repository\",\n        ) from error\n    if resolved != revision:\n        raise artifact_io.BenchmarkError(\n            \"tool_revision_mismatch\",\n            \"tool revision does not resolve to the requested exact commit\",\n        )",
+          "reason": "This resolves a tool revision and does not export source files or preserve file permissions.",
+          "declaration_line": 33
+        }
+      ],
+      "reason": "Find the source projection owner that preserves executable file modes."
+    },
+    {
+      "id": "v7-reachable-commit-corpus",
+      "split": "independent",
+      "kind": "positive",
+      "query": "freeze local branches without losing any reachable commits",
+      "top": 5,
+      "family": "persona replay corpus membership",
+      "owner_language": "python",
+      "relevant": [
+        {
+          "path": "evals/persona/replay.py",
+          "symbol": "corpus",
+          "line_start": 109,
+          "line_end": 176,
+          "source_excerpt": "def corpus(source: Path, output: Path, home: Path, anchor: str,\n           frozen_manifest: Path | None = None) -> tuple[Path, list[dict], dict]:\n    if frozen_manifest:\n        frozen = json.loads(frozen_manifest.read_text())\n        if frozen[\"source\"] != str(source):\n            raise ValueError(\"frozen manifest belongs to a different source\")\n        refs, head, anchor_sha = frozen[\"refs\"], frozen[\"head\"], frozen[\"anchor\"]\n    else:\n        refs = git(source, home, \"for-each-ref\", \"--format=%(refname) %(objectname)\").decode().splitlines()\n        head = git(source, home, \"rev-parse\", \"HEAD^{commit}\").decode().strip()\n        anchor_sha = git(source, home, \"rev-parse\", \"--verify\", anchor + \"^{commit}\").decode().strip()\n    for oid in [head, anchor_sha, *(line.split(\" \", 1)[1] for line in refs)]:\n        if not re.fullmatch(r\"[0-9a-f]{40}|[0-9a-f]{64}\", oid):\n            raise ValueError(\"manifest contains a non-OID history selector\")\n    # Only confirmed non-commit objects may be skipped. Missing/corrupt objects\n    # and transport failures abort instead of silently shrinking the corpus.\n    tips, skipped_refs = {head}, []\n    for record in refs:\n        name, oid = record.split(\" \", 1)\n        kind = git(source, home, \"cat-file\", \"-t\", oid).decode().strip()\n        if kind == \"tag\":\n            oid = git(source, home, \"rev-parse\", \"--verify\", oid + \"^{}\").decode().strip()\n            kind = git(source, home, \"cat-file\", \"-t\", oid).decode().strip()\n        if kind == \"commit\":\n            tips.add(oid)\n        elif kind in (\"tree\", \"blob\"):\n            skipped_refs.append(name)\n        else:\n            raise ValueError(f\"unexpected Git object type: {kind}\")\n    members = set(git(source, home, \"rev-list\", \"--stdin\",\n                      stdin=(\"\\n\".join(sorted(tips)) + \"\\n\").encode()).decode().splitlines())\n    if anchor_sha not in members:\n        raise ValueError(\"anchor must belong to the frozen corpus\")\n    common = Path(git(source, home, \"rev-parse\", \"--path-format=absolute\", \"--git-common-dir\").decode().strip())\n    repo = output / \"corpus.git\"\n    object_format = git(source, home, \"rev-parse\", \"--show-object-format\").decode().strip()\n    git(output, home, \"init\", \"--bare\", \"--object-format=\" + object_format, str(repo))\n    # Objects stay local and immutable; a missing source object fails the run.\n    (repo / \"objects/info/alternates\").write_text(str(common / \"objects\") + \"\\n\")\n    tree = git(source, home, \"rev-parse\", anchor_sha + \"^{tree}\").decode().strip()\n    args = [\"-c\", \"user.name=Persona Replay\", \"-c\", \"user.email=replay@example.invalid\",\n            \"commit-tree\", tree]\n    parents = sorted(tips | {anchor_sha})\n    for tip in parents:\n        args.extend([\"-p\", tip])\n    synthetic = len(parents) > 1\n    snapshot = (git(repo, home, *args, stdin=b\"Local replay corpus union; excluded merge\\n\").decode().strip()\n                if synthetic else parents[0])\n    git(repo, home, \"update-ref\", \"--no-deref\", \"HEAD\", snapshot)\n    excluded = {snapshot} if synthetic else set()\n    observed_members = set(git(repo, home, \"rev-list\", \"HEAD\").decode().splitlines()) - excluded\n    if observed_members != members:\n        raise ValueError(\"synthetic union does not preserve the frozen commit set\")\n    rows = [r for r in metadata(repo, home, snapshot) if r[\"sha\"] not in excluded]\n    regular = [r for r in rows if len(r[\"parents\"]) < 2]\n    ancestry = git(repo, home, \"rev-list\", \"--first-parent\", anchor_sha).decode().splitlines()\n    past = ancestry[len(ancestry) // 2]\n    manifest = dict(source=str(source), refs=refs, head=head, anchor=anchor_sha,\n                    snapshot=snapshot, synthetic_merge=synthetic,\n                    temporal_seed=past, skipped_refs=skipped_refs,\n                    commit_set_sha256=digest(encoded(sorted(members))),\n                    commits=len(rows),\n                    non_merge_commits=len(regular), merge_commits=len(rows)-len(regular),\n                    raw_author_emails=len({r[\"email\"] for r in regular}),\n                    commits_with_coauthor_trailers=sum(r[\"coauthor_trailers\"] > 0 for r in regular))\n    if frozen_manifest and manifest[\"commit_set_sha256\"] != frozen[\"commit_set_sha256\"]:\n        raise ValueError(\"frozen commit membership changed\")\n    return repo, rows, manifest",
+          "reason": "This freezes reference tips and their reachable commit set, creates a local corpus union, and verifies exact membership after the synthetic union.",
+          "declaration_line": 109
+        }
+      ],
+      "distractors": [
+        {
+          "path": "evals/persona/replay.py",
+          "symbol": "store_snapshot",
+          "line_start": 79,
+          "line_end": 86,
+          "source_excerpt": "def store_snapshot(home: Path) -> dict:\n    db = home / \".mastermind/style.db\"\n    with sqlite3.connect(db.as_uri() + \"?mode=ro\", uri=True) as conn:\n        commits = conn.execute(\"SELECT sha, authored_at FROM sampled_commit ORDER BY sha\").fetchall()\n        counters = conn.execute(\"SELECT sha, key, value FROM commit_counter ORDER BY sha, key\").fetchall()\n        identities = [r[0] for r in conn.execute(\"SELECT DISTINCT email FROM identity ORDER BY email\")]\n        provenance = conn.execute(\"SELECT commits_total, commits_sampled, added_lines_sampled, extractor FROM repo\").fetchall()\n    return dict(commits=commits, counters=counters, identities=identities, provenance=provenance)",
+          "reason": "This reads an existing persona database snapshot rather than freezing Git reference membership.",
+          "declaration_line": 79
+        }
+      ],
+      "reason": "Find the local history corpus constructor that retains all frozen reachable commits."
+    },
+    {
+      "id": "v7-batch-mutual-exclusion",
+      "split": "independent",
+      "kind": "positive",
+      "query": "prevent simultaneous benchmark trials from running within one planned batch",
+      "top": 5,
+      "family": "planned batch mutual exclusion",
+      "owner_language": "python",
+      "relevant": [
+        {
+          "path": "evals/benchmark/batch.py",
+          "symbol": "batch_execution_guard",
+          "line_start": 214,
+          "line_end": 279,
+          "source_excerpt": "@contextmanager\ndef batch_execution_guard(trial: Path, manifest: dict, manifest_bytes: bytes):\n    if \"batch\" not in manifest:\n        yield None\n        return\n    if os.name != \"posix\" or not hasattr(os, \"O_NOFOLLOW\"):\n        raise artifact_io.BenchmarkError(\"batch_platform\", \"batch execution requires POSIX no-follow file locking\")\n    import fcntl\n    root = trial.parent\n    path = root / \"execution.lock\"\n    root_descriptor = None\n    descriptor = None\n    try:\n        root_descriptor = os.open(\n            root, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_NONBLOCK)\n        root_before = os.fstat(root_descriptor)\n        if not stat.S_ISDIR(root_before.st_mode):\n            raise artifact_io.BenchmarkError(\"batch_lock\", \"batch root is not a directory\")\n        _check_batch_root(root, root_descriptor, root_before)\n        descriptor = os.open(\n            \"execution.lock\", os.O_RDWR | os.O_NOFOLLOW | os.O_NONBLOCK,\n            dir_fd=root_descriptor)\n    except OSError as error:\n        if root_descriptor is not None:\n            os.close(root_descriptor)\n        raise artifact_io.BenchmarkError(\"batch_lock\", \"cannot acquire the batch execution lock\") from error\n    except Exception:\n        if root_descriptor is not None:\n            os.close(root_descriptor)\n        raise\n    try:\n        before = os.fstat(descriptor)\n        if not stat.S_ISREG(before.st_mode) or before.st_size != 0:\n            raise artifact_io.BenchmarkError(\"batch_lock\", \"batch execution lock is invalid\")\n        named = os.stat(\"execution.lock\", dir_fd=root_descriptor, follow_symlinks=False)\n        current = path.lstat()\n        if artifact_io.file_identity(before) != artifact_io.file_identity(named) or artifact_io.file_identity(before) != artifact_io.file_identity(current):\n            raise artifact_io.BenchmarkError(\"batch_lock\", \"batch execution lock changed while opening\")\n        try:\n            fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)\n        except BlockingIOError as error:\n            raise artifact_io.BenchmarkError(\"batch_busy\", \"another batch attempt is still running\") from error\n        _check_batch_root(root, root_descriptor, root_before)\n    except OSError as error:\n        os.close(descriptor)\n        os.close(root_descriptor)\n        raise artifact_io.BenchmarkError(\"batch_lock\", \"cannot acquire the batch execution lock\") from error\n    except Exception:\n        os.close(descriptor)\n        os.close(root_descriptor)\n        raise\n    try:\n        snapshot = load_bound_batch(trial, manifest, manifest_bytes)\n        if snapshot[\"root_identity\"][:2] != (root_before.st_dev, root_before.st_ino):\n            raise artifact_io.BenchmarkError(\"batch_lock\", \"batch root changed while validating the execution lock\")\n        _check_batch_root(root, root_descriptor, root_before)\n        receipt, fingerprints = batch_attempt_state(snapshot, claimed=False)\n        snapshot.update(receipt=receipt, fingerprints=fingerprints,\n                        lock_identity=artifact_io.file_identity(before))\n        yield snapshot\n    finally:\n        try:\n            fcntl.flock(descriptor, fcntl.LOCK_UN)\n        finally:\n            os.close(descriptor)\n            os.close(root_descriptor)",
+          "reason": "This holds a nonblocking exclusive batch lock, rejects a running peer, and validates the batch before yielding an execution snapshot.",
+          "declaration_line": 215
+        }
+      ],
+      "distractors": [
+        {
+          "path": "evals/benchmark/batch.py",
+          "symbol": "validate_batch_binding",
+          "line_start": 28,
+          "line_end": 37,
+          "source_excerpt": "def validate_batch_binding(value: object) -> dict:\n    if (not isinstance(value, dict)\n            or set(value) != {\"batch_id\", \"plan_sha256\", \"position\"}\n            or not isinstance(value.get(\"batch_id\"), str)\n            or not re.fullmatch(r\"batch-[0-9a-f]{32}\", value[\"batch_id\"])\n            or not isinstance(value.get(\"plan_sha256\"), str)\n            or not re.fullmatch(r\"[0-9a-f]{64}\", value[\"plan_sha256\"])\n            or type(value.get(\"position\")) is not int or value[\"position\"] < 0):\n        raise artifact_io.BenchmarkError(\"invalid_batch_binding\", \"invalid trial batch binding\")\n    return value",
+          "reason": "This validates a batch binding value without acquiring an execution lock.",
+          "declaration_line": 28
+        }
+      ],
+      "reason": "Find the execution guard that serializes attempts in a prepared batch."
+    },
+    {
+      "id": "v7-private-trial-environment",
+      "split": "independent",
+      "kind": "positive",
+      "query": "isolate trial home directories and allow only explicitly supplied credentials",
+      "top": 5,
+      "family": "private trial process environment",
+      "owner_language": "python",
+      "relevant": [
+        {
+          "path": "evals/benchmark/runtime.py",
+          "symbol": "clean_environment",
+          "line_start": 13,
+          "line_end": 36,
+          "source_excerpt": "CREDENTIAL_NAMES = {\"ANTHROPIC_API_KEY\", \"CLAUDE_CODE_OAUTH_TOKEN\", \"OPENAI_API_KEY\"}\n\n\ndef clean_environment(trial: Path, credentials: dict[str, str] | None = None) -> dict[str, str]:\n    credentials = credentials or {}\n    if set(credentials) - CREDENTIAL_NAMES:\n        raise artifact_io.BenchmarkError(\"invalid_credentials\", \"only explicit credential names are accepted\")\n    home = trial / \"home\"\n    temp = trial / \"tmp\"\n    home.mkdir(exist_ok=True)\n    temp.mkdir(exist_ok=True)\n    return {\n        \"PATH\": os.pathsep.join((str(Path(sys.executable).parent), os.defpath)),\n        \"HOME\": str(home), \"XDG_CONFIG_HOME\": str(home / \".config\"),\n        \"XDG_CACHE_HOME\": str(home / \".cache\"), \"TMPDIR\": str(temp),\n        \"LANG\": \"C.UTF-8\", \"LC_ALL\": \"C\", \"TERM\": \"dumb\",\n        \"GIT_CONFIG_NOSYSTEM\": \"1\", \"GIT_CONFIG_GLOBAL\": os.devnull,\n        \"GIT_TERMINAL_PROMPT\": \"0\", \"GIT_OPTIONAL_LOCKS\": \"0\",\n        \"GIT_NO_LAZY_FETCH\": \"1\", \"GIT_ALLOW_PROTOCOL\": \"\",\n        \"GIT_AUTHOR_NAME\": \"Benchmark\", \"GIT_COMMITTER_NAME\": \"Benchmark\",\n        \"GIT_AUTHOR_EMAIL\": \"benchmark@example.invalid\", \"GIT_COMMITTER_EMAIL\": \"benchmark@example.invalid\",\n        \"GIT_AUTHOR_DATE\": \"2000-01-01T00:00:00Z\", \"GIT_COMMITTER_DATE\": \"2000-01-01T00:00:00Z\",\n        **credentials,\n    }",
+          "reason": "This constructs private home and temporary directories and returns a fixed environment containing only explicitly supplied allowed credentials.",
+          "declaration_line": 16
+        }
+      ],
+      "distractors": [
+        {
+          "path": "evals/benchmark/runtime.py",
+          "symbol": "runtime_pin",
+          "line_start": 39,
+          "line_end": 61,
+          "source_excerpt": "def runtime_pin(spec: object, role: str, revision: str | None = None) -> dict:\n    if not isinstance(spec, dict):\n        raise artifact_io.BenchmarkError(f\"{role}_missing\", f\"an explicit {role} runtime pin is required\")\n    try:\n        path = Path(spec[\"path\"]).resolve(strict=True)\n        expected = spec[\"sha256\"]\n        if not re.fullmatch(r\"[0-9a-f]{64}\", expected):\n            raise ValueError(\"invalid hash\")\n        if artifact_io.hash_file(path, artifact_io.BINARY_BYTE_LIMIT)[\"sha256\"] != expected:\n            raise artifact_io.BenchmarkError(f\"{role}_mismatch\", f\"{role} executable does not match its SHA-256 pin\")\n        if not os.access(path, os.X_OK):\n            raise ValueError(\"not executable\")\n        if revision is not None and spec.get(\"source_revision\") != revision:\n            raise artifact_io.BenchmarkError(f\"{role}_revision_mismatch\", f\"{role} declared source revision does not match instructions\")\n        if not isinstance(spec.get(\"version\"), str) or not spec[\"version\"]:\n            raise ValueError(\"missing version\")\n        if not isinstance(spec.get(\"origin\"), str) or not spec[\"origin\"]:\n            raise ValueError(\"missing origin\")\n        return {\"path\": str(path), \"sha256\": expected, \"version\": spec[\"version\"],\n                \"origin\": spec[\"origin\"], \"source_revision\": spec.get(\"source_revision\"),\n                \"source_provenance\": \"declared_not_attestation_verified\"}\n    except (KeyError, TypeError, ValueError, OSError) as error:\n        raise artifact_io.BenchmarkError(f\"{role}_invalid\", f\"invalid {role} runtime pin\") from error",
+          "reason": "This verifies an executable pin and does not construct the trial process environment.",
+          "declaration_line": 39
+        }
+      ],
+      "reason": "Find the environment builder that controls credential inheritance and trial isolation."
+    },
+    {
+      "id": "v7-profile-link-closure",
+      "split": "independent",
+      "kind": "positive",
+      "query": "reject installation profiles missing their linked skill dependencies",
+      "top": 5,
+      "family": "workflow profile closure",
+      "owner_language": "javascript",
+      "relevant": [
+        {
+          "path": "npm/mastermind/bin/install.js",
+          "symbol": "profileBundle",
+          "line_start": 214,
+          "line_end": 234,
+          "source_excerpt": "export function profileBundle(bundle, profile, share = DEFAULT_SHARE) {\n  assertProfile(profile);\n  const skills = profile === \"full\" ? bundle.skills : [...PROFILE_SKILLS[profile]];\n  const available = new Set(bundle.skills);\n  const selected = new Set(skills);\n  const missing = skills.filter((skill) => !available.has(skill));\n  if (missing.length > 0) {\n    throw new Error(`workflow profile ${profile} references missing skill(s): ${missing.join(\", \")}`);\n  }\n  for (const skill of skills) {\n    for (const linked of linkedSkills(path.join(share, \"skills\", skill))) {\n      if (!available.has(linked)) {\n        throw new Error(`workflow bundle skill ${skill} references missing skill ${linked}`);\n      }\n      if (!selected.has(linked)) {\n        throw new Error(`workflow profile ${profile} is not closed: ${skill} links to ${linked}`);\n      }\n    }\n  }\n  return { subagents: bundle.subagents, skills };\n}",
+          "reason": "This checks every selected skill link against available and selected skills and rejects a profile that is not closed over those links.",
+          "declaration_line": 214
+        }
+      ],
+      "distractors": [
+        {
+          "path": "npm/mastermind/bin/install.js",
+          "symbol": "expandClients",
+          "line_start": 241,
+          "line_end": 247,
+          "source_excerpt": "function expandClients(client) {\n  if (client === \"all\") return Object.keys(CLIENTS);\n  if (!Object.hasOwn(CLIENTS, client)) {\n    throw new Error(`unsupported workflow client ${JSON.stringify(client)}; use claude, codex, or all`);\n  }\n  return [client];\n}",
+          "reason": "This selects client names and does not check skill dependency closure.",
+          "declaration_line": 241
+        }
+      ],
+      "reason": "Find the profile selection owner that rejects omitted linked skills."
+    },
+    {
+      "id": "v7-project-install-ownership",
+      "split": "independent",
+      "kind": "positive",
+      "query": "identify project local npm installs from package ownership metadata",
+      "top": 5,
+      "family": "launcher installation ownership",
+      "owner_language": "javascript",
+      "relevant": [
+        {
+          "path": "npm/mastermind/bin/mastermind.js",
+          "symbol": "projectOwner",
+          "line_start": 82,
+          "line_end": 103,
+          "source_excerpt": "function projectOwner(owner) {\n  const metadata = path.join(owner, \"package.json\");\n  let stat;\n  try { stat = fs.lstatSync(metadata); }\n  catch (error) { return error.code === \"ENOENT\" ? null : \"unknown\"; }\n  if (!stat.isFile() || stat.isSymbolicLink() || stat.size > 1024 * 1024) return \"unknown\";\n  try {\n    const project = JSON.parse(fs.readFileSync(metadata, \"utf8\"));\n    if ((project.packageManager && !/^npm@/.test(project.packageManager))\n        || fs.existsSync(path.join(owner, \"pnpm-lock.yaml\"))\n        || fs.existsSync(path.join(owner, \"yarn.lock\"))) return \"unknown\";\n    const kinds = [\"dependencies\", \"devDependencies\", \"optionalDependencies\"]\n      .filter((kind) => Object.hasOwn(project[kind] ?? {}, pkg.name));\n    if (kinds.length === 1) {\n      const source = project[kinds[0]][pkg.name];\n      if (typeof source === \"string\" && source.trim() && !/[/:#\\\\]/.test(source)) return \"project\";\n    }\n  } catch {\n    // Invalid ownership metadata is handled by the explicit update workflow.\n  }\n  return \"unknown\";\n}",
+          "reason": "This inspects the owning package metadata, rejects other package managers and ambiguous dependencies, and identifies an unambiguous direct registry dependency as a project installation.",
+          "declaration_line": 82
+        }
+      ],
+      "distractors": [],
+      "reason": "Find the launcher ownership check for a persistent project npm installation."
+    },
+    {
+      "id": "v7-negative-web-source-edit",
+      "split": "independent",
+      "kind": "negative",
+      "query": "save edited source through the local review web interface",
+      "top": 5,
+      "family": "unsupported local web mutation",
+      "owner_language": "rust",
+      "relevant": [],
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/lens.rs",
+          "symbol": "validate",
+          "line_start": 2376,
+          "line_end": 2383,
+          "source_excerpt": "    fn validate(&self, authority: &str) -> Result<(), RequestRejection> {\n        if self.method != \"GET\" && self.method != \"HEAD\" {\n            return Err(RequestRejection::new(\n                405,\n                \"Method Not Allowed\",\n                \"Lens is read-only; only GET and HEAD are accepted\",\n            ));\n        }",
+          "reason": "The request admission method accepts only read methods and rejects mutation methods.",
+          "qualified_symbol": "HttpRequest.validate",
+          "declaration_line": 2376
+        },
+        {
+          "path": "mcp/servers/mmcg/src/lens.rs",
+          "symbol": "route",
+          "line_start": 2495,
+          "line_end": 2508,
+          "source_excerpt": "fn route(path: &str, state: &ServerState) -> HttpResponse {\n    match path {\n        \"/\" | \"/index.html\" => HttpResponse::static_asset(\"text/html; charset=utf-8\", INDEX_HTML),\n        \"/app.js\" => HttpResponse::static_asset(\"text/javascript; charset=utf-8\", APP_JS),\n        \"/styles.css\" => HttpResponse::static_asset(\"text/css; charset=utf-8\", STYLES_CSS),\n        \"/mastermind-mark.svg\" => {\n            HttpResponse::static_asset(\"image/svg+xml; charset=utf-8\", MASTERMIND_MARK_SVG)\n        }\n        \"/api/lens\" => api_response(state),\n        \"/api/context\" => context_response(state),\n        \"/favicon.ico\" => HttpResponse::empty(204, \"No Content\"),\n        _ => HttpResponse::text(404, \"Not Found\", \"not found\"),\n    }\n}",
+          "reason": "The route table serves static assets and read APIs and exposes no source-save route.",
+          "declaration_line": 2495
+        }
+      ],
+      "reason": "The inspected HTTP boundary and complete route table provide read access only; saving edited source is unsupported."
+    },
+    {
+      "id": "v7-negative-remote-episode-upload",
+      "split": "independent",
+      "kind": "negative",
+      "query": "upload archived episode payloads to remote object storage",
+      "top": 5,
+      "family": "unsupported archive transport",
+      "owner_language": "rust",
+      "relevant": [],
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/hooks/journal/archive.rs",
+          "symbol": "write",
+          "line_start": 42,
+          "line_end": 77,
+          "source_excerpt": "fn write(conn: &Connection, episode: &Episode) -> Result<String, Error> {\n    let bytes = serde_json::to_vec(episode)?;\n    if bytes.len() > MAX_EPISODE_BYTES {\n        return Err(\"episode archive exceeds its bound\".into());\n    }\n    let key = digest(&bytes);\n    let (root, path) = bounded_fs::prepare_file_target(&target(conn, &key)?)?;\n    if let Some(identity) = bounded_fs::inspect_direct_regular_file_identity_with_capability(\n        &root,\n        &path,\n        ReadControl::default(),\n    )? {\n        let file = bounded_fs::read_regular_file_expected(\n            &root,\n            &path,\n            MAX_EPISODE_BYTES as u64,\n            MAX_EPISODE_BYTES as u64,\n            ReadControl::default(),\n            Some(identity),\n        )?;\n        if file.bytes != bytes {\n            return Err(\"existing episode archive differs\".into());\n        }\n    } else {\n        let missing = bounded_fs::inspect_absent_path(&root, &path, ReadControl::default())?\n            .ok_or(BoundedReadError::SnapshotChanged)?;\n        bounded_fs::write_atomic_regular_file_expected_with_capability_mode(\n            &root,\n            &path,\n            &bytes,\n            0o600,\n            AtomicWriteExpectation::Missing(missing),\n        )?;\n    }\n    Ok(key)\n}",
+          "reason": "This writes exact payload bytes to a private local file and neither creates a remote transport nor accepts a remote destination.",
+          "declaration_line": 42
+        },
+        {
+          "path": "mcp/servers/mmcg/src/miner/hooks/journal/archive.rs",
+          "symbol": "target",
+          "line_start": 12,
+          "line_end": 25,
+          "source_excerpt": "fn target(conn: &Connection, digest: &str) -> Result<PathBuf, Error> {\n    if !super::super::collection::valid_id(digest) {\n        return Err(\"invalid episode archive digest\".into());\n    }\n    let database = conn\n        .path()\n        .ok_or(\"episode archive requires a persistent journal\")?;\n    let parent = Path::new(database)\n        .parent()\n        .ok_or(\"journal parent unavailable\")?;\n    Ok(parent\n        .join(\"persona-archive\")\n        .join(format!(\"{digest}.json\")))\n}",
+          "reason": "Archive destinations are derived from the local journal database parent directory.",
+          "declaration_line": 12
+        }
+      ],
+      "reason": "The complete archive owner stores digest-addressed files beside a persistent local journal and contains no remote object storage upload."
+    },
+    {
+      "id": "v7-negative-fetch-missing-skills",
+      "split": "independent",
+      "kind": "negative",
+      "query": "download missing linked skills while installing a chosen profile",
+      "top": 5,
+      "family": "unsupported remote skill resolution",
+      "owner_language": "javascript",
+      "relevant": [],
+      "distractors": [
+        {
+          "path": "npm/mastermind/bin/install.js",
+          "symbol": "profileBundle",
+          "line_start": 214,
+          "line_end": 234,
+          "source_excerpt": "export function profileBundle(bundle, profile, share = DEFAULT_SHARE) {\n  assertProfile(profile);\n  const skills = profile === \"full\" ? bundle.skills : [...PROFILE_SKILLS[profile]];\n  const available = new Set(bundle.skills);\n  const selected = new Set(skills);\n  const missing = skills.filter((skill) => !available.has(skill));\n  if (missing.length > 0) {\n    throw new Error(`workflow profile ${profile} references missing skill(s): ${missing.join(\", \")}`);\n  }\n  for (const skill of skills) {\n    for (const linked of linkedSkills(path.join(share, \"skills\", skill))) {\n      if (!available.has(linked)) {\n        throw new Error(`workflow bundle skill ${skill} references missing skill ${linked}`);\n      }\n      if (!selected.has(linked)) {\n        throw new Error(`workflow profile ${profile} is not closed: ${skill} links to ${linked}`);\n      }\n    }\n  }\n  return { subagents: bundle.subagents, skills };\n}",
+          "reason": "This rejects missing linked skills or an incomplete profile; it does not resolve or download a missing dependency.",
+          "declaration_line": 214
+        },
+        {
+          "path": "npm/mastermind/bin/install.js",
+          "symbol": "linkedSkills",
+          "line_start": 209,
+          "line_end": 212,
+          "source_excerpt": "function linkedSkills(skillPath) {\n  const text = fs.readFileSync(path.join(skillPath, \"SKILL.md\"), \"utf8\");\n  return [...text.matchAll(/\\[\\[([a-z0-9-]+)\\]\\]/g)].map((match) => match[1]);\n}",
+          "reason": "This reads link names from the already bundled local skill file.",
+          "declaration_line": 209
+        }
+      ],
+      "reason": "The inspected profile resolver reads the local bundle and fails on missing dependencies instead of downloading linked skills."
+    },
+    {
+      "id": "v7-negative-ambient-login-inheritance",
+      "split": "independent",
+      "kind": "negative",
+      "query": "reuse every login credential from the caller environment in trials",
+      "top": 5,
+      "family": "unsupported ambient credential inheritance",
+      "owner_language": "python",
+      "relevant": [],
+      "distractors": [
+        {
+          "path": "evals/benchmark/runtime.py",
+          "symbol": "clean_environment",
+          "line_start": 13,
+          "line_end": 36,
+          "source_excerpt": "CREDENTIAL_NAMES = {\"ANTHROPIC_API_KEY\", \"CLAUDE_CODE_OAUTH_TOKEN\", \"OPENAI_API_KEY\"}\n\n\ndef clean_environment(trial: Path, credentials: dict[str, str] | None = None) -> dict[str, str]:\n    credentials = credentials or {}\n    if set(credentials) - CREDENTIAL_NAMES:\n        raise artifact_io.BenchmarkError(\"invalid_credentials\", \"only explicit credential names are accepted\")\n    home = trial / \"home\"\n    temp = trial / \"tmp\"\n    home.mkdir(exist_ok=True)\n    temp.mkdir(exist_ok=True)\n    return {\n        \"PATH\": os.pathsep.join((str(Path(sys.executable).parent), os.defpath)),\n        \"HOME\": str(home), \"XDG_CONFIG_HOME\": str(home / \".config\"),\n        \"XDG_CACHE_HOME\": str(home / \".cache\"), \"TMPDIR\": str(temp),\n        \"LANG\": \"C.UTF-8\", \"LC_ALL\": \"C\", \"TERM\": \"dumb\",\n        \"GIT_CONFIG_NOSYSTEM\": \"1\", \"GIT_CONFIG_GLOBAL\": os.devnull,\n        \"GIT_TERMINAL_PROMPT\": \"0\", \"GIT_OPTIONAL_LOCKS\": \"0\",\n        \"GIT_NO_LAZY_FETCH\": \"1\", \"GIT_ALLOW_PROTOCOL\": \"\",\n        \"GIT_AUTHOR_NAME\": \"Benchmark\", \"GIT_COMMITTER_NAME\": \"Benchmark\",\n        \"GIT_AUTHOR_EMAIL\": \"benchmark@example.invalid\", \"GIT_COMMITTER_EMAIL\": \"benchmark@example.invalid\",\n        \"GIT_AUTHOR_DATE\": \"2000-01-01T00:00:00Z\", \"GIT_COMMITTER_DATE\": \"2000-01-01T00:00:00Z\",\n        **credentials,\n    }",
+          "reason": "This returns a fixed environment and admits only explicitly supplied allowlisted credential names, without copying the caller environment.",
+          "declaration_line": 16
+        }
+      ],
+      "reason": "The complete environment owner intentionally omits ambient login credentials and requires explicit allowed credentials."
+    }
+  ]
+}

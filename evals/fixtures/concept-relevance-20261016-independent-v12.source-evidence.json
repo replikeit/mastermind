@@ -1,0 +1,823 @@
+{
+  "schema_version": 1,
+  "source_head": "f418b380bf191877f5903f5c85f483f5e0e86632",
+  "source_root": "/private/var/folders/21/xj6nw_bs4rn6l5s3h8b9m3t80000gn/T/mmcg-concept-repair-gx6h652k/source",
+  "source_files_sha256": {
+    "evals/benchmark/adapters/codex.py": "5b0ba40d9d01635576f42e3e114cb4c3942ec973733c70586ff3535f7aeacdf3",
+    "evals/benchmark/adapters/codex_metrics.py": "8415afc664e780ad3bab04767fa73bceb29fb39c972588fe0ccd42ac6d849e56",
+    "evals/benchmark/analysis.py": "24bf443e5055b85c8826ca0b9e0cc023481f145971aba58cf50787f0430bd3de",
+    "evals/benchmark/assessment.py": "06511965a483a83aa34b04d2284a2fb39970abf14a8bcd33b793b6d606416264",
+    "evals/benchmark/campaign.py": "8bfcebe40d6eec9cb75f0e399d21edbbfbc0488913f1077cfb9925cfe122cafd",
+    "evals/benchmark/conditions.py": "0c66a6f472808a6dfcebea4dbe03609094a15270e2da9c0280436f9f0dc1f018",
+    "evals/benchmark/corpus.py": "fa5ae7bf7f8ecb4d7ff476720d1c8b01c6909c728fbf510df94de758e5801e77",
+    "evals/benchmark/efficiency.py": "21c672dde4a1e1f68d859e143264a9decb360261ef3f8b724b8bf6595178b64d",
+    "evals/benchmark/intent.py": "ffca47307790cd7c672e6cfaac6be2c09aa5eb1b9aca74d0b252483936971041",
+    "evals/benchmark/protocol.py": "113ecebe42b9f2fa636084c55f8828d6b918b363a177ab15c12c430dfa0344e9",
+    "evals/benchmark/review.py": "33d712f14d842d211bbbcb5bb5b0696d9e0b363f038dc491eebe5010791e6a67",
+    "evals/benchmark/review_contracts.py": "5d50edec2f25a485864704459b218c70b6990ce8f62202473c0224f44815d7ca",
+    "evals/benchmark/review_io.py": "7014411a97cbfb9bdc768596b27c917e075c82ba513642e17598671099a6c567",
+    "evals/benchmark/trials.py": "58c12a62616e1ca1c1c60dd8f47373a7ef8ca2e50e405fab58883aea8bd03636",
+    "evals/intake/harness.py": "9fdefe586ad36fa49da5e4b4ef969ce5d6729244020d9ff2d68b63380f496f33",
+    "evals/persona/delivery.py": "aa45b9f4697033fe149c40980508dc1f57f4d74b1f70c0fb48344f670254c0c6",
+    "mcp/servers/mmcg/src/commands/audit.rs": "cf49d4351e25f93d425f25cd88509ddf76b0f62d0ee81437fd904197e698e9eb",
+    "mcp/servers/mmcg/src/commands/ci.rs": "c10a512e426f4ab20f8a7b29951e1f48aa019f2cfb6241a56e690f0ae832197b",
+    "mcp/servers/mmcg/src/commands/init.rs": "2bae3c80e6923958c0b686f7d7947b708d4ebd6372da46be9b53cd5b93ff8fec",
+    "mcp/servers/mmcg/src/diff.rs": "83fc82e35209fdfd5109c3b4e7a749766442915a7cacc0db440c7330ded07aad",
+    "mcp/servers/mmcg/src/evidence.rs": "77ee49301a14eb23ca824306c7537ef32d61d9be5c29d532c6b54b0adffa6a9b",
+    "mcp/servers/mmcg/src/main.rs": "f6ea634957a86ffa5daae25b74e5b8687eadded227625847eca0aca09aac703b",
+    "mcp/servers/mmcg/src/miner/collection.rs": "73aa301acdee1214f98570d1764ce8c09f1a8a18b66fe8d4d51aefb325701f4c",
+    "mcp/servers/mmcg/src/miner/collection/sources.rs": "9afafb6b5b10a6c73ad61f7ff0f0ac272212e37f655eb98a6fb20ff52e84adee",
+    "mcp/servers/mmcg/src/miner/store/collection.rs": "dd7397c50b136e2b8f48e4de563b32ee77477675fa8f24f99f9b5f61635fee20"
+  },
+  "evidence_semantics": "Source-authored bounded judgments; not retrieved-result judgments.",
+  "cases": [
+    {
+      "id": "ind-v12-pos-01",
+      "kind": "positive",
+      "query": "Verify portable instruction bytes against recorded file hashes",
+      "scope": "Schema-4 portable trial instructions carrying an instruction-file inventory.",
+      "explanation": "The owning validator checks the combined instruction hash, then each ordered file record, separator, byte count and file hash. Trial verification calls it on the portable instruction before accepting the request.",
+      "mandatory_paths": [
+        "evals/benchmark/conditions.py",
+        "evals/benchmark/trials.py"
+      ],
+      "excerpts": [
+        {
+          "path": "evals/benchmark/conditions.py",
+          "sha256": "0c66a6f472808a6dfcebea4dbe03609094a15270e2da9c0280436f9f0dc1f018",
+          "start_line": 122,
+          "end_line": 150,
+          "keepends": true,
+          "quote": "def verify_instruction(manifest: dict, instruction: str) -> None:\n    if (not isinstance(instruction, str)\n            or hashlib.sha256(instruction.encode()).hexdigest() != manifest[\"instruction_sha256\"]):\n        raise artifact_io.BenchmarkError(\"request_changed\", \"instruction changed\")\n    spec = condition_spec(manifest)\n    if spec is None:\n        if manifest[\"condition\"] == \"source\" and instruction:\n            raise artifact_io.BenchmarkError(\"request_changed\", \"source condition contains an instruction\")\n        return\n    records = manifest[\"instruction_files\"]\n    if not isinstance(records, list) or len(records) != len(spec[\"instruction_paths\"]):\n        raise artifact_io.BenchmarkError(\"request_changed\", \"instruction inventory changed\")\n    body, offset = instruction.encode(), 0\n    for position, (record, path) in enumerate(zip(records, spec[\"instruction_paths\"])):\n        if (not isinstance(record, dict) or set(record) != {\"path\", \"bytes\", \"sha256\"}\n                or record[\"path\"] != path or type(record[\"bytes\"]) is not int\n                or not 0 <= record[\"bytes\"] <= artifact_io.CONTROL_BYTE_LIMIT):\n            raise artifact_io.BenchmarkError(\"request_changed\", \"invalid instruction record\")\n        if position:\n            if body[offset:offset + 2] != b\"\\n\\n\":\n                raise artifact_io.BenchmarkError(\"request_changed\", \"instruction separator changed\")\n            offset += 2\n        part = body[offset:offset + record[\"bytes\"]]\n        part.decode(\"utf-8\")\n        if len(part) != record[\"bytes\"] or hashlib.sha256(part).hexdigest() != record[\"sha256\"]:\n            raise artifact_io.BenchmarkError(\"request_changed\", \"instruction file bytes changed\")\n        offset += record[\"bytes\"]\n    if offset != len(body) or len(body) > artifact_io.CONTROL_BYTE_LIMIT:\n        raise artifact_io.BenchmarkError(\"request_changed\", \"instruction bytes exceed their inventory\")\n"
+        },
+        {
+          "path": "evals/benchmark/trials.py",
+          "sha256": "58c12a62616e1ca1c1c60dd8f47373a7ef8ca2e50e405fab58883aea8bd03636",
+          "start_line": 190,
+          "end_line": 197,
+          "keepends": true,
+          "quote": "    model_protocol.validate_rubric(manifest[\"task\"], rubric)\n    request = artifact_io.load_json(trial / \"request.json\")\n    if hashlib.sha256(artifact_io.canonical(request)).hexdigest() != manifest[\"request_sha256\"]:\n        raise artifact_io.BenchmarkError(\"request_changed\", \"adapter request changed after preparation\")\n    instruction = request[\"portable_instruction\"]\n    condition_contract.verify_instruction(manifest, instruction)\n    if request != model_protocol.adapter_request(trial, manifest, instruction):\n        raise artifact_io.BenchmarkError(\"request_changed\", \"request differs from the frozen trial inputs\")\n"
+        }
+      ]
+    },
+    {
+      "id": "ind-v12-pos-02",
+      "kind": "positive",
+      "query": "Reject abbreviated audit signing key identifiers before verification",
+      "scope": "Trusted and revoked key identifiers supplied to the audit verification CLI.",
+      "explanation": "The validator requires the sha256 prefix and exactly 64 lowercase hexadecimal characters. CLI dispatch validates both identifier lists before invoking audit verification.",
+      "mandatory_paths": [
+        "mcp/servers/mmcg/src/commands/audit.rs",
+        "mcp/servers/mmcg/src/main.rs"
+      ],
+      "excerpts": [
+        {
+          "path": "mcp/servers/mmcg/src/commands/audit.rs",
+          "sha256": "cf49d4351e25f93d425f25cd88509ddf76b0f62d0ee81437fd904197e698e9eb",
+          "start_line": 93,
+          "end_line": 110,
+          "keepends": true,
+          "quote": "pub fn validate_key_ids(values: &[String]) -> Result<BTreeSet<String>, String> {\n    values\n        .iter()\n        .map(|value| {\n            let Some(hex) = value.strip_prefix(\"sha256:\") else {\n                return Err(\"key IDs must use sha256:<64 lowercase hex>\".into());\n            };\n            if hex.len() != 64\n                || !hex\n                    .bytes()\n                    .all(|byte| byte.is_ascii_hexdigit() && !byte.is_ascii_uppercase())\n            {\n                return Err(\"key IDs must use sha256:<64 lowercase hex>\".into());\n            }\n            Ok(value.clone())\n        })\n        .collect()\n}\n"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/main.rs",
+          "sha256": "f6ea634957a86ffa5daae25b74e5b8687eadded227625847eca0aca09aac703b",
+          "start_line": 2770,
+          "end_line": 2798,
+          "keepends": true,
+          "quote": "            bundle,\n            root,\n            expected_repository,\n            expected_baseline,\n            expected_head,\n            signature,\n            public_key,\n            require_signature,\n            trusted_key_ids,\n            revoked_key_ids,\n            integrity_only,\n            json,\n        }) => {\n            commands::audit::validate_key_ids(&trusted_key_ids)?;\n            commands::audit::validate_key_ids(&revoked_key_ids)?;\n            commands::audit::verify(commands::audit::VerifyOptions {\n                bundle,\n                root,\n                expected_repository,\n                expected_baseline,\n                expected_head,\n                signature,\n                public_key,\n                require_signature,\n                trusted_key_ids,\n                revoked_key_ids,\n                integrity_only,\n                json,\n            })?;\n"
+        }
+      ]
+    },
+    {
+      "id": "ind-v12-pos-03",
+      "kind": "positive",
+      "query": "Bind acceptance criteria to excerpts from original requests",
+      "scope": "Acceptance criteria admitted through a benchmark corpus key.",
+      "explanation": "Each criterion must quote a nonempty excerpt occurring in the public question or output contract. The corpus-key validator invokes this implementation when acceptance criteria are declared.",
+      "mandatory_paths": [
+        "evals/benchmark/corpus.py",
+        "evals/benchmark/intent.py",
+        "evals/benchmark/review_contracts.py"
+      ],
+      "excerpts": [
+        {
+          "path": "evals/benchmark/intent.py",
+          "sha256": "ffca47307790cd7c672e6cfaac6be2c09aa5eb1b9aca74d0b252483936971041",
+          "start_line": 8,
+          "end_line": 21,
+          "keepends": true,
+          "quote": "def validate_criteria(task, criteria):\n    contract.require(isinstance(criteria, list) and 1 <= len(criteria) <= 12,\n                     \"acceptance needs 1..12 criteria\", \"corpus_acceptance\")\n    seen = set()\n    for row in criteria:\n        contract.fields(row, (\"id\", \"request_excerpt\", \"criterion\"))\n        identifier = row[\"id\"]\n        contract.require(isinstance(identifier, str) and re.fullmatch(r\"[a-z][a-z0-9_]{0,47}\", identifier)\n                         and identifier not in seen, \"invalid or duplicate acceptance criterion\", \"corpus_acceptance\")\n        seen.add(identifier)\n        excerpt = contract.text(row[\"request_excerpt\"])\n        contract.require(any(excerpt in task[field] for field in (\"question\", \"output_contract\")),\n                         \"acceptance criterion is not bound to the original request\", \"corpus_acceptance\")\n        contract.text(row[\"criterion\"])\n"
+        },
+        {
+          "path": "evals/benchmark/review_contracts.py",
+          "sha256": "5d50edec2f25a485864704459b218c70b6990ce8f62202473c0224f44815d7ca",
+          "start_line": 22,
+          "end_line": 35,
+          "keepends": true,
+          "quote": "def require(condition, message, code=\"review_schema\"):\n    if not condition:\n        raise artifact_io.BenchmarkError(code, message)\n\n\ndef fields(value, required, optional=()):\n    require(isinstance(value, dict) and set(required) <= set(value)\n            and not set(value) - set(required) - set(optional), \"missing or unexpected review fields\")\n\n\ndef text(value, maximum=16384):\n    require(isinstance(value, str) and bool(value.strip()) and len(value.encode()) <= maximum,\n            \"expected bounded nonempty review text\")\n    return value\n"
+        },
+        {
+          "path": "evals/benchmark/corpus.py",
+          "sha256": "fa5ae7bf7f8ecb4d7ff476720d1c8b01c6909c728fbf510df94de758e5801e77",
+          "start_line": 86,
+          "end_line": 98,
+          "keepends": true,
+          "quote": "def validate_key(task: dict, key: dict) -> list[str]:\n    _fields(key, (\"task_id\", \"source_revision\", \"status\", \"required_knowns\", \"expected_unknowns\",\n                  \"materially_false_claims\", \"reviewer_notes\", \"review_dimensions\", \"decision_quality\",\n                  \"automatic_quality_score\"), \"corpus_key_schema\", optional=(\"acceptance_criteria\",))\n    model_protocol.validate_rubric(task, key)\n    if \"acceptance_criteria\" in key:\n        intent.validate_criteria(task, key[\"acceptance_criteria\"])\n    if (task[\"kind\"] != \"research\" or key[\"status\"] not in KEY_STATUS.values()\n            or key[\"automatic_quality_score\"] is not None\n            or key[\"decision_quality\"] != \"not_applicable_to_facts_only_research_task\"):\n        raise artifact_io.BenchmarkError(\"corpus_key_schema\", \"expected a source-reviewed research key without a score\")\n    if key[\"status\"] == KEY_STATUS[\"qualification\"] and \"acceptance_criteria\" not in key:\n        raise artifact_io.BenchmarkError(\"corpus_acceptance\", \"qualification measures original-request acceptance\")\n"
+        }
+      ]
+    },
+    {
+      "id": "ind-v12-pos-04",
+      "kind": "positive",
+      "query": "Count unknown resource measurements separately for each condition",
+      "scope": "Per-condition accounting of retained planned trial slots.",
+      "explanation": "The summary separates present measurements from missing values and reports measured and unknown trial counts for every resource in each condition. The review status consumer includes that summary.",
+      "mandatory_paths": [
+        "evals/benchmark/analysis.py",
+        "evals/benchmark/review.py",
+        "evals/benchmark/review_contracts.py"
+      ],
+      "excerpts": [
+        {
+          "path": "evals/benchmark/analysis.py",
+          "sha256": "24bf443e5055b85c8826ca0b9e0cc023481f145971aba58cf50787f0430bd3de",
+          "start_line": 52,
+          "end_line": 66,
+          "keepends": true,
+          "quote": "def resource_summary(coordinator):\n    names = condition_contract.condition_names(coordinator.get(\"batch\", {\"schema_version\": 1}))\n    summary = []\n    for condition in names:\n        slots = [slot for slot in coordinator[\"slots\"] if slot[\"condition\"] == condition]\n        metrics = {}\n        for name in review_contracts.RESOURCE_FIELDS:\n            values = [slot.get(\"resources\", {}).get(name) for slot in slots]\n            observed = [value for value in values if value is not None]\n            total = sum(observed)\n            review_contracts.require(type(total) is int or math.isfinite(total), \"resource sum exceeds numeric bounds\", \"review_limit\")\n            metrics[name] = {\"observed_total\": total if observed else None, \"measured_trials\": len(observed),\n                             \"unknown_trials\": len(values) - len(observed), \"complete\": len(observed) == len(values)}\n        summary.append({\"condition\": condition, \"planned\": len(slots), \"metrics\": metrics})\n    return {\"scope\": \"trial_setup_and_adapter_attempts\", \"by_condition\": summary}\n"
+        },
+        {
+          "path": "evals/benchmark/review_contracts.py",
+          "sha256": "5d50edec2f25a485864704459b218c70b6990ce8f62202473c0224f44815d7ca",
+          "start_line": 15,
+          "end_line": 19,
+          "keepends": true,
+          "quote": "TOKEN_FIELDS = (\"input_tokens\", \"output_tokens\", \"cache_read_tokens\", \"cache_write_tokens\")\n\nCORE_RESOURCE_FIELDS = (\"setup_seconds\", \"run_seconds\", \"cost_usd\", \"turns\", *TOKEN_FIELDS)\nTIMING_FIELDS = (\"first_message_seconds\", \"final_answer_seconds\")\nRESOURCE_FIELDS = (*CORE_RESOURCE_FIELDS, *TIMING_FIELDS)\n"
+        },
+        {
+          "path": "evals/benchmark/review.py",
+          "sha256": "33d712f14d842d211bbbcb5bb5b0696d9e0b363f038dc491eebe5010791e6a67",
+          "start_line": 547,
+          "end_line": 560,
+          "keepends": true,
+          "quote": "def review_status(export: Path):\n    with Root(export) as root:\n        seal, packet, coordinator, answers, sources = load_export(root)\n        assessments = review_assessment.read_assessments(root, seal, packet, answers, sources)\n        reviewers = [{\"reviewer\": value[\"reviewer\"], \"reviewed\": len(value[\"reviews\"])} for value in assessments]\n        root.recheck()\n        return {\"kind\": \"mastermind-research-review-status\", \"schema_version\": 3, \"export_id\": seal[\"export_id\"],\n                \"attempts\": analysis.attempt_counts(coordinator[\"slots\"]), \"reviewers\": reviewers,\n                \"reviewed_attempts\": len(answers) if reviewers else 0,\n                \"attempts_without_verified_source\": sum(slot[\"source_integrity\"] != \"verified\" for slot in coordinator[\"slots\"]),\n                \"execution_order_integrity\": coordinator.get(\"execution_order_integrity\", \"unverified_legacy\"),\n                \"assessment_summary\": analysis.assessment_summary(coordinator, assessments),\n                \"resources\": analysis.resource_summary(coordinator),\n                \"assessment_semantics\": \"reviewer_declared_not_machine_verified\", \"comparison_accepted\": False, \"quality_uplift\": None}\n"
+        }
+      ]
+    },
+    {
+      "id": "ind-v12-pos-05",
+      "kind": "positive",
+      "query": "Calculate observed attempt percentiles with linear interpolation",
+      "scope": "Descriptive p50 and p95 values for supplied observed attempt resources.",
+      "explanation": "The function sorts observations and linearly interpolates between neighboring positions. The resource accumulator calls it only with observed measurements; its output explicitly limits the scope to observed attempts.",
+      "mandatory_paths": [
+        "evals/benchmark/efficiency.py"
+      ],
+      "excerpts": [
+        {
+          "path": "evals/benchmark/efficiency.py",
+          "sha256": "21c672dde4a1e1f68d859e143264a9decb360261ef3f8b724b8bf6595178b64d",
+          "start_line": 19,
+          "end_line": 53,
+          "keepends": true,
+          "quote": "def distribution(values):\n    \"\"\"Observed sample quantiles with linear interpolation, not population estimates.\"\"\"\n    ordered = sorted(values)\n    def percentile(fraction):\n        if not ordered:\n            return None\n        position = (len(ordered) - 1) * fraction\n        lower, upper = math.floor(position), math.ceil(position)\n        try:\n            return ordered[lower] + (ordered[upper] - ordered[lower]) * (position - lower)\n        except OverflowError:\n            review_contracts.require(False, \"resource quantile exceeds numeric bounds\", \"review_limit\")\n    return {\"observed_attempts\": len(ordered), \"p50\": percentile(0.5), \"p95\": percentile(0.95),\n            \"scope\": \"observed_attempts_only\"}\n\n\ndef resource_totals(slots):\n    result = {}\n    for name, components in RESOURCE_COMPONENTS.items():\n        measured = []\n        for slot in slots:\n            values = [slot.get(\"resources\", {}).get(part) for part in components]\n            if all(value is not None for value in values):\n                value = sum(values)\n                review_contracts.require(type(value) is int or math.isfinite(value), \"resource sum overflow\", \"review_limit\")\n                measured.append(value)\n        complete = len(measured) == len(slots)\n        total = sum(measured) if measured else None\n        review_contracts.require(total is None or type(total) is int or math.isfinite(total), \"resource total overflow\", \"review_limit\")\n        result[name] = {\"total\": total if complete else None,\n            \"observed_total\": total,\n            \"observed_values\": measured, \"distribution\": distribution(measured),\n            \"measured_attempts\": len(measured), \"unknown_attempts\": len(slots) - len(measured),\n            \"complete\": complete}\n    return result\n"
+        }
+      ]
+    },
+    {
+      "id": "ind-v12-pos-06",
+      "kind": "positive",
+      "query": "Deduplicate identical persona candidates within each collection snapshot",
+      "scope": "Cue-detected candidate observations produced from one transcript snapshot.",
+      "explanation": "The extractor hashes the source identity, candidate kind and exact quote, then omits repeated identifiers within that snapshot. Preparation invokes it independently for a new or changed source snapshot; this does not merge different quoted statements.",
+      "mandatory_paths": [
+        "mcp/servers/mmcg/src/miner/collection.rs"
+      ],
+      "excerpts": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/collection.rs",
+          "sha256": "73aa301acdee1214f98570d1764ce8c09f1a8a18b66fe8d4d51aefb325701f4c",
+          "start_line": 283,
+          "end_line": 329,
+          "keepends": true,
+          "quote": "fn extract(snapshot: &CollectionTranscript, source: &CollectionSource) -> Vec<CollectedCandidate> {\n    let mut segments: HashMap<usize, usize> = HashMap::new();\n    let mut seen = HashSet::new();\n    snapshot\n        .turns\n        .iter()\n        .filter_map(|turn| {\n            let segment = segments.entry(turn.line_no).or_default();\n            let segment_no = *segment;\n            *segment += 1;\n            let (quote, kind, rule) = detect(turn)?;\n            // Repetition within a session cannot become independent support.\n            let id = hash(json!([\"persona-candidate-v1\", source.source, kind, quote]));\n            if !seen.insert(id.clone()) {\n                return None;\n            }\n            let revision = hash(json!([\n                EXTRACTOR,\n                id,\n                source.source_path,\n                source.project_root,\n                turn.line_no,\n                segment_no,\n                turn.record_digest,\n                rule\n            ]));\n            Some(CollectedCandidate {\n                id,\n                source: source.source.clone(),\n                kind: kind.into(),\n                quote,\n                source_path: source.source_path.clone(),\n                line_no: turn.line_no,\n                segment_no,\n                record_digest: turn.record_digest.clone(),\n                project_root: source.project_root.clone(),\n                project: source.project.clone(),\n                observed_at: turn.at.clone(),\n                extractor: EXTRACTOR.into(),\n                rule_id: rule.into(),\n                revision,\n                status: \"pending\".into(),\n                present: true,\n            })\n        })\n        .collect()\n}\n"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/miner/collection.rs",
+          "sha256": "73aa301acdee1214f98570d1764ce8c09f1a8a18b66fe8d4d51aefb325701f4c",
+          "start_line": 395,
+          "end_line": 428,
+          "keepends": true,
+          "quote": "        if let Some(old) = seen.insert(snapshot.source.clone(), snapshot.digest.clone()) {\n            if old != snapshot.digest {\n                return Err(\"two selected files disagree about the same session snapshot\".into());\n            }\n            continue;\n        }\n        let source = CollectionSource {\n            source: snapshot.source.clone(),\n            source_path: snapshot\n                .path\n                .to_str()\n                .ok_or(\"transcript path must be UTF-8\")?\n                .into(),\n            project_root: root_text.into(),\n            project: project.clone(),\n            repository: repository.clone(),\n            snapshot_digest: snapshot.digest.clone(),\n            extractor: EXTRACTOR.into(),\n            bytes: snapshot.bytes,\n            lines: snapshot.lines,\n        };\n        let old = db\n            .map(|db| db.collection_source(&source.source))\n            .transpose()?\n            .flatten();\n        if old.as_ref().is_some_and(|old| {\n            old.project != source.project || old.project_root != source.project_root\n        }) {\n            return Err(\"collection source cannot change project\".into());\n        }\n        let mut detected = if old.as_ref() == Some(&source) {\n            Vec::new()\n        } else {\n            extract(&snapshot, &source)\n"
+        }
+      ]
+    },
+    {
+      "id": "ind-v12-pos-07",
+      "kind": "positive",
+      "query": "Validate reviewer outcomes against frozen acceptance evidence",
+      "scope": "Version-3 research assessments submitted for a sealed export with acceptance criteria.",
+      "explanation": "Export and packet hashes bind the assessment to frozen inputs. Acceptance rows are validated against retained answer evidence, then unmet criteria, material errors and overclaims force unsatisfied outcomes, while unresolved criteria force unknown outcomes. Import calls this check before publishing a receipt.",
+      "mandatory_paths": [
+        "evals/benchmark/assessment.py",
+        "evals/benchmark/intent.py",
+        "evals/benchmark/review.py"
+      ],
+      "excerpts": [
+        {
+          "path": "evals/benchmark/assessment.py",
+          "sha256": "06511965a483a83aa34b04d2284a2fb39970abf14a8bcd33b793b6d606416264",
+          "start_line": 15,
+          "end_line": 23,
+          "keepends": true,
+          "quote": "def check_assessment(value, seal, packet, answers, sources):\n    review_contracts.fields(value, (\"kind\", \"schema_version\", \"export_id\", \"packet_sha256\", \"reviewer\", \"reviews\"))\n    review_contracts.require(value[\"kind\"] == \"mastermind-research-assessment\" and type(value[\"schema_version\"]) is int\n            and value[\"schema_version\"] in (1, 2, 3), \"unsupported assessment\")\n    has_acceptance = \"acceptance_criteria\" in packet[\"rubric\"]\n    review_contracts.require((value[\"schema_version\"] == 3) == has_acceptance,\n                            \"assessment version does not match the frozen acceptance contract\", \"review_outcome\")\n    review_contracts.require(value[\"export_id\"] == seal[\"export_id\"] and value[\"packet_sha256\"] == seal[\"packet_sha256\"],\n            \"assessment belongs to a different or changed export\", \"review_identity\")\n"
+        },
+        {
+          "path": "evals/benchmark/assessment.py",
+          "sha256": "06511965a483a83aa34b04d2284a2fb39970abf14a8bcd33b793b6d606416264",
+          "start_line": 75,
+          "end_line": 92,
+          "keepends": true,
+          "quote": "        if value[\"schema_version\"] >= 2:\n            review_contracts.fields(item[\"outcome\"], (\"status\", \"rationale\"))\n            review_contracts.require(item[\"outcome\"][\"status\"] in (\"satisfied\", \"unsatisfied\", \"unknown\"), \"invalid task outcome\")\n            review_contracts.text(item[\"outcome\"][\"rationale\"])\n        if has_acceptance:\n            intent.validate_assessment(item[\"acceptance\"], packet[\"rubric\"][\"acceptance_criteria\"], answer)\n            failed = (any(row[\"status\"] == \"unmet\" for row in item[\"acceptance\"])\n                      or any(claim[\"material_error\"] for claim in item[\"claims\"])\n                      or any(row[\"handling\"] == \"overclaimed\" for row in item[\"unknowns\"]))\n            unresolved = any(row[\"status\"] == \"unknown\" for row in item[\"acceptance\"])\n            expected = \"unsatisfied\" if failed else \"unknown\" if unresolved else \"satisfied\"\n            review_contracts.require(item[\"outcome\"][\"status\"] == expected,\n                                     \"task outcome conflicts with the acceptance evidence\", \"review_outcome\")\n        elif value[\"schema_version\"] == 2 and item[\"outcome\"][\"status\"] == \"satisfied\":\n            review_contracts.require(all(row[\"coverage\"] == \"covered\" for row in item[\"knowns\"])\n                        and all(row[\"handling\"] == \"appropriate\" for row in item[\"unknowns\"])\n                        and all(claim[\"support\"] == \"supported\" and not claim[\"material_error\"] for claim in item[\"claims\"]),\n                        \"satisfied task conflicts with its evidence assessment\", \"review_outcome\")\n"
+        },
+        {
+          "path": "evals/benchmark/intent.py",
+          "sha256": "ffca47307790cd7c672e6cfaac6be2c09aa5eb1b9aca74d0b252483936971041",
+          "start_line": 24,
+          "end_line": 42,
+          "keepends": true,
+          "quote": "def validate_assessment(rows, criteria, answer):\n    contract.require(isinstance(rows, list) and len(rows) == len(criteria),\n                     \"assessment omits user acceptance criteria\", \"review_inventory\")\n    expected = {row[\"id\"] for row in criteria}\n    seen = set()\n    for row in rows:\n        contract.fields(row, (\"criterion_id\", \"status\", \"answer_excerpt\", \"rationale\"))\n        identifier = row[\"criterion_id\"]\n        contract.require(isinstance(identifier, str) and identifier in expected and identifier not in seen,\n                         \"unknown or duplicate acceptance criterion\", \"review_inventory\")\n        seen.add(identifier)\n        contract.require(row[\"status\"] in (\"met\", \"unmet\", \"unknown\"), \"invalid acceptance status\")\n        contract.text(row[\"rationale\"])\n        excerpt = row[\"answer_excerpt\"]\n        contract.require(row[\"status\"] != \"met\" or excerpt is not None,\n                         \"met acceptance criterion needs answer evidence\", \"review_quote\")\n        if excerpt is not None:\n            contract.require(contract.text(excerpt) in answer,\n                             \"acceptance excerpt is absent from the retained answer\", \"review_quote\")\n"
+        },
+        {
+          "path": "evals/benchmark/review.py",
+          "sha256": "33d712f14d842d211bbbcb5bb5b0696d9e0b363f038dc491eebe5010791e6a67",
+          "start_line": 526,
+          "end_line": 543,
+          "keepends": true,
+          "quote": "def import_assessment(export: Path, assessment: Path):\n    with Root(export) as root, Root(assessment.absolute().parent) as submitted, root.exclusive_lock(\"import.lock\"):\n        seal, packet, _, answers, sources = load_export(root)\n        value = submitted.json(assessment.name)\n        review_assessment.check_assessment(value, seal, packet, answers, sources)\n        existing = review_assessment.receipt_names(root)\n        review_contracts.require(value[\"reviewer\"] + \".json\" not in existing, \"reviewer already submitted an assessment\", \"review_exists\")\n        review_contracts.require(len(existing) < 64, \"reviewer admission limit reached\", \"review_limit\")\n        receipt = {\"kind\": \"mastermind-research-assessment-receipt\", \"schema_version\": 1,\n                   \"export_id\": seal[\"export_id\"], \"packet_sha256\": seal[\"packet_sha256\"],\n                   \"coordinator_sha256\": seal[\"coordinator_sha256\"], \"assessment_sha256\": artifact_io.digest(value),\n                   \"assessment\": value, \"semantics\": \"reviewer_declared_not_machine_verified\",\n                   \"comparison_accepted\": False, \"quality_uplift\": None}\n        body = encoded(receipt)\n        submitted.recheck()\n        root.recheck()\n        destination = \"reviews/\" + value[\"reviewer\"] + \".json\"\n        root.write_new(destination, body)\n"
+        }
+      ]
+    },
+    {
+      "id": "ind-v12-pos-08",
+      "kind": "positive",
+      "query": "Compare retained profile rules against exact expected text",
+      "scope": "An explicitly supplied expected rule list and a retained profile response packet.",
+      "explanation": "The comparator compares statements by exact text and reports unchanged, changed, missing and unexpected keys. Its CLI hashes the two input byte streams and writes the returned inspection; the output makes no current source-verification or model-application claim.",
+      "mandatory_paths": [
+        "evals/persona/delivery.py"
+      ],
+      "excerpts": [
+        {
+          "path": "evals/persona/delivery.py",
+          "sha256": "aa45b9f4697033fe149c40980508dc1f57f4d74b1f70c0fb48344f670254c0c6",
+          "start_line": 9,
+          "end_line": 49,
+          "keepends": true,
+          "quote": "def compare(expected, packet):\n    if not isinstance(expected, list) or not isinstance(packet, dict):\n        raise ValueError(\"expected rules must be a list and the packet an object\")\n    wanted = {}\n    for row in expected:\n        if (not isinstance(row, dict) or set(row) != {\"key\", \"statement\"}\n                or any(not isinstance(row[field], str) or not row[field].strip() for field in row)):\n            raise ValueError(\"each expected rule needs a nonempty key and statement\")\n        if row[\"key\"] in wanted:\n            raise ValueError(\"duplicate expected rule\")\n        wanted[row[\"key\"]] = row[\"statement\"]\n    feedback = packet.get(\"feedback\", [])\n    if not isinstance(feedback, list):\n        raise ValueError(\"profile feedback must be a list\")\n    received, revisions = {}, {}\n    for row in feedback:\n        if (not isinstance(row, dict) or not isinstance(row.get(\"key\"), str) or not row[\"key\"].strip()\n                or not isinstance(row.get(\"statement\"), str) or not row[\"statement\"].strip() or row.get(\"status\") != \"active\"\n                or row[\"key\"] in received):\n            raise ValueError(\"invalid, unaccepted or duplicate returned rule\")\n        received[row[\"key\"]] = row[\"statement\"]\n        revisions[row[\"key\"]] = row.get(\"review_revision\")\n    if received and packet.get(\"status\") != \"ok\":\n        raise ValueError(\"a non-ok profile packet cannot expose personal rules\")\n    unchanged = sorted(key for key in wanted if received.get(key) == wanted[key])\n    return {\n        \"kind\": \"mastermind-profile-delivery-inspection\", \"schema_version\": 1,\n        \"reported_status\": packet.get(\"status\"),\n        \"reported_source_verification\": packet.get(\"source_verification\"),\n        \"selection\": packet.get(\"selection\"),\n        \"profile_revision\": packet.get(\"profile_revision\"), \"store_revision\": packet.get(\"store_revision\"),\n        \"expected_rules\": len(wanted), \"returned_rules\": len(received),\n        \"unchanged_expected_rules\": unchanged,\n        \"missing_expected_rules\": sorted(set(wanted) - set(received)),\n        \"changed_expected_rules\": sorted(key for key in wanted.keys() & received.keys() if wanted[key] != received[key]),\n        \"unexpected_rules\": sorted(set(received) - set(wanted)),\n        \"review_revisions\": revisions, \"omitted\": packet.get(\"omitted\"),\n        \"exact_text_delivery_fraction\": len(unchanged) / len(wanted) if wanted else None,\n        \"current_source_reverification\": \"not_performed\",\n        \"model_application\": None, \"semantic_quality\": None, \"comparison_accepted\": False,\n    }\n"
+        },
+        {
+          "path": "evals/persona/delivery.py",
+          "sha256": "aa45b9f4697033fe149c40980508dc1f57f4d74b1f70c0fb48344f670254c0c6",
+          "start_line": 58,
+          "end_line": 63,
+          "keepends": true,
+          "quote": "    expected, packet = args.expected.read_bytes(), args.packet.read_bytes()\n    result = compare(json.loads(expected), json.loads(packet))\n    result[\"input_sha256\"] = {\"expected\": hashlib.sha256(expected).hexdigest(), \"packet\": hashlib.sha256(packet).hexdigest()}\n    with args.output.open(\"x\", encoding=\"utf-8\") as handle:\n        json.dump(result, handle, ensure_ascii=False, indent=2)\n        handle.write(\"\\n\")\n"
+        }
+      ]
+    },
+    {
+      "id": "ind-v12-pos-09",
+      "kind": "positive",
+      "query": "Parse ordered adapter events into terminal result records",
+      "scope": "A bounded newline-delimited benchmark adapter event stream.",
+      "explanation": "The parser admits one initialization followed by trace events and one terminal result, records ordering and payload issues, and returns the terminal record. The trial consumer classifies issues as protocol errors and independently retains a bounded nonempty answer when present.",
+      "mandatory_paths": [
+        "evals/benchmark/protocol.py",
+        "evals/benchmark/trials.py"
+      ],
+      "excerpts": [
+        {
+          "path": "evals/benchmark/protocol.py",
+          "sha256": "113ecebe42b9f2fa636084c55f8828d6b918b363a177ab15c12c430dfa0344e9",
+          "start_line": 144,
+          "end_line": 190,
+          "keepends": true,
+          "quote": "def parse_stream(body: bytes, answer_limit: int) -> tuple[dict | None, dict | None, list[str], list[str]]:\n    \"\"\"Require one init and one terminal result, preserving a valid final answer.\"\"\"\n    init, result, tools, issues = None, None, [], []\n    for line in body.splitlines():\n        if not line.strip():\n            continue\n        try:\n            event = artifact_io.parse_json(line)\n        except (ValueError, UnicodeError):\n            issues.append(\"invalid_json_event\")\n            continue\n        if result is not None:\n            issues.append(\"event_after_result\")\n            continue\n        kind = event.get(\"type\")\n        if kind == \"init\" and init is None:\n            init = event\n        elif kind == \"trace\" and init is not None:\n            if isinstance(event.get(\"tool\"), str):\n                tools.append(event[\"tool\"])\n        elif kind == \"result\" and init is not None:\n            result = event\n            if type(event.get(\"model_error\")) is not bool:\n                issues.append(\"missing_or_invalid_model_error\")\n            if not isinstance(event.get(\"answer\"), str):\n                issues.append(\"missing_answer\")\n            elif not event[\"answer\"].strip() and event.get(\"model_error\") is not True and not event.get(\"failure\"):\n                issues.append(\"empty_answer\")\n            elif len(event[\"answer\"].encode(\"utf-8\")) > answer_limit:\n                issues.append(\"answer_limit\")\n            failure = event.get(\"failure\")\n            if failure is not None and (\n                    not isinstance(failure, dict) or set(failure) != {\"state\", \"code\"}\n                    or not isinstance(failure.get(\"state\"), str)\n                    or failure.get(\"state\") not in {\"setup_error\", \"protocol_error\", \"identity_mismatch\",\n                        \"timeout\", \"output_limit\", \"invocation_error\", \"model_error\", \"budget_exceeded\"}\n                    or not isinstance(failure.get(\"code\"), str)\n                    or not re.fullmatch(r\"[a-z][a-z0-9_]{0,95}\", failure[\"code\"])\n                    or event.get(\"model_error\") != (failure[\"state\"] == \"model_error\")):\n                issues.append(\"invalid_failure\")\n        else:\n            issues.append(\"unexpected_event\")\n    if init is None:\n        issues.append(\"missing_init\")\n    if result is None:\n        issues.append(\"missing_result\")\n    return init, result, tools, sorted(set(issues))\n"
+        },
+        {
+          "path": "evals/benchmark/trials.py",
+          "sha256": "58c12a62616e1ca1c1c60dd8f47373a7ef8ca2e50e405fab58883aea8bd03636",
+          "start_line": 260,
+          "end_line": 282,
+          "keepends": true,
+          "quote": "    init, result, tools, issues = model_protocol.parse_stream(process.stdout, limits[\"answer_bytes\"])\n    state, reason = \"completed\", None\n    reported_failure = result.get(\"failure\") if result else None\n    reported_model_error = result.get(\"model_error\") is True if result else False\n    identity_changed = bool(init) and (\n        init.get(\"adapter_version\") != manifest[\"adapter\"][\"version\"]\n        or (init.get(\"model\") is not None and init.get(\"model\") != manifest[\"model\"])\n        or (init.get(\"model\") is None and not reported_failure and not reported_model_error)\n    )\n    if process.stop_reason:\n        state = process.stop_reason if process.stop_reason in {\"timeout\", \"output_limit\"} else \"invocation_error\"\n        reason = process.stop_reason\n    elif process.returncode != 0:\n        state, reason = \"invocation_error\", \"nonzero_exit\"\n    elif issues:\n        state, reason = \"protocol_error\", issues[0]\n    elif identity_changed:\n        state, reason = \"identity_mismatch\", \"observed_model_or_adapter_version_mismatch\"\n    elif reported_failure:\n        state, reason = reported_failure[\"state\"], reported_failure[\"code\"]\n    elif reported_model_error:\n        state, reason = \"model_error\", \"adapter_reported_model_error\"\n    measured = model_protocol.telemetry(result, limits)\n"
+        },
+        {
+          "path": "evals/benchmark/trials.py",
+          "sha256": "58c12a62616e1ca1c1c60dd8f47373a7ef8ca2e50e405fab58883aea8bd03636",
+          "start_line": 301,
+          "end_line": 307,
+          "keepends": true,
+          "quote": "    answer = result.get(\"answer\") if result else None\n    if isinstance(answer, str) and answer.strip() and len(answer.encode(\"utf-8\")) <= limits[\"answer_bytes\"]:\n        answer_bytes = answer.encode(\"utf-8\")\n        artifact_io.write_new_bytes(trial / \"answer.md\", answer_bytes)\n        envelope[\"answer\"] = {\"path\": \"answer.md\", \"bytes\": len(answer_bytes),\n                              \"sha256\": hashlib.sha256(answer_bytes).hexdigest()}\n        envelope[\"quality\"][\"status\"] = \"review_pending\"\n"
+        }
+      ]
+    },
+    {
+      "id": "ind-v12-pos-10",
+      "kind": "positive",
+      "query": "Publish review artifacts exclusively without replacing existing files",
+      "scope": "Publication of one artifact relative to an open review directory.",
+      "explanation": "The implementation stages a private exclusive file, links it to the final name without replacement, verifies the published bytes and inode, and rejects an existing final path. Assessment import uses this method for its immutable receipt.",
+      "mandatory_paths": [
+        "evals/benchmark/review.py",
+        "evals/benchmark/review_io.py"
+      ],
+      "excerpts": [
+        {
+          "path": "evals/benchmark/review_io.py",
+          "sha256": "7014411a97cbfb9bdc768596b27c917e075c82ba513642e17598671099a6c567",
+          "start_line": 201,
+          "end_line": 240,
+          "keepends": true,
+          "quote": "    def write_new(self, path, body):\n        self.written_bytes += len(body)\n        if self.written_bytes > OUTPUT_LIMIT:\n            raise artifact_io.BenchmarkError(\"review_limit\", \"review output exceeds its aggregate byte cap\")\n        temporary = \".pending-\" + uuid.uuid4().hex\n        try:\n            with self.parent(path, create=True) as (parent, name):\n                expected_parent = os.fstat(parent)\n                descriptor = None\n                owned = None\n                staged = False\n                published = False\n                try:\n                    descriptor = os.open(\n                        temporary,\n                        os.O_RDWR | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW,\n                        0o400,\n                        dir_fd=parent,\n                    )\n                    staged = True\n                    opened = os.fstat(descriptor)\n                    owned = (opened.st_dev, opened.st_ino)\n                    os.fchmod(descriptor, 0o400)\n                    with os.fdopen(os.dup(descriptor), \"wb\") as stream:\n                        stream.write(body)\n                        stream.flush()\n                        os.fsync(stream.fileno())\n                    written = os.fstat(descriptor)\n                    if (not stat.S_ISREG(written.st_mode)\n                            or stat.S_IMODE(written.st_mode) != 0o400\n                            or written.st_size != len(body)):\n                        raise artifact_io.BenchmarkError(\n                            \"review_changed\", \"staged review artifact changed during publication\")\n                    self.check_parent(path, expected_parent)\n                    os.link(temporary, name, src_dir_fd=parent, dst_dir_fd=parent, follow_symlinks=False)\n                    published = True\n                    linked = os.stat(name, dir_fd=parent, follow_symlinks=False)\n                    if (linked.st_dev, linked.st_ino) != owned:\n                        raise artifact_io.BenchmarkError(\n                            \"review_changed\", \"published review artifact changed during publication\")\n"
+        },
+        {
+          "path": "evals/benchmark/review_io.py",
+          "sha256": "7014411a97cbfb9bdc768596b27c917e075c82ba513642e17598671099a6c567",
+          "start_line": 259,
+          "end_line": 299,
+          "keepends": true,
+          "quote": "                    written = os.fstat(descriptor)\n                    try:\n                        observed = self.read(path, len(body))\n                    except artifact_io.BenchmarkError as error:\n                        raise artifact_io.BenchmarkError(\n                            \"review_changed\", \"published review artifact changed during verification\") from error\n                    current = self.records[path][\"identity\"]\n                    if (bytes(retained) != body or observed != body\n                            or (written.st_dev, written.st_ino) != owned\n                            or (current[0], current[1]) != owned\n                            or identity(written) != current):\n                        raise artifact_io.BenchmarkError(\n                            \"review_changed\", \"published review artifact changed during verification\")\n                    self.check_parent(path, expected_parent)\n                except (artifact_io.BenchmarkError, OSError, KeyboardInterrupt):\n                    if published:\n                        try:\n                            current = os.stat(name, dir_fd=parent, follow_symlinks=False)\n                            if (current.st_dev, current.st_ino) == owned:\n                                os.unlink(name, dir_fd=parent)\n                                os.fsync(parent)\n                        except FileNotFoundError:\n                            pass\n                    raise\n                finally:\n                    try:\n                        if staged:\n                            try:\n                                current = os.stat(temporary, dir_fd=parent, follow_symlinks=False)\n                                if (current.st_dev, current.st_ino) == owned:\n                                    os.unlink(temporary, dir_fd=parent)\n                            except FileNotFoundError:\n                                pass\n                    finally:\n                        if descriptor is not None:\n                            os.close(descriptor)\n            self.check_root()\n        except FileExistsError as error:\n            raise artifact_io.BenchmarkError(\"review_exists\", \"review artifact already exists; replacement is not allowed\") from error\n        except OSError as error:\n            raise artifact_io.BenchmarkError(\"review_path\", \"cannot publish artifact without following links\") from error\n"
+        },
+        {
+          "path": "evals/benchmark/review.py",
+          "sha256": "33d712f14d842d211bbbcb5bb5b0696d9e0b363f038dc491eebe5010791e6a67",
+          "start_line": 530,
+          "end_line": 543,
+          "keepends": true,
+          "quote": "        review_assessment.check_assessment(value, seal, packet, answers, sources)\n        existing = review_assessment.receipt_names(root)\n        review_contracts.require(value[\"reviewer\"] + \".json\" not in existing, \"reviewer already submitted an assessment\", \"review_exists\")\n        review_contracts.require(len(existing) < 64, \"reviewer admission limit reached\", \"review_limit\")\n        receipt = {\"kind\": \"mastermind-research-assessment-receipt\", \"schema_version\": 1,\n                   \"export_id\": seal[\"export_id\"], \"packet_sha256\": seal[\"packet_sha256\"],\n                   \"coordinator_sha256\": seal[\"coordinator_sha256\"], \"assessment_sha256\": artifact_io.digest(value),\n                   \"assessment\": value, \"semantics\": \"reviewer_declared_not_machine_verified\",\n                   \"comparison_accepted\": False, \"quality_uplift\": None}\n        body = encoded(receipt)\n        submitted.recheck()\n        root.recheck()\n        destination = \"reviews/\" + value[\"reviewer\"] + \".json\"\n        root.write_new(destination, body)\n"
+        }
+      ]
+    },
+    {
+      "id": "ind-v12-pos-11",
+      "kind": "positive",
+      "query": "Read bounded intake files while detecting concurrent replacement",
+      "scope": "Explicit intake-harness input and processor-output files.",
+      "explanation": "The reader requires a bounded regular file, compares descriptor identity before and after reading with the final path, and checks the complete byte count. Processor-output evaluation uses this reader before parsing a response.",
+      "mandatory_paths": [
+        "evals/intake/harness.py"
+      ],
+      "excerpts": [
+        {
+          "path": "evals/intake/harness.py",
+          "sha256": "9fdefe586ad36fa49da5e4b4ef969ce5d6729244020d9ff2d68b63380f496f33",
+          "start_line": 74,
+          "end_line": 99,
+          "keepends": true,
+          "quote": "def read_regular(path: Path, limit: int) -> bytes:\n    \"\"\"Read one explicit bounded file with stable descriptor and final-path checks.\"\"\"\n    descriptor = os.open(path, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)\n    try:\n        before = os.fstat(descriptor)\n        if not stat.S_ISREG(before.st_mode) or before.st_size > limit:\n            raise ValueError(\"input is not a bounded regular file\")\n        parts = []\n        remaining = limit + 1\n        while remaining:\n            chunk = os.read(descriptor, min(1024 * 1024, remaining))\n            if not chunk:\n                break\n            parts.append(chunk)\n            remaining -= len(chunk)\n        after = os.fstat(descriptor)\n    finally:\n        os.close(descriptor)\n    current = path.stat(follow_symlinks=False)\n    keys = (\"st_dev\", \"st_ino\", \"st_mode\", \"st_size\", \"st_mtime_ns\", \"st_ctime_ns\")\n    if any(getattr(before, key) != getattr(after, key) or getattr(before, key) != getattr(current, key) for key in keys):\n        raise ValueError(\"input changed during read\")\n    body = b\"\".join(parts)\n    if len(body) > limit or len(body) != before.st_size:\n        raise ValueError(\"input byte count is incomplete\")\n    return body\n"
+        },
+        {
+          "path": "evals/intake/harness.py",
+          "sha256": "9fdefe586ad36fa49da5e4b4ef969ce5d6729244020d9ff2d68b63380f496f33",
+          "start_line": 377,
+          "end_line": 385,
+          "keepends": true,
+          "quote": "    raw_response = None\n    if (directory / \"processor.stdout\").exists():\n        try:\n            raw_response = strict_json(read_regular(directory / \"processor.stdout\", STDOUT_LIMIT))\n            row[\"wire_invariant_issues\"] = response_issues(raw_response, source)\n            row[\"wire_contract_valid\"] = not row[\"wire_invariant_issues\"]\n        except (OSError, ValueError, KeyError, TypeError, RecursionError):\n            row[\"wire_contract_valid\"] = False\n            row[\"wire_invariant_issues\"] = [\"invalid_response_json\"]\n"
+        }
+      ]
+    },
+    {
+      "id": "ind-v12-pos-12",
+      "kind": "positive",
+      "query": "Extract Python dependencies across project and development groups",
+      "scope": "Python dependency names declared in project TOML metadata used during initialization.",
+      "explanation": "The parser collects normal and optional project dependencies, dependency groups, Poetry normal/dev/group dependencies and uv dev dependencies. Stack detection consumes these names to choose a Python framework label; the operation extracts names and does not install packages.",
+      "mandatory_paths": [
+        "mcp/servers/mmcg/src/commands/init.rs"
+      ],
+      "excerpts": [
+        {
+          "path": "mcp/servers/mmcg/src/commands/init.rs",
+          "sha256": "2bae3c80e6923958c0b686f7d7947b708d4ebd6372da46be9b53cd5b93ff8fec",
+          "start_line": 453,
+          "end_line": 512,
+          "keepends": true,
+          "quote": "fn add_python_requirement_array(value: Option<&toml::Value>, dependencies: &mut BTreeSet<String>) {\n    let Some(requirements) = value.and_then(toml::Value::as_array) else {\n        return;\n    };\n    dependencies.extend(\n        requirements\n            .iter()\n            .filter_map(toml::Value::as_str)\n            .filter_map(python_requirement_name),\n    );\n}\n\nfn add_python_dependency_table(value: Option<&toml::Value>, dependencies: &mut BTreeSet<String>) {\n    let Some(table) = value.and_then(toml::Value::as_table) else {\n        return;\n    };\n    dependencies.extend(table.keys().map(|name| dependency_name(name)));\n}\n\nfn pyproject_dependencies(contents: &str) -> Result<BTreeSet<String>, String> {\n    let manifest: toml::Value = toml::from_str(contents).map_err(|error| error.to_string())?;\n    let root = manifest\n        .as_table()\n        .ok_or_else(|| \"top-level value is not a table\".to_string())?;\n    let mut dependencies = BTreeSet::new();\n    if let Some(project) = root.get(\"project\").and_then(toml::Value::as_table) {\n        add_python_requirement_array(project.get(\"dependencies\"), &mut dependencies);\n        if let Some(optional) = project\n            .get(\"optional-dependencies\")\n            .and_then(toml::Value::as_table)\n        {\n            for group in optional.values() {\n                add_python_requirement_array(Some(group), &mut dependencies);\n            }\n        }\n    }\n    if let Some(groups) = root\n        .get(\"dependency-groups\")\n        .and_then(toml::Value::as_table)\n    {\n        for group in groups.values() {\n            add_python_requirement_array(Some(group), &mut dependencies);\n        }\n    }\n    if let Some(tool) = root.get(\"tool\").and_then(toml::Value::as_table) {\n        if let Some(poetry) = tool.get(\"poetry\").and_then(toml::Value::as_table) {\n            add_python_dependency_table(poetry.get(\"dependencies\"), &mut dependencies);\n            add_python_dependency_table(poetry.get(\"dev-dependencies\"), &mut dependencies);\n            if let Some(groups) = poetry.get(\"group\").and_then(toml::Value::as_table) {\n                for group in groups.values().filter_map(toml::Value::as_table) {\n                    add_python_dependency_table(group.get(\"dependencies\"), &mut dependencies);\n                }\n            }\n        }\n        if let Some(uv) = tool.get(\"uv\").and_then(toml::Value::as_table) {\n            add_python_requirement_array(uv.get(\"dev-dependencies\"), &mut dependencies);\n        }\n    }\n    Ok(dependencies)\n}\n"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/commands/init.rs",
+          "sha256": "2bae3c80e6923958c0b686f7d7947b708d4ebd6372da46be9b53cd5b93ff8fec",
+          "start_line": 628,
+          "end_line": 655,
+          "keepends": true,
+          "quote": "    let python = [&pyproject, &requirements, &pipfile, &setup_py];\n    if python.iter().any(|manifest| manifest.contents.is_some()) {\n        let mut dependencies = BTreeSet::new();\n        if let Some(contents) = pyproject.contents.as_deref() {\n            match pyproject_dependencies(contents) {\n                Ok(found) => dependencies.extend(found),\n                Err(error) => add_manifest_parse_warning(&mut warnings, pyproject.name, error),\n            }\n        }\n        if let Some(contents) = requirements.contents.as_deref() {\n            dependencies.extend(contents.lines().filter_map(python_requirement_name));\n        }\n        if let Some(contents) = pipfile.contents.as_deref() {\n            match pipfile_dependencies(contents) {\n                Ok(found) => dependencies.extend(found),\n                Err(error) => add_manifest_parse_warning(&mut warnings, pipfile.name, error),\n            }\n        }\n        if dependencies.contains(\"fastapi\") {\n            return Stack::new(\"python (fastapi)\", warnings);\n        }\n        if dependencies.contains(\"django\") {\n            return Stack::new(\"python (django)\", warnings);\n        }\n        if dependencies.contains(\"flask\") {\n            return Stack::new(\"python (flask)\", warnings);\n        }\n        return Stack::new(\"python\", warnings);\n"
+        }
+      ]
+    },
+    {
+      "id": "ind-v12-pos-13",
+      "kind": "positive",
+      "query": "Select changed task folders for continuous integration verification",
+      "scope": "Changed-only CI selection for files beneath the canonical task directory.",
+      "explanation": "The helper maps bounded baseline-to-head changed paths to distinct task directories. Changed-only CI retains discovered specs only when their parent directory appears in that selection.",
+      "mandatory_paths": [
+        "mcp/servers/mmcg/src/commands/ci.rs",
+        "mcp/servers/mmcg/src/diff.rs"
+      ],
+      "excerpts": [
+        {
+          "path": "mcp/servers/mmcg/src/commands/ci.rs",
+          "sha256": "c10a512e426f4ab20f8a7b29951e1f48aa019f2cfb6241a56e690f0ae832197b",
+          "start_line": 14,
+          "end_line": 32,
+          "keepends": true,
+          "quote": "fn changed_task_folders(root: &Path, since: &str) -> Result<BTreeSet<PathBuf>, String> {\n    let changed = mmcg::diff::changed_paths_under(root, since, \".mastermind/tasks\")\n        .map_err(|error| format!(\"git diff changed tasks: {error}\"))?;\n    let mut folders = BTreeSet::new();\n    let tasks_prefix = Path::new(\".mastermind/tasks\");\n    for relative in changed {\n        let path = Path::new(&relative);\n        let Ok(within_tasks) = path.strip_prefix(tasks_prefix) else {\n            continue;\n        };\n        let mut components = within_tasks.components();\n        let Some(std::path::Component::Normal(task_name)) = components.next() else {\n            continue;\n        };\n        if components.next().is_some() {\n            folders.insert(tasks_prefix.join(task_name));\n        }\n    }\n    Ok(folders)\n"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/commands/ci.rs",
+          "sha256": "c10a512e426f4ab20f8a7b29951e1f48aa019f2cfb6241a56e690f0ae832197b",
+          "start_line": 57,
+          "end_line": 76,
+          "keepends": true,
+          "quote": "    if opts.changed_only {\n        let changed = changed_task_folders(&root, &opts.since)?;\n        spec_paths.retain(|spec| {\n            spec.parent()\n                .and_then(|parent| parent.strip_prefix(&root).ok())\n                .is_some_and(|parent| changed.contains(parent))\n        });\n    }\n\n    if spec_paths.is_empty() {\n        if opts.changed_only {\n            eprintln!(\n                \"  [FAIL] no changed task contracts found for {}..HEAD\",\n                opts.since\n            );\n            return Ok(false);\n        }\n        eprintln!(\"  no spec.md files found in .mastermind/tasks/\");\n        return Ok(true);\n    }\n"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/diff.rs",
+          "sha256": "83fc82e35209fdfd5109c3b4e7a749766442915a7cacc0db440c7330ded07aad",
+          "start_line": 1314,
+          "end_line": 1375,
+          "keepends": true,
+          "quote": "pub fn changed_paths_under(\n    repo: &Path,\n    git_ref: &str,\n    prefix: &str,\n) -> Result<Vec<String>, WorkingTreeDiffError> {\n    let prefix_path = Path::new(prefix);\n    if prefix.is_empty()\n        || prefix.len() > MAX_GIT_PATHSPEC_BYTES\n        || prefix.contains('\\0')\n        || prefix_path.is_absolute()\n        || prefix_path\n            .components()\n            .any(|component| !matches!(component, std::path::Component::Normal(_)))\n    {\n        return Err(WorkingTreeDiffError::SnapshotChanged);\n    }\n    let deadline = Some(Instant::now() + git_timeout());\n    let baseline_oid = resolve_commit_controlled(repo, git_ref, deadline, None)?;\n    let head_oid = resolve_head_controlled(repo, deadline, None)?;\n    let literal_pathspec = format!(\":(top,literal){prefix}\");\n    let output = run_bounded_git_controlled(\n        repo,\n        &[\n            \"-c\",\n            \"diff.external=\",\n            \"diff\",\n            \"--no-ext-diff\",\n            \"--no-textconv\",\n            \"--no-renames\",\n            \"--name-only\",\n            \"-z\",\n            &baseline_oid,\n            &head_oid,\n            \"--\",\n            &literal_pathspec,\n        ],\n        None,\n        GIT_OUTPUT_LIMIT,\n        deadline,\n        None,\n    )?;\n    if !output.success {\n        return Err(WorkingTreeDiffError::InvalidRef);\n    }\n    let mut paths = BTreeSet::new();\n    for raw in nul_fields(&output.stdout) {\n        let path = std::str::from_utf8(raw)\n            .map_err(|_| WorkingTreeDiffError::SnapshotChanged)?\n            .to_string();\n        let parsed = Path::new(&path);\n        if parsed.is_absolute()\n            || parsed\n                .components()\n                .any(|component| !matches!(component, std::path::Component::Normal(_)))\n            || !parsed.starts_with(prefix_path)\n        {\n            return Err(WorkingTreeDiffError::SnapshotChanged);\n        }\n        paths.insert(path);\n    }\n    Ok(paths.into_iter().collect())\n}\n"
+        }
+      ]
+    },
+    {
+      "id": "ind-v12-pos-14",
+      "kind": "positive",
+      "query": "Merge duplicate LCOV line hits using maximum counts",
+      "scope": "Repeated coverage records for the same normalized relevant repository path and line.",
+      "explanation": "LCOV line data is parsed into a map keyed by repository path and line number, and duplicate hit counts merge by maximum. The coverage loader consumes those records into its evidence collection.",
+      "mandatory_paths": [
+        "mcp/servers/mmcg/src/evidence.rs"
+      ],
+      "excerpts": [
+        {
+          "path": "mcp/servers/mmcg/src/evidence.rs",
+          "sha256": "77ee49301a14eb23ca824306c7537ef32d61d9be5c29d532c6b54b0adffa6a9b",
+          "start_line": 2705,
+          "end_line": 2775,
+          "keepends": true,
+          "quote": "fn parse_lcov(\n    root: &Path,\n    relevant: &BTreeSet<String>,\n    bytes: &[u8],\n    deadline: Option<Instant>,\n) -> Result<(CoverageRecords, SourceStats), SourceFailure> {\n    let text = std::str::from_utf8(bytes).map_err(|_| SourceFailure::InvalidUtf8)?;\n    let mut records = CoverageRecords::new();\n    let mut current = None;\n    let mut stats = SourceStats::default();\n    let mut saw_format_marker = false;\n    for (line_index, line) in text.lines().enumerate() {\n        if line_index.is_multiple_of(4_096) && deadline.is_some_and(|value| Instant::now() >= value)\n        {\n            stats.partial = true;\n            stats.deadline_reached = true;\n            break;\n        }\n        if let Some(path) = line.strip_prefix(\"SF:\") {\n            saw_format_marker = true;\n            current = match normalize_evidence_path(root, path.trim(), relevant) {\n                Ok(path) => path,\n                Err(_) => {\n                    stats.partial = true;\n                    stats.invalid_records = true;\n                    None\n                }\n            };\n            continue;\n        }\n        if line == \"end_of_record\" {\n            saw_format_marker = true;\n            current = None;\n            continue;\n        }\n        let Some(data) = line.strip_prefix(\"DA:\") else {\n            saw_format_marker |= line.starts_with(\"TN:\");\n            continue;\n        };\n        saw_format_marker = true;\n        if stats.facts_total >= MAX_SOURCE_FACTS {\n            stats.partial = true;\n            stats.work_limited = true;\n            break;\n        }\n        stats.facts_total += 1;\n        let mut fields = data.split(',');\n        let Some(line_number) = fields.next().and_then(|value| value.parse::<u32>().ok()) else {\n            stats.partial = true;\n            stats.invalid_records = true;\n            continue;\n        };\n        let Some(hits) = fields.next().and_then(|value| value.parse::<u64>().ok()) else {\n            stats.partial = true;\n            stats.invalid_records = true;\n            continue;\n        };\n        if let Some(path) = &current {\n            records\n                .entry(path.clone())\n                .or_default()\n                .entry(line_number)\n                .and_modify(|value| *value = (*value).max(hits))\n                .or_insert(hits);\n        }\n    }\n    if !saw_format_marker {\n        return Err(SourceFailure::InvalidFormat);\n    }\n    Ok((records, stats))\n}\n"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/evidence.rs",
+          "sha256": "77ee49301a14eb23ca824306c7537ef32d61d9be5c29d532c6b54b0adffa6a9b",
+          "start_line": 1365,
+          "end_line": 1401,
+          "keepends": true,
+          "quote": "    fn load_coverage(&mut self, path: &Path, id: String) {\n        let fallback = requested_label(path);\n        let input = match self.read_source(path) {\n            Ok(input) => input,\n            Err(error) => return self.source_error(id, \"coverage\", fallback, error),\n        };\n        self.register_artifact(&id, &input);\n        let label = input.label;\n        let coverage_bytes = strip_utf8_bom(&input.bytes);\n        let first = coverage_bytes\n            .iter()\n            .copied()\n            .find(|byte| !byte.is_ascii_whitespace());\n        let result = if first == Some(b'<') {\n            parse_cobertura(self.root, &self.relevant, coverage_bytes, self.deadline)\n        } else {\n            parse_lcov(self.root, &self.relevant, coverage_bytes, self.deadline)\n        };\n        let (records, mut stats) = match result {\n            Ok(value) => value,\n            Err(error) => return self.source_error(id, \"coverage\", label, error),\n        };\n        'records: for (repo_path, lines) in records {\n            for (line, hits) in lines {\n                if self.deadline_reached() {\n                    stats.partial = true;\n                    stats.deadline_reached = true;\n                    break 'records;\n                }\n                if self.add_coverage(&repo_path, &id, line, hits) {\n                    stats.facts_returned += 1;\n                    stats.files.insert(repo_path.clone());\n                } else {\n                    stats.partial = true;\n                    stats.work_limited = true;\n                }\n            }\n"
+        }
+      ]
+    },
+    {
+      "id": "ind-v12-pos-15",
+      "kind": "positive",
+      "query": "Disable future transcript synchronization while retaining collection evidence",
+      "scope": "Future sync selection of a registered transcript source for one exact project root.",
+      "explanation": "Disabling inserts a source exclusion without deleting its stored source or candidate evidence. The storage selector filters excluded sources unless explicitly asked to include them, and sync preparation requests the filtered page.",
+      "mandatory_paths": [
+        "mcp/servers/mmcg/src/miner/collection/sources.rs",
+        "mcp/servers/mmcg/src/miner/store/collection.rs"
+      ],
+      "excerpts": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/store/collection.rs",
+          "sha256": "dd7397c50b136e2b8f48e4de563b32ee77477675fa8f24f99f9b5f61635fee20",
+          "start_line": 199,
+          "end_line": 261,
+          "keepends": true,
+          "quote": "    pub(crate) fn collection_sources(\n        &self,\n        project_root: &str,\n        after: &str,\n        limit: usize,\n        include_excluded: bool,\n    ) -> SqlResult<Vec<CollectionSourceSelection>> {\n        if !self.has_table(\"persona_collection_source\")? {\n            return Ok(Vec::new());\n        }\n        let enabled = if self.has_table(\"persona_sync_exclusion\")? {\n            \"NOT EXISTS(SELECT 1 FROM persona_sync_exclusion x WHERE x.source=s.source)\"\n        } else {\n            \"1\"\n        };\n        let mut stmt = self.conn.prepare(&format!(\n            \"SELECT source, source_path, project_root, project, repository, snapshot_digest,\n                    extractor, bytes, lines, {enabled} FROM persona_collection_source s\n             WHERE project_root = ?1 AND source > ?2 AND (?4 OR ({enabled}))\n             ORDER BY source LIMIT ?3\"\n        ))?;\n        let rows = stmt.query_map(\n            params![project_root, after, limit as i64, include_excluded],\n            |row| {\n                Ok(CollectionSourceSelection {\n                    snapshot: source_row(row)?,\n                    sync_enabled: row.get(9)?,\n                })\n            },\n        )?;\n        rows.collect()\n    }\n\n    /// Changes only future sync selection; retained evidence and explicit\n    /// collection are independent. A collect never removes this exclusion.\n    pub(crate) fn set_source_sync_enabled(\n        &mut self,\n        source: &str,\n        project_root: &str,\n        enabled: bool,\n    ) -> SqlResult<()> {\n        let tx = self\n            .conn\n            .transaction_with_behavior(TransactionBehavior::Immediate)?;\n        let matches = tx\n            .prepare(\"SELECT 1 FROM persona_collection_source WHERE source=?1 AND project_root=?2\")?\n            .exists(params![source, project_root])?;\n        if !matches {\n            return Err(rusqlite::Error::InvalidParameterName(\n                \"source is not registered for this project root\".into(),\n            ));\n        }\n        if enabled {\n            tx.execute(\n                \"DELETE FROM persona_sync_exclusion WHERE source=?1\",\n                [source],\n            )?;\n        } else {\n            tx.execute(\"INSERT OR IGNORE INTO persona_sync_exclusion(source,excluded_at) VALUES(?1,unixepoch())\", [source])?;\n        }\n        check_size(&tx)?;\n        tx.commit()\n    }\n"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/miner/collection/sources.rs",
+          "sha256": "9afafb6b5b10a6c73ad61f7ff0f0ac272212e37f655eb98a6fb20ff52e84adee",
+          "start_line": 92,
+          "end_line": 109,
+          "keepends": true,
+          "quote": "fn prepare_page(\n    db: Option<&ProfileStore>,\n    root: &Path,\n    after: Option<&str>,\n    limit: usize,\n) -> Result<(SourcePage, Vec<CollectionBatch>), Box<dyn std::error::Error>> {\n    let page = page(db, root, after, limit, false)?;\n    let inputs: Vec<_> = page\n        .sources\n        .iter()\n        .map(|source| CollectionInput::Registered(&source.snapshot))\n        .collect();\n    let batches = if inputs.is_empty() {\n        Vec::new()\n    } else {\n        prepare_inputs(db, root, &inputs)?\n    };\n    Ok((page, batches))\n"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/miner/collection/sources.rs",
+          "sha256": "9afafb6b5b10a6c73ad61f7ff0f0ac272212e37f655eb98a6fb20ff52e84adee",
+          "start_line": 200,
+          "end_line": 226,
+          "keepends": true,
+          "quote": "/// Explicitly opt a registered source in or out of future sync operations.\npub fn set_sync_enabled(\n    root: &Path,\n    source: &str,\n    enabled: bool,\n) -> Result<(), Box<dyn std::error::Error>> {\n    let root = validate_page(root, Some(source), 1, 1)?;\n    let root_text = root.to_str().ok_or(\"project root must be UTF-8\")?;\n    let path = ProfileStore::db_path().ok_or(\"could not resolve profile store\")?;\n    mutate_private_store(\n        &path,\n        |db| {\n            let selected = db\n                .map(|db| db.collection_source(source))\n                .transpose()?\n                .flatten()\n                .ok_or(\"source is not registered for this project root\")?;\n            if selected.project_root != root_text {\n                return Err(\"source is not registered for this project root\".into());\n            }\n            Ok(ControlFlow::Continue(()))\n        },\n        |db, ()| {\n            db.set_source_sync_enabled(source, root_text, enabled)?;\n            Ok(())\n        },\n    )?;\n"
+        }
+      ]
+    },
+    {
+      "id": "ind-v12-pos-16",
+      "kind": "positive",
+      "query": "Separate reported reasoning tokens from other output tokens",
+      "scope": "A valid reported Codex output-token total and included reasoning-output count.",
+      "explanation": "The function reports the reasoning count and subtracts it from the total for the non-reasoning count, only when both are nonnegative integers and reasoning does not exceed the total. Stream observation calls it on reported usage and includes its result in diagnostics.",
+      "mandatory_paths": [
+        "evals/benchmark/adapters/codex.py",
+        "evals/benchmark/adapters/codex_metrics.py"
+      ],
+      "excerpts": [
+        {
+          "path": "evals/benchmark/adapters/codex_metrics.py",
+          "sha256": "8415afc664e780ad3bab04767fa73bceb29fb39c972588fe0ccd42ac6d849e56",
+          "start_line": 6,
+          "end_line": 13,
+          "keepends": true,
+          "quote": "def output_breakdown(usage):\n    output, reasoning = (usage.get(name) for name in (\"output_tokens\", \"reasoning_output_tokens\"))\n    valid = (type(output) is int and type(reasoning) is int\n             and 0 <= reasoning <= output)\n    return {\"reasoning_output_tokens\": reasoning if valid else None,\n            \"non_reasoning_output_tokens\": output - reasoning if valid else None,\n            \"status\": \"reported\" if valid else \"unavailable\" if reasoning is None else \"invalid\",\n            \"scope\": \"reasoning_is_included_in_total_output_tokens\"}\n"
+        },
+        {
+          "path": "evals/benchmark/adapters/codex.py",
+          "sha256": "5b0ba40d9d01635576f42e3e114cb4c3942ec973733c70586ff3535f7aeacdf3",
+          "start_line": 183,
+          "end_line": 198,
+          "keepends": true,
+          "quote": "        elif kind == \"turn.completed\":\n            if self.completed:\n                return self.fail(\"protocol_error\", \"duplicate_codex_result\")\n            self.completed = True\n            if any(not call[\"completed\"] for call in self.discovery.values()):\n                self.fail(\"protocol_error\", \"incomplete_resource_discovery\")\n            if isinstance(self.answer, str) and self.answer.strip() and self.failure is None:\n                self.record_timing(\"final_answer_seconds\")\n            raw = event.get(\"usage\", {})\n            self.output_breakdown = output_breakdown(raw)\n            total, cached, written = (raw.get(name) for name in (\"input_tokens\", \"cached_input_tokens\", \"cache_write_input_tokens\"))\n            if all(type(value) is int and value >= 0 for value in (total, cached, written)) and total >= cached + written:\n                self.usage = {\"input_tokens\": total - cached - written, \"cache_read_tokens\": cached,\n                    \"cache_write_tokens\": written, \"output_tokens\": raw.get(\"output_tokens\")}\n            else:\n                return self.fail(\"protocol_error\", \"invalid_codex_usage\")\n"
+        },
+        {
+          "path": "evals/benchmark/adapters/codex.py",
+          "sha256": "5b0ba40d9d01635576f42e3e114cb4c3942ec973733c70586ff3535f7aeacdf3",
+          "start_line": 276,
+          "end_line": 290,
+          "keepends": true,
+          "quote": "    final = {\"type\": \"result\", \"answer\": observer.answer, \"usage\": observer.usage, \"turns\": observer.turns,\n        \"timings\": observer.timings,\n        \"cost_usd\": None, \"model_error\": bool(observer.failure and observer.failure[\"state\"] == \"model_error\"),\n        \"diagnostics\": {\"model_identity\": \"requested_not_observed\", \"authentication\": \"existing_codex_subscription\",\n            \"mcp_calls\": observer.calls, \"raw_stream\": \"codex-stream.jsonl\", \"billing_cost\": \"not_reported\",\n            \"stream_error_events\": observer.stream_error_events,\n            \"resource_discovery\": {\"contract\": request.get(\"resource_discovery\"),\n                \"calls\": len(observer.discovery),\n                \"completed_empty\": sum(call[\"completed\"] for call in observer.discovery.values())},\n            \"raw_stream_sha256\": artifact_io.hash_file(trial / \"codex-stream.jsonl\",\n                request[\"limits\"][\"trace_bytes\"])[\"sha256\"] if (trial / \"codex-stream.jsonl\").exists() else None,\n            \"read_ledger\": observer.read_ledger.report(),\n            \"output_breakdown\": observer.output_breakdown,\n            \"tool_timeline\": observer.tool_timeline.report(\n                observer.clock() - observer.command_started if observer.command_started is not None else None),\n"
+        }
+      ]
+    },
+    {
+      "id": "ind-v12-neg-01",
+      "kind": "negative",
+      "query": "Calibrate effort changes while also changing role instructions",
+      "scope": "An effort-axis calibration whose conditions change role labels or instruction paths.",
+      "explanation": "The inspected calibration validator explicitly rejects effort-axis comparisons unless role labels and ordered instruction paths stay fixed. This is a bounded rejection of the confounded calibration, not a claim about every possible experiment.",
+      "mandatory_paths": [
+        "evals/benchmark/campaign.py",
+        "evals/benchmark/conditions.py"
+      ],
+      "excerpts": [
+        {
+          "path": "evals/benchmark/conditions.py",
+          "sha256": "0c66a6f472808a6dfcebea4dbe03609094a15270e2da9c0280436f9f0dc1f018",
+          "start_line": 78,
+          "end_line": 93,
+          "keepends": true,
+          "quote": "def validate_calibration(value: object, matrix: object) -> dict:\n    \"\"\"Separate portable role-prompt and effort experiments before inference.\"\"\"\n    if (not isinstance(value, dict) or set(value) != {\"axis\"}\n            or value[\"axis\"] not in (\"role_prompt\", \"effort\")):\n        raise artifact_io.BenchmarkError(\"invalid_calibration\", \"declare a role_prompt or effort axis\")\n    matrix = validate_conditions(matrix)\n    if (any(\"role\" not in item or \"reasoning_effort\" not in item for item in matrix)\n            or len({(item[\"tools\"], item.get(\"symbol_lookup\"), item.get(\"source_delivery\")) for item in matrix}) != 1):\n        raise artifact_io.BenchmarkError(\"confounded_calibration\", \"calibration needs explicit roles, efforts and identical tools\")\n    if value[\"axis\"] == \"effort\":\n        if (len({item[\"role\"] for item in matrix}) != 1\n                or len({tuple(item[\"instruction_paths\"]) for item in matrix}) != 1):\n            raise artifact_io.BenchmarkError(\"confounded_calibration\", \"an effort comparison must keep the role and instruction paths fixed\")\n    elif len({item[\"reasoning_effort\"] for item in matrix}) != 1:\n        raise artifact_io.BenchmarkError(\"confounded_calibration\", \"a role-prompt comparison must keep effort fixed\")\n    return value\n"
+        },
+        {
+          "path": "evals/benchmark/campaign.py",
+          "sha256": "8bfcebe40d6eec9cb75f0e399d21edbbfbc0488913f1077cfb9925cfe122cafd",
+          "start_line": 23,
+          "end_line": 28,
+          "keepends": true,
+          "quote": "def prepare(*, corpus_path, config, source_repo, tool_repo, output, repetitions=3):\n    checked = corpus.check_corpus(corpus_path, source_repo, require_current=True)\n    corpus.require_private(checked[\"cases\"][0][\"role\"], corpus_path, output, [source_repo, tool_repo])\n    names = conditions.condition_names({\"schema_version\": 3, \"conditions\": config[\"conditions\"]}) if \"conditions\" in config else conditions.CONDITIONS\n    if \"calibration\" in config:\n        conditions.validate_calibration(config[\"calibration\"], config.get(\"conditions\"))\n"
+        }
+      ]
+    },
+    {
+      "id": "ind-v12-neg-02",
+      "kind": "negative",
+      "query": "Mark acceptance criteria met without retained answer evidence",
+      "scope": "An acceptance assessment row marked met while answer evidence is absent.",
+      "explanation": "The owning validator explicitly requires an answer excerpt for met criteria and requires any excerpt to occur in the retained answer. Assessment admission invokes this validator before computing the task outcome.",
+      "mandatory_paths": [
+        "evals/benchmark/assessment.py",
+        "evals/benchmark/intent.py",
+        "evals/benchmark/review_contracts.py"
+      ],
+      "excerpts": [
+        {
+          "path": "evals/benchmark/intent.py",
+          "sha256": "ffca47307790cd7c672e6cfaac6be2c09aa5eb1b9aca74d0b252483936971041",
+          "start_line": 24,
+          "end_line": 42,
+          "keepends": true,
+          "quote": "def validate_assessment(rows, criteria, answer):\n    contract.require(isinstance(rows, list) and len(rows) == len(criteria),\n                     \"assessment omits user acceptance criteria\", \"review_inventory\")\n    expected = {row[\"id\"] for row in criteria}\n    seen = set()\n    for row in rows:\n        contract.fields(row, (\"criterion_id\", \"status\", \"answer_excerpt\", \"rationale\"))\n        identifier = row[\"criterion_id\"]\n        contract.require(isinstance(identifier, str) and identifier in expected and identifier not in seen,\n                         \"unknown or duplicate acceptance criterion\", \"review_inventory\")\n        seen.add(identifier)\n        contract.require(row[\"status\"] in (\"met\", \"unmet\", \"unknown\"), \"invalid acceptance status\")\n        contract.text(row[\"rationale\"])\n        excerpt = row[\"answer_excerpt\"]\n        contract.require(row[\"status\"] != \"met\" or excerpt is not None,\n                         \"met acceptance criterion needs answer evidence\", \"review_quote\")\n        if excerpt is not None:\n            contract.require(contract.text(excerpt) in answer,\n                             \"acceptance excerpt is absent from the retained answer\", \"review_quote\")\n"
+        },
+        {
+          "path": "evals/benchmark/review_contracts.py",
+          "sha256": "5d50edec2f25a485864704459b218c70b6990ce8f62202473c0224f44815d7ca",
+          "start_line": 22,
+          "end_line": 35,
+          "keepends": true,
+          "quote": "def require(condition, message, code=\"review_schema\"):\n    if not condition:\n        raise artifact_io.BenchmarkError(code, message)\n\n\ndef fields(value, required, optional=()):\n    require(isinstance(value, dict) and set(required) <= set(value)\n            and not set(value) - set(required) - set(optional), \"missing or unexpected review fields\")\n\n\ndef text(value, maximum=16384):\n    require(isinstance(value, str) and bool(value.strip()) and len(value.encode()) <= maximum,\n            \"expected bounded nonempty review text\")\n    return value\n"
+        },
+        {
+          "path": "evals/benchmark/assessment.py",
+          "sha256": "06511965a483a83aa34b04d2284a2fb39970abf14a8bcd33b793b6d606416264",
+          "start_line": 79,
+          "end_line": 87,
+          "keepends": true,
+          "quote": "        if has_acceptance:\n            intent.validate_assessment(item[\"acceptance\"], packet[\"rubric\"][\"acceptance_criteria\"], answer)\n            failed = (any(row[\"status\"] == \"unmet\" for row in item[\"acceptance\"])\n                      or any(claim[\"material_error\"] for claim in item[\"claims\"])\n                      or any(row[\"handling\"] == \"overclaimed\" for row in item[\"unknowns\"]))\n            unresolved = any(row[\"status\"] == \"unknown\" for row in item[\"acceptance\"])\n            expected = \"unsatisfied\" if failed else \"unknown\" if unresolved else \"satisfied\"\n            review_contracts.require(item[\"outcome\"][\"status\"] == expected,\n                                     \"task outcome conflicts with the acceptance evidence\", \"review_outcome\")\n"
+        }
+      ]
+    },
+    {
+      "id": "ind-v12-neg-03",
+      "kind": "negative",
+      "query": "Read review artifacts through symbolic parent directories",
+      "scope": "Review artifacts reached through a symbolic-link root or intermediate parent directory.",
+      "explanation": "The review root must be canonical without symbolic links, parent traversal opens directories with O_NOFOLLOW, and file reads likewise forbid following links. The submitted-assessment reader uses these operations, so the requested linked-parent access is rejected within this review IO path.",
+      "mandatory_paths": [
+        "evals/benchmark/review.py",
+        "evals/benchmark/review_io.py"
+      ],
+      "excerpts": [
+        {
+          "path": "evals/benchmark/review_io.py",
+          "sha256": "7014411a97cbfb9bdc768596b27c917e075c82ba513642e17598671099a6c567",
+          "start_line": 47,
+          "end_line": 54,
+          "keepends": true,
+          "quote": "class Root:\n    def __init__(self, path: Path):\n        if os.name != \"posix\" or not hasattr(os, \"O_NOFOLLOW\"):\n            raise artifact_io.BenchmarkError(\"review_platform\", \"review artifacts require POSIX no-follow directory operations\")\n        self.path = path.absolute()\n        if self.path != self.path.resolve(strict=True):\n            raise artifact_io.BenchmarkError(\"review_path\", \"artifact directory must be canonical, without symbolic links\")\n        self.fd = os.open(self.path, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)\n"
+        },
+        {
+          "path": "evals/benchmark/review_io.py",
+          "sha256": "7014411a97cbfb9bdc768596b27c917e075c82ba513642e17598671099a6c567",
+          "start_line": 81,
+          "end_line": 126,
+          "keepends": true,
+          "quote": "    @contextmanager\n    def parent(self, path, create=False):\n        parts = relative(path)\n        descriptors = [os.dup(self.fd)]\n        try:\n            for part in parts[:-1]:\n                if create:\n                    try:\n                        os.mkdir(part, 0o700, dir_fd=descriptors[-1])\n                    except FileExistsError:\n                        pass\n                descriptors.append(os.open(part, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW,\n                                           dir_fd=descriptors[-1]))\n            yield descriptors[-1], parts[-1]\n        finally:\n            for fd in reversed(descriptors):\n                os.close(fd)\n\n    def read(self, path, limit=artifact_io.CONTROL_BYTE_LIMIT, optional=False):\n        try:\n            with self.parent(path) as (parent, name):\n                expected_parent = os.fstat(parent)\n                fd = os.open(name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=parent)\n                with os.fdopen(fd, \"rb\") as stream:\n                    before = os.fstat(stream.fileno())\n                    if not stat.S_ISREG(before.st_mode) or before.st_size > limit:\n                        raise artifact_io.BenchmarkError(\"review_file\", \"artifact must be a bounded regular file\")\n                    body = stream.read(limit + 1)\n                    after = os.fstat(stream.fileno())\n                current = os.stat(name, dir_fd=parent, follow_symlinks=False)\n                if len(body) > limit or identity(before) != identity(after) or identity(after) != identity(current):\n                    raise artifact_io.BenchmarkError(\"review_changed\", \"artifact changed while reading\")\n                self.check_parent(path, expected_parent)\n            self.read_bytes += len(body)\n            if self.read_bytes > READ_LIMIT:\n                raise artifact_io.BenchmarkError(\"review_limit\", \"review input exceeds its aggregate read cap\")\n            self.check_root()\n            self.records[path] = {\"sha256\": sha(body), \"limit\": limit, \"identity\": identity(before)}\n            return body\n        except FileNotFoundError:\n            if not optional:\n                raise artifact_io.BenchmarkError(\"review_missing\", f\"required artifact is absent: {path}\")\n            self.records[path] = {\"sha256\": None, \"limit\": limit, \"identity\": None}\n            return None\n        except OSError as error:\n            raise artifact_io.BenchmarkError(\"review_path\", f\"cannot read artifact without following links: {path}\") from error\n"
+        },
+        {
+          "path": "evals/benchmark/review.py",
+          "sha256": "33d712f14d842d211bbbcb5bb5b0696d9e0b363f038dc491eebe5010791e6a67",
+          "start_line": 526,
+          "end_line": 530,
+          "keepends": true,
+          "quote": "def import_assessment(export: Path, assessment: Path):\n    with Root(export) as root, Root(assessment.absolute().parent) as submitted, root.exclusive_lock(\"import.lock\"):\n        seal, packet, _, answers, sources = load_export(root)\n        value = submitted.json(assessment.name)\n        review_assessment.check_assessment(value, seal, packet, answers, sources)\n"
+        }
+      ]
+    },
+    {
+      "id": "ind-v12-neg-04",
+      "kind": "negative",
+      "query": "Treat negative runtime token counts as complete telemetry",
+      "scope": "The telemetry completeness result for adapter usage containing a negative token count.",
+      "explanation": "The telemetry parser records missing-or-invalid issues and replaces negative token counts with unknown values. Completeness is the absence of issues, and trial execution stores this exact telemetry object; a negative count cannot yield complete telemetry through this path.",
+      "mandatory_paths": [
+        "evals/benchmark/protocol.py",
+        "evals/benchmark/trials.py"
+      ],
+      "excerpts": [
+        {
+          "path": "evals/benchmark/protocol.py",
+          "sha256": "113ecebe42b9f2fa636084c55f8828d6b918b363a177ab15c12c430dfa0344e9",
+          "start_line": 193,
+          "end_line": 207,
+          "keepends": true,
+          "quote": "def telemetry(result: dict | None, limits: dict) -> dict:\n    result = result or {}\n    usage = result.get(\"usage\")\n    fields = (\"input_tokens\", \"output_tokens\", \"cache_read_tokens\", \"cache_write_tokens\")\n    issues, values = [], {}\n    for name in fields:\n        value = usage.get(name) if isinstance(usage, dict) else None\n        if type(value) is not int or value < 0:\n            issues.append(f\"missing_or_invalid_{name}\")\n            value = None\n        values[name] = value\n    turns = result.get(\"turns\")\n    if type(turns) is not int or turns < 1:\n        issues.append(\"missing_or_invalid_turns\")\n        turns = None\n"
+        },
+        {
+          "path": "evals/benchmark/protocol.py",
+          "sha256": "113ecebe42b9f2fa636084c55f8828d6b918b363a177ab15c12c430dfa0344e9",
+          "start_line": 241,
+          "end_line": 244,
+          "keepends": true,
+          "quote": "    return {\"complete\": not issues, \"issues\": sorted(set(issues)), \"usage\": values, \"turns\": turns,\n            \"timings\": timings,\n            \"cost_usd\": cost, \"budget_exceeded\": exceeded,\n            \"model_budget_enforcement\": \"adapter_unverified\"}\n"
+        },
+        {
+          "path": "evals/benchmark/trials.py",
+          "sha256": "58c12a62616e1ca1c1c60dd8f47373a7ef8ca2e50e405fab58883aea8bd03636",
+          "start_line": 282,
+          "end_line": 295,
+          "keepends": true,
+          "quote": "    measured = model_protocol.telemetry(result, limits)\n    if any(value is not None and value > process.elapsed_seconds for value in measured[\"timings\"].values()):\n        measured[\"issues\"] = sorted(set(measured[\"issues\"]) | {\"invalid_timings\"})\n        measured[\"complete\"] = False\n        measured[\"timings\"] = dict.fromkeys(measured[\"timings\"])\n    unexpected_tools = sorted(set(tools) - set(request[\"available_tools\"]))\n    envelope[\"diagnostics\"] = {\"protocol_issues\": issues, \"telemetry\": measured, \"tools\": tools,\n        \"unexpected_tools\": unexpected_tools,\n        \"observed_model\": init.get(\"model\") if init else None,\n        \"observed_adapter_version\": init.get(\"adapter_version\") if init else None,\n        \"elapsed_seconds\": process.elapsed_seconds, \"setup_seconds\": manifest[\"setup_seconds\"],\n        \"returncode\": process.returncode, \"trace_bytes\": len(process.stdout), \"stderr_bytes\": len(process.stderr),\n        \"enforced_limits\": [name for name in (\"timeout_seconds\", \"trace_bytes\", \"stderr_bytes\", \"answer_bytes\")\n                            if limits[name] is not None]}\n"
+        }
+      ]
+    },
+    {
+      "id": "ind-v12-neg-05",
+      "kind": "negative",
+      "query": "Move registered collection sources between different project roots",
+      "scope": "Updating a previously registered collection source under a different project identity or root.",
+      "explanation": "Storage rejects any existing source whose project or project root differs from the proposed source. Collection preparation also checks this before extraction and mutation. This establishes the specific forbidden reassignment, without asserting that paths can never relocate within their permitted scope.",
+      "mandatory_paths": [
+        "mcp/servers/mmcg/src/miner/collection.rs",
+        "mcp/servers/mmcg/src/miner/store/collection.rs"
+      ],
+      "excerpts": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/store/collection.rs",
+          "sha256": "dd7397c50b136e2b8f48e4de563b32ee77477675fa8f24f99f9b5f61635fee20",
+          "start_line": 263,
+          "end_line": 279,
+          "keepends": true,
+          "quote": "    /// Commit complete source snapshots and their current candidate sets as a\n    /// batch. Errors leave the previous successful snapshots intact.\n    pub(crate) fn collect_candidates(\n        &mut self,\n        batches: &[CollectionBatch],\n    ) -> SqlResult<CollectionStats> {\n        let mut stats = CollectionStats::default();\n        let mut changed = Vec::new();\n        for batch in batches {\n            let old = self.collection_source(&batch.source.source)?;\n            if old.as_ref().is_some_and(|old| {\n                old.project != batch.source.project || old.project_root != batch.source.project_root\n            }) {\n                return Err(rusqlite::Error::InvalidParameterName(\n                    \"collection source cannot change project\".into(),\n                ));\n            }\n"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/miner/collection.rs",
+          "sha256": "73aa301acdee1214f98570d1764ce8c09f1a8a18b66fe8d4d51aefb325701f4c",
+          "start_line": 416,
+          "end_line": 428,
+          "keepends": true,
+          "quote": "        let old = db\n            .map(|db| db.collection_source(&source.source))\n            .transpose()?\n            .flatten();\n        if old.as_ref().is_some_and(|old| {\n            old.project != source.project || old.project_root != source.project_root\n        }) {\n            return Err(\"collection source cannot change project\".into());\n        }\n        let mut detected = if old.as_ref() == Some(&source) {\n            Vec::new()\n        } else {\n            extract(&snapshot, &source)\n"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/miner/collection.rs",
+          "sha256": "73aa301acdee1214f98570d1764ce8c09f1a8a18b66fe8d4d51aefb325701f4c",
+          "start_line": 470,
+          "end_line": 480,
+          "keepends": true,
+          "quote": "    } else {\n        mutate_private_store(\n            &db_path,\n            |db| prepare(db, &root, paths).map(ControlFlow::Continue),\n            |db, batches| {\n                let stats: CollectionStats = db.collect_candidates(&batches)?;\n                Ok(\n                    json!({\"status\":\"complete\", \"dry_run\":false, \"extractor\":EXTRACTOR, \"collection\":stats}),\n                )\n            },\n        )\n"
+        }
+      ]
+    },
+    {
+      "id": "ind-v12-neg-06",
+      "kind": "negative",
+      "query": "Parse intake JSON containing duplicate object keys",
+      "scope": "JSON decoded by the intake harness strict parser.",
+      "explanation": "The object-pairs hook raises on a repeated key, and strict_json installs that hook on the JSON decoder. Processor-output evaluation catches the decoding failure and records invalid response JSON; it does not admit duplicate-key input.",
+      "mandatory_paths": [
+        "evals/intake/harness.py"
+      ],
+      "excerpts": [
+        {
+          "path": "evals/intake/harness.py",
+          "sha256": "9fdefe586ad36fa49da5e4b4ef969ce5d6729244020d9ff2d68b63380f496f33",
+          "start_line": 56,
+          "end_line": 71,
+          "keepends": true,
+          "quote": "def strict_json(body: bytes):\n    def pairs(items):\n        result = {}\n        for key, value in items:\n            if key in result:\n                raise ValueError(\"duplicate JSON key\")\n            result[key] = value\n        return result\n\n    def nonfinite(_):\n        raise ValueError(\"nonfinite JSON number\")\n\n    try:\n        return json.loads(body.decode(\"utf-8\"), object_pairs_hook=pairs, parse_constant=nonfinite)\n    except (UnicodeError, RecursionError) as error:\n        raise ValueError(\"invalid bounded JSON\") from error\n"
+        },
+        {
+          "path": "evals/intake/harness.py",
+          "sha256": "9fdefe586ad36fa49da5e4b4ef969ce5d6729244020d9ff2d68b63380f496f33",
+          "start_line": 377,
+          "end_line": 385,
+          "keepends": true,
+          "quote": "    raw_response = None\n    if (directory / \"processor.stdout\").exists():\n        try:\n            raw_response = strict_json(read_regular(directory / \"processor.stdout\", STDOUT_LIMIT))\n            row[\"wire_invariant_issues\"] = response_issues(raw_response, source)\n            row[\"wire_contract_valid\"] = not row[\"wire_invariant_issues\"]\n        except (OSError, ValueError, KeyError, TypeError, RecursionError):\n            row[\"wire_contract_valid\"] = False\n            row[\"wire_invariant_issues\"] = [\"invalid_response_json\"]\n"
+        }
+      ]
+    },
+    {
+      "id": "ind-v12-neg-07",
+      "kind": "negative",
+      "query": "Measure native reasoning time from observed tool intervals",
+      "scope": "Native model reasoning duration inferred from client-observed tool event intervals.",
+      "explanation": "The timeline records client event receipt intervals and reports their sum, union and outside-interval remainder. Its explicit output limitation says outside intervals include startup, model work, network and queuing, and neither measure isolates native execution or reasoning time. The adapter exposes this limited timeline as diagnostics.",
+      "mandatory_paths": [
+        "evals/benchmark/adapters/codex.py",
+        "evals/benchmark/adapters/codex_metrics.py"
+      ],
+      "excerpts": [
+        {
+          "path": "evals/benchmark/adapters/codex_metrics.py",
+          "sha256": "8415afc664e780ad3bab04767fa73bceb29fb39c972588fe0ccd42ac6d849e56",
+          "start_line": 21,
+          "end_line": 69,
+          "keepends": true,
+          "quote": "    def observe(self, kind, item, seconds):\n        identifier, tool = item.get(\"id\"), item.get(\"tool\")\n        if not isinstance(identifier, str) or not identifier or not isinstance(tool, str):\n            identifier = \"unidentified-\" + str(len(self.calls))\n        call = self.calls.setdefault(identifier, {\"id\": identifier, \"tool\": tool,\n            \"start_seconds\": None, \"end_seconds\": None, \"status\": None, \"invalid\": False})\n        if call[\"end_seconds\"] is not None or call[\"status\"] is not None:\n            if kind == \"item.completed\":\n                self.duplicate_completions += 1\n            return\n        if call[\"tool\"] != tool or not _seconds(seconds):\n            call[\"invalid\"] = True\n        elif kind == \"item.started\":\n            if call[\"start_seconds\"] is None:\n                call[\"start_seconds\"] = seconds\n            else:\n                call[\"invalid\"] = True\n        elif kind == \"item.completed\":\n            call[\"end_seconds\"] = seconds\n        if kind == \"item.completed\":\n            call[\"status\"] = item.get(\"status\", \"unreported\")\n\n    def report(self, command_seconds):\n        intervals, calls = [], []\n        valid_horizon = _seconds(command_seconds)\n        for call in self.calls.values():\n            start, end = call[\"start_seconds\"], call[\"end_seconds\"]\n            valid = (not call[\"invalid\"] and valid_horizon and _seconds(start)\n                     and _seconds(end) and start <= end <= command_seconds)\n            duration = end - start if valid else None\n            if valid:\n                intervals.append((start, end))\n            calls.append({key: call[key] for key in (\"id\", \"tool\", \"start_seconds\", \"end_seconds\", \"status\")}\n                         | {\"elapsed_seconds\": duration})\n        union, previous_end = 0, 0\n        for start, end in sorted(intervals):\n            union += max(0, end - max(start, previous_end))\n            previous_end = max(previous_end, end)\n        complete = valid_horizon and len(intervals) == len(calls)\n        return {\"schema_version\": 1, \"scope\": \"client_observed_tool_event_intervals\",\n            \"command_seconds\": command_seconds if valid_horizon else None,\n            \"calls\": calls, \"call_count\": len(calls), \"unknown_spans\": len(calls) - len(intervals),\n            \"duplicate_completions\": self.duplicate_completions, \"accounting_complete\": complete,\n            \"observed_tool_span_seconds\": sum(end - start for start, end in intervals),\n            \"observed_tool_interval_union_seconds\": union,\n            \"tool_interval_union_seconds\": union if complete else None,\n            \"outside_tool_intervals_seconds\": command_seconds - union if complete else None,\n            \"limitations\": \"Event receipt includes client and transport overhead. Outside intervals include \"\n                \"startup, model work, network and queuing; neither measure isolates native execution or reasoning time.\"}\n"
+        },
+        {
+          "path": "evals/benchmark/adapters/codex.py",
+          "sha256": "5b0ba40d9d01635576f42e3e114cb4c3942ec973733c70586ff3535f7aeacdf3",
+          "start_line": 287,
+          "end_line": 290,
+          "keepends": true,
+          "quote": "            \"read_ledger\": observer.read_ledger.report(),\n            \"output_breakdown\": observer.output_breakdown,\n            \"tool_timeline\": observer.tool_timeline.report(\n                observer.clock() - observer.command_started if observer.command_started is not None else None),\n"
+        }
+      ]
+    },
+    {
+      "id": "ind-v12-neg-08",
+      "kind": "negative",
+      "query": "Compare active profile rules from unsuccessful delivery packets",
+      "scope": "A retained non-ok profile packet containing one or more active returned rules.",
+      "explanation": "After validating active returned feedback, the comparator raises if the packet status is not ok and any rule was received. Its CLI calls the comparator before writing the inspection output. This rejection is scoped to nonempty personal-rule exposure from the unsuccessful packet.",
+      "mandatory_paths": [
+        "evals/persona/delivery.py"
+      ],
+      "excerpts": [
+        {
+          "path": "evals/persona/delivery.py",
+          "sha256": "aa45b9f4697033fe149c40980508dc1f57f4d74b1f70c0fb48344f670254c0c6",
+          "start_line": 23,
+          "end_line": 32,
+          "keepends": true,
+          "quote": "    received, revisions = {}, {}\n    for row in feedback:\n        if (not isinstance(row, dict) or not isinstance(row.get(\"key\"), str) or not row[\"key\"].strip()\n                or not isinstance(row.get(\"statement\"), str) or not row[\"statement\"].strip() or row.get(\"status\") != \"active\"\n                or row[\"key\"] in received):\n            raise ValueError(\"invalid, unaccepted or duplicate returned rule\")\n        received[row[\"key\"]] = row[\"statement\"]\n        revisions[row[\"key\"]] = row.get(\"review_revision\")\n    if received and packet.get(\"status\") != \"ok\":\n        raise ValueError(\"a non-ok profile packet cannot expose personal rules\")\n"
+        },
+        {
+          "path": "evals/persona/delivery.py",
+          "sha256": "aa45b9f4697033fe149c40980508dc1f57f4d74b1f70c0fb48344f670254c0c6",
+          "start_line": 58,
+          "end_line": 63,
+          "keepends": true,
+          "quote": "    expected, packet = args.expected.read_bytes(), args.packet.read_bytes()\n    result = compare(json.loads(expected), json.loads(packet))\n    result[\"input_sha256\"] = {\"expected\": hashlib.sha256(expected).hexdigest(), \"packet\": hashlib.sha256(packet).hexdigest()}\n    with args.output.open(\"x\", encoding=\"utf-8\") as handle:\n        json.dump(result, handle, ensure_ascii=False, indent=2)\n        handle.write(\"\\n\")\n"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,557 @@
+{
+  "schema_version": 1,
+  "kind": "mastermind-concept-relevance",
+  "purpose": "Fresh independent blind fixture for short natural-language concept intents on inspected implementation owners.",
+  "frozen_date": "2026-10-16",
+  "source_head": "f418b380bf191877f5903f5c85f483f5e0e86632",
+  "source_files_sha256": {
+    "evals/benchmark/artifacts.py": "34f870b53a572b18199969e9f184029d44378943d977b8e20ca0bed936a6f452",
+    "evals/control/harness.py": "4c3f106baf7b5ce75586d6e2d79c2c9d88339595375a56efed8817dd245a7ed5",
+    "mcp/servers/mmcg/src/context.rs": "9da783e6a3c2dff10d750493da8699f4866c660120b5d8537ca4243b465a81a9",
+    "mcp/servers/mmcg/src/diff.rs": "83fc82e35209fdfd5109c3b4e7a749766442915a7cacc0db440c7330ded07aad",
+    "mcp/servers/mmcg/src/indexer/go.rs": "f8c969195b690abfb2b8f72f1d622530965ae14e1c99b76cb467561dabce2888",
+    "mcp/servers/mmcg/src/miner/codex_transcript.rs": "17989e9fda7ce8070475f5e94d7c393f1c0899751edc9ebef0e36a5472a403b1",
+    "mcp/servers/mmcg/src/miner/stats.rs": "e6989c987de7d3431484beb76c4771d4330d66b1b5f471023a7b99a670617cfc",
+    "mcp/servers/mmcg/src/spec_removals.rs": "c95bab325c8eab1904eb4e10ee734803713d4484ddd336d5e9d8363e6c14388a",
+    "npm/mastermind/bin/help.js": "b194856ee5fde144844367235c17af319e69360ab8cc4c1e3ffd5d2153a24b06",
+    "npm/mastermind/bin/update.js": "1b23c1009b8631880be4812b427dc38fceeb36534a4e91c0ad936a23bc845109"
+  },
+  "source_basis": "Tracked working-tree snapshot after owner rustdoc; not a clean commit. File digests bind the inspected owner bytes.",
+  "provenance": {
+    "authorship": "model-authored local purposive sample; not human gold",
+    "author_role": "independent fixture author blind to the proposed retrieval policy and new retrieval outputs",
+    "selection_source": "/var/folders/21/xj6nw_bs4rn6l5s3h8b9m3t80000gn/T/mmcg-concept-noise-nugw2gbz/source",
+    "source_tree_sha256": "08f7c2bc7fcddb5d1ad8db4d0e1b61e1022a799fa4a42d5fb6577ab68b97971a",
+    "source_tree_binding_basis": "Snapshot digest supplied by the coordinating agent; owner file digests independently computed by the fixture author.",
+    "inspected_prior_material": "Existing concept-relevance fixture case ids, query text and path/symbol anchors only, for novelty; fixture README and evaluator format contract.",
+    "not_inspected": [
+      "query and ranking implementation",
+      "retrieval candidate pages",
+      "baseline or relevance reports",
+      "proposed policy or later outputs"
+    ],
+    "freeze_contract": "Queries, ids, kinds, splits, top limits and path/symbol judgments were frozen before any retrieval result. Only source bindings and exact line locations may be rebound before first output if owner documentation changes without changing these intents or anchors.",
+    "query_anchor_sha256": "b369eebe8a6654c1ea25b0253f092dd1a11d340beaac8809b89275a2adf66c7f",
+    "query_anchor_digest_format": "SHA-256 of UTF-8 canonical JSON: sorted keys, compact separators, non-ASCII preserved; array in case order with id, split, kind, query, top and relevant/distractors path/symbol pairs only."
+  },
+  "selection": {
+    "method": "Purposive source-owner inspection, with short ordinary lowercase queries; no aliases, result-guided selection or query tuning.",
+    "novelty": "Selected fresh owners and operations absent from the inspected observed fixture ids, queries and relevant anchors.",
+    "owner_languages": [
+      "rust",
+      "javascript",
+      "python"
+    ],
+    "scope": "One repository; local useful navigation intents from ten implementation responsibilities. Negative operations are plausible adjacent capabilities unsupported by the inspected owners.",
+    "limitations": [
+      "Model judgments are sparse source anchors, not exhaustive relevance labels.",
+      "This is not a random sample of user requests or a semantic quality estimate.",
+      "Negative source review does not establish product-wide absence of every possible implementation."
+    ]
+  },
+  "denominators": {
+    "independent_positive_queries": 10,
+    "independent_negative_queries": 4,
+    "positive_anchors": 12,
+    "total_cases": 14
+  },
+  "judgment_contract": {
+    "identity": [
+      "path",
+      "symbol"
+    ],
+    "positive": "A result is a frozen hit only when path and symbol match one listed relevant source anchor.",
+    "distractor": "An explicitly inspected neighboring owner with a distinct operation is labeled separately; all other rows remain unjudged.",
+    "negative": "No relevant anchor is expected for the requested unsupported operation. Returned lexical candidates do not establish that capability.",
+    "evidence": "Anchor line bounds are one-based inclusive and source_excerpt preserves those exact snapshot lines."
+  },
+  "cases": [
+    {
+      "id": "v6-working-tree-symbol-diff",
+      "split": "independent",
+      "kind": "positive",
+      "query": "compare symbol changes including staged unstaged and untracked files",
+      "top": 5,
+      "family": "source change analysis",
+      "owner_language": "rust",
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/diff.rs",
+          "symbol": "symbols_changed_since_worktree",
+          "line_start": 632,
+          "line_end": 658,
+          "source_excerpt": "/// Same symbol comparison as [`symbols_changed_since`], but the file scope is\n/// `git_ref` → **working tree**: staged, unstaged, and untracked changes count,\n/// not just what has been committed.\n///\n/// Callers that audit work *before* it is committed must use this. The\n/// commit-range scope of [`symbols_changed_since`] is empty by construction\n/// while `HEAD` is still the baseline, which reads as \"the spec named these\n/// files but nothing changed\" rather than \"nothing is committed yet\".\n///\n/// The file set matches [`symbols_changed_in_worktree`] (and therefore\n/// `mastermind impact`); the symbol comparison is `git_ref`'s blobs against the\n/// live index, so a stale index under-reports symbol changes — it does not\n/// invent them.\npub fn symbols_changed_since_worktree(\n    store: &Store,\n    repo_root: &Path,\n    git_ref: &str,\n) -> Result<SymbolDiff, DiffError> {\n    symbols_changed_in_worktree_controlled(\n        store,\n        repo_root,\n        git_ref,\n        Some(Instant::now() + git_timeout()),\n        None,\n    )\n    .map(|diff| diff.diff)\n    .map_err(|error| worktree_scope_error(git_ref, error))",
+          "reason": "This public owner selects the working tree scope, including staged, unstaged and untracked changes, and returns the symbol diff."
+        }
+      ],
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/diff.rs",
+          "symbol": "symbols_changed_since",
+          "line_start": 572,
+          "line_end": 578,
+          "source_excerpt": "pub fn symbols_changed_since(\n    store: &Store,\n    repo_root: &Path,\n    git_ref: &str,\n) -> Result<SymbolDiff, DiffError> {\n    symbols_changed_since_controlled(store, repo_root, git_ref, None, None)\n}",
+          "reason": "This entry point delegates to the committed range comparison and does not select the requested working tree scope."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/diff.rs",
+          "symbol": "is_full_git_oid",
+          "line_start": 527,
+          "line_end": 534,
+          "source_excerpt": "/// Git repositories currently use full SHA-1 or SHA-256 object IDs. Keep one\n/// lowercase validator for persisted revision bindings across the product.\npub(crate) fn is_full_git_oid(value: &str) -> bool {\n    matches!(value.len(), 40 | 64)\n        && value\n            .bytes()\n            .all(|byte| byte.is_ascii_hexdigit() && !byte.is_ascii_uppercase())\n}",
+          "reason": "This validates revision text rather than comparing declarations."
+        }
+      ],
+      "reason": "Find the source comparison entry point suitable before the executor commits changes."
+    },
+    {
+      "id": "v6-unacknowledged-removals",
+      "split": "independent",
+      "kind": "positive",
+      "query": "find removed symbols missing explicit breaking change acknowledgements",
+      "top": 5,
+      "family": "breaking change contract",
+      "owner_language": "rust",
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/spec_removals.rs",
+          "symbol": "unacknowledged",
+          "line_start": 97,
+          "line_end": 110,
+          "source_excerpt": "    pub(crate) fn unacknowledged(&self) -> Result<Vec<(String, String)>, Unresolved> {\n        let baseline = self.baseline.as_ref().map_err(Clone::clone)?;\n        let mut remaining = Vec::new();\n        for key in &self.removed {\n            let symbol = baseline.symbol(key)?;\n            if symbol.kind != \"module\" && !self.acknowledged.contains(key) {\n                let file = &baseline.files[&key.0];\n                let name = ancestry(file, key.1, baseline.deadline)?.join(\".\");\n                remaining.push((key.0.clone(), name));\n            }\n        }\n        remaining.sort();\n        Ok(remaining)\n    }",
+          "reason": "This method lists removed non-module declarations whose parser identity was not acknowledged, with their enclosing names."
+        }
+      ],
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/spec_removals.rs",
+          "symbol": "accepts_snapshot",
+          "line_start": 112,
+          "line_end": 131,
+          "source_excerpt": "    pub(crate) fn accepts_snapshot(\n        &self,\n        name: &str,\n        scopes: &[Scope<'_>],\n        signature: Option<&str>,\n    ) -> Result<bool, Unresolved> {\n        let baseline = self.baseline.as_ref().map_err(Clone::clone)?;\n        let key = baseline.resolve(name, scopes, None)?;\n        if !self.removed.contains(&key) || !self.acknowledged.contains(&key) {\n            return Ok(false);\n        }\n        let symbol = baseline.symbol(&key)?;\n        if signature.is_some_and(|signature| symbol.signature.as_deref() != Some(signature)) {\n            return Err(Unresolved {\n                reason: \"signature_mismatch\",\n                matches: Some(1),\n            });\n        }\n        Ok(true)\n    }",
+          "reason": "This checks one acknowledged removed snapshot rather than enumerating missing acknowledgements."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/spec_removals.rs",
+          "symbol": "ack_scope",
+          "line_start": 145,
+          "line_end": 151,
+          "source_excerpt": "fn ack_scope(ack: &SymbolSpec) -> Scope<'_> {\n    Scope {\n        name: ack.name(),\n        file: ack.file(),\n        language: ack.language(),\n    }\n}",
+          "reason": "This only projects the scope of a declared acknowledgement."
+        }
+      ],
+      "reason": "Find the owner that reports omitted breaking change acknowledgements."
+    },
+    {
+      "id": "v6-go-import-aliases",
+      "split": "independent",
+      "kind": "positive",
+      "query": "extract go import aliases and package paths",
+      "top": 5,
+      "family": "language import extraction",
+      "owner_language": "rust",
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/indexer/go.rs",
+          "symbol": "collect_imports",
+          "line_start": 132,
+          "line_end": 150,
+          "source_excerpt": "/// `import \"fmt\"` / `import f \"fmt\"` / `import ( a \"x\"; b \"y\" )`.\nfn collect_imports(decl: &Node, source: &[u8], pending: &mut PendingFile, module_index: usize) {\n    let line = line_of(decl);\n    let mut cursor = decl.walk();\n    for child in decl.children(&mut cursor) {\n        match child.kind() {\n            \"import_spec\" => emit_import_spec(&child, source, pending, module_index, line),\n            \"import_spec_list\" => {\n                let mut lc = child.walk();\n                for spec in child.children(&mut lc) {\n                    if spec.kind() == \"import_spec\" {\n                        emit_import_spec(&spec, source, pending, module_index, line);\n                    }\n                }\n            }\n            _ => {}\n        }\n    }\n}",
+          "reason": "This walks both individual and grouped Go import specs."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/indexer/go.rs",
+          "symbol": "emit_import_spec",
+          "line_start": 152,
+          "line_end": 176,
+          "source_excerpt": "fn emit_import_spec(\n    spec: &Node,\n    source: &[u8],\n    pending: &mut PendingFile,\n    module_index: usize,\n    line: u32,\n) {\n    let path_lit = spec\n        .child_by_field_name(\"path\")\n        .and_then(|n| node_text(&n, source))\n        .map(|s| s.trim_matches('\"').to_string());\n    let Some(path) = path_lit else { return };\n    if path.is_empty() {\n        return;\n    }\n    // Leaf: explicit alias if present, else last `/` segment.\n    let leaf = spec\n        .child_by_field_name(\"name\")\n        .and_then(|n| node_text(&n, source))\n        .filter(|n| *n != \"_\" && *n != \".\")\n        .map(str::to_string)\n        .unwrap_or_else(|| path.rsplit('/').next().unwrap_or(&path).to_string());\n    let to_path = Some(format!(\"{path}::*\"));\n    push_import(pending, module_index, leaf, to_path, line);\n}",
+          "reason": "This extracts the quoted package path and explicit alias or default leaf and emits the import relationship."
+        }
+      ],
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/indexer/go.rs",
+          "symbol": "leaf_and_path",
+          "line_start": 178,
+          "line_end": 198,
+          "source_excerpt": "/// `(leaf, full_text, to_type)` for a call target. `pkg.Func` → (\"Func\", \"pkg.Func\", Some(\"pkg\"))\n/// when receiver starts uppercase, else to_type=None. Plain identifier → just the name.\nfn leaf_and_path(node: &Node, source: &[u8]) -> Option<(String, Option<String>, Option<String>)> {\n    let full = node_text(node, source).map(String::from);\n    match node.kind() {\n        \"identifier\" | \"type_identifier\" => {\n            let n = node_text(node, source)?.to_string();\n            Some((n, full, None))\n        }\n        \"selector_expression\" => {\n            let field = node\n                .child_by_field_name(\"field\")\n                .and_then(|n| node_text(&n, source))?\n                .to_string();\n            let operand = node\n                .child_by_field_name(\"operand\")\n                .and_then(|n| node_text(&n, source))\n                .and_then(|s| s.rsplit('.').next().map(str::to_string));\n            // Uppercase receiver = exported type / package — useful to_type hint.\n            let to_type = operand.filter(|s| starts_uppercase(s));\n            Some((field, full, to_type))",
+          "reason": "This resolves a call target and receiver hint rather than reading import declarations."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/indexer/go.rs",
+          "symbol": "name_field",
+          "line_start": 127,
+          "line_end": 130,
+          "source_excerpt": "fn name_field<'a>(node: &Node, source: &'a [u8]) -> Option<&'a str> {\n    node.child_by_field_name(\"name\")\n        .and_then(|n| node_text(&n, source))\n}",
+          "reason": "This retrieves a node name without extracting an import path or alias relationship."
+        }
+      ],
+      "reason": "Find the Go syntax owner for alias-aware import edges."
+    },
+    {
+      "id": "v6-forked-transcript-provenance",
+      "split": "independent",
+      "kind": "positive",
+      "query": "reject forked transcript histories as independent human evidence",
+      "top": 5,
+      "family": "transcript provenance",
+      "owner_language": "rust",
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/codex_transcript.rs",
+          "symbol": "parse",
+          "line_start": 70,
+          "line_end": 119,
+          "source_excerpt": "    pub(super) fn parse(text: &str) -> Result<Self, &'static str> {\n        let mut session: Option<Self> = None;\n        let mut context_records = 0;\n        for (index, line) in text.lines().enumerate() {\n            if index >= MAX_LINES {\n                return Err(\"Codex transcript exceeds 1 million JSONL lines\");\n            }\n            if line.trim().is_empty() {\n                continue;\n            }\n            // Unknown payload fields are skipped without allocating their text.\n            // Invalid JSON anywhere prevents reuse of preceding metadata.\n            let kind: RecordKind<'_> =\n                serde_json::from_str(line).map_err(|_| \"invalid Codex JSONL record\")?;\n            if session.is_none() && kind.kind != \"session_meta\" {\n                return Err(\"Codex transcript must begin with session_meta\");\n            }\n            match kind.kind {\n                \"session_meta\" => {\n                    if session.is_some() {\n                        return Err(\"Codex transcript has multiple session_meta records\");\n                    }\n                    let meta = payload(line)?;\n                    let id = meta[\"id\"]\n                        .as_str()\n                        .and_then(valid_session_id)\n                        .ok_or(\"Codex session_meta lacks a valid id\")?;\n                    if meta\n                        .get(\"session_id\")\n                        .is_some_and(|value| value.as_str() != Some(id))\n                    {\n                        return Err(\"Codex session identifiers disagree\");\n                    }\n                    if !matches!(meta[\"source\"].as_str(), Some(\"cli\" | \"vscode\"))\n                        || meta[\"thread_source\"].as_str() != Some(\"user\")\n                    {\n                        return Err(\"unsupported Codex session attribution; need cli/vscode and thread_source=user\");\n                    }\n                    if meta.as_object().unwrap().iter().any(|(key, value)| {\n                        (key.contains(\"fork\") || key.starts_with(\"parent_\")) && !value.is_null()\n                    }) {\n                        return Err(\n                            \"forked Codex histories cannot establish independent human evidence\",\n                        );\n                    }\n                    session = Some(Self {\n                        id: id.to_string(),\n                        cwd: project_path(&meta[\"cwd\"])?,\n                        metadata_digest: digest(&meta.to_string()),\n                        contexts: HashMap::new(),",
+          "reason": "The session parser requires a user-origin session and rejects non-null fork or parent metadata before retaining provenance."
+        }
+      ],
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/codex_transcript.rs",
+          "symbol": "human_turns",
+          "line_start": 154,
+          "line_end": 159,
+          "source_excerpt": "    pub(super) fn human_turns(&self, text: &str) -> Vec<HumanTurn> {\n        text.lines()\n            .enumerate()\n            .flat_map(|(index, line)| self.record_turns(line, index + 1))\n            .collect()\n    }",
+          "reason": "This extracts turns after session validation rather than deciding whether session provenance is acceptable."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/miner/codex_transcript.rs",
+          "symbol": "project_path",
+          "line_start": 33,
+          "line_end": 48,
+          "source_excerpt": "fn project_path(value: &Value) -> Result<PathBuf, &'static str> {\n    let path = Path::new(value.as_str().ok_or(\"Codex record lacks a project cwd\")?);\n    if !path.is_absolute() {\n        return Err(\"Codex project cwd must be absolute\");\n    }\n    let canonical = path\n        .canonicalize()\n        .map_err(|_| \"Codex project cwd is unavailable\")?;\n    if !canonical.is_dir() {\n        return Err(\"Codex project cwd is not a directory\");\n    }\n    if canonical.to_str().is_none() {\n        return Err(\"Codex canonical project cwd must be UTF-8\");\n    }\n    Ok(canonical)\n}",
+          "reason": "This validates a project directory but does not reject forked histories."
+        }
+      ],
+      "reason": "Find the attribution boundary that prevents copied histories from becoming independent human evidence."
+    },
+    {
+      "id": "v6-context-delivery-revalidation",
+      "split": "independent",
+      "kind": "positive",
+      "query": "recheck selected context sources immediately before native execution",
+      "top": 5,
+      "family": "context delivery trust",
+      "owner_language": "rust",
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/context.rs",
+          "symbol": "validate_delivery",
+          "line_start": 146,
+          "line_end": 203,
+          "source_excerpt": "/// Revalidate the evidence actually selected for delivery immediately before\n/// native execution. Work rows are historical previews and are deliberately\n/// excluded: publishing this invocation changes its own work row. This is an\n/// optimistic boundary check, not an atomic snapshot across Git, SQL and files.\npub fn validate_delivery(\n    root: &Path,\n    index_path: &Path,\n    options: &ContextOptions,\n    profile_client: Option<&str>,\n    offered: &Value,\n) -> Result<(), &'static str> {\n    let normalized = options\n        .normalized()\n        .map_err(|_| \"invocation_context_selection_invalid\")?;\n    let options = &normalized;\n    let mut selection = options.clone();\n    // Rechecking a selected layer must not omit it merely because another\n    // optional layer has grown since the initial preview.\n    selection.budget_tokens = MAX_BUDGET;\n    // The personal selection is checked separately, after project source I/O.\n    let current = from_paths(root, index_path, &selection, None)\n        .map_err(|_| \"invocation_context_revalidation_unavailable\")?;\n    if offered[\"repository_identity\"] != current[\"repository_identity\"] {\n        return Err(\"invocation_context_repository_changed\");\n    }\n    for name in [\"project\", \"documentation\", \"code\"] {\n        let previous = &offered[\"layers\"][name];\n        if !previous[\"data\"].is_null()\n            && (previous[\"status\"] != current[\"layers\"][name][\"status\"]\n                || previous[\"revision\"] != current[\"layers\"][name][\"revision\"])\n        {\n            return Err(\"invocation_context_sources_changed\");\n        }\n    }\n    let previous = &offered[\"layers\"][\"person\"][\"data\"];\n    if !previous.is_null() && !previous[\"profile_revision\"].is_null() {\n        // Do this last, after all other source I/O. Compare selected evidence,\n        // not the global store revision or the advisory draft review queue.\n        let client = profile_client.ok_or(\"invocation_profile_audience_missing\")?;\n        let repo = crate::miner::profile::RepoContext::for_root(root);\n        // Fixed ceiling: only status, profile_revision and source_verification are compared, and none depend on the budget.\n        let person = crate::miner::profile::view(\n            &options.paths,\n            repo.as_ref(),\n            crate::onboarding::MAX_PROFILE_BUDGET_TOKENS,\n            Some((root, client)),\n            Some(options.role.as_str()),\n            options.workflow.as_deref(),\n        )\n        .map_err(|_| \"invocation_profile_revalidation_unavailable\")?;\n        if previous[\"status\"] != person[\"status\"]\n            || previous[\"profile_revision\"] != person[\"profile_revision\"]\n            || previous[\"source_verification\"] != person[\"source_verification\"]\n        {\n            return Err(\"invocation_profile_sources_or_grant_changed\");\n        }\n    }\n    Ok(())",
+          "reason": "This revalidates selected project, documentation, code and personal evidence before native execution and rejects changed bindings."
+        }
+      ],
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/context.rs",
+          "symbol": "selector",
+          "line_start": 57,
+          "line_end": 59,
+          "source_excerpt": "fn selector(value: &str, max: usize) -> bool {\n    !value.trim().is_empty() && value.len() <= max && !value.chars().any(char::is_control)\n}",
+          "reason": "This only bounds request selector text."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/context.rs",
+          "symbol": "layer",
+          "line_start": 92,
+          "line_end": 115,
+          "source_excerpt": "fn layer(status: &str, data: Value) -> Result<Value, ContextError> {\n    // Retain epistemic status even when the whole payload does not fit. An\n    // `ok` selection alone must not conceal incomplete source verification.\n    let verification: serde_json::Map<String, Value> = [\n        \"source_verification\",\n        \"source_verification_scope\",\n        \"evidence_basis\",\n        \"freshness\",\n        \"review_status\",\n        \"current_checkout\",\n    ]\n    .iter()\n    .filter_map(|key| {\n        data.get(*key)\n            .map(|value| ((*key).to_owned(), value.clone()))\n    })\n    .collect();\n    Ok(json!({\n        \"status\":status,\n        \"revision\":digest(&data)?,\n        \"omitted_reason\":null,\n        \"verification\":verification,\n        \"data\":data,\n    }))",
+          "reason": "This packages a layer with its verification status and digest without comparing an offered delivery with current sources."
+        }
+      ],
+      "reason": "Find the boundary check for evidence that was already selected for delivery."
+    },
+    {
+      "id": "v6-commit-support-counting",
+      "split": "independent",
+      "kind": "positive",
+      "query": "count eligible commits once when measuring style agreement",
+      "top": 5,
+      "family": "profile descriptive statistics",
+      "owner_language": "rust",
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/stats.rs",
+          "symbol": "support",
+          "line_start": 51,
+          "line_end": 65,
+          "source_excerpt": "/// Each eligible commit votes once: true supports the predicate, false does\n/// not support it (including an ambiguous tie), None was not measurable.\npub(super) fn support(commits: &[&Counts], vote: impl Fn(&Counts) -> Option<bool>) -> Support {\n    let mut support = Support {\n        agree: 0,\n        commits: 0,\n    };\n    for counts in commits {\n        if let Some(agrees) = vote(counts) {\n            support.commits += 1;\n            support.agree += usize::from(agrees);\n        }\n    }\n    support\n}",
+          "reason": "This counts one opportunity and at most one supporting vote per measurable commit, leaving unmeasurable commits outside the denominator."
+        }
+      ],
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/stats.rs",
+          "symbol": "bump",
+          "line_start": 30,
+          "line_end": 32,
+          "source_excerpt": "pub(super) fn bump(c: &mut Counts, key: &str, n: i64) {\n    *c.entry(key.to_string()).or_insert(0) += n;\n}",
+          "reason": "This increments a raw count and does not establish eligible commit opportunities."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/miner/stats.rs",
+          "symbol": "gate",
+          "line_start": 85,
+          "line_end": 100,
+          "source_excerpt": "/// A claim survives only when enough commits had the opportunity and the lower\n/// Wilson bound of their agreement clears the tier. Returns `None` (→ no rule)\n/// when the signal is weak.\npub(super) fn gate(support: Support) -> Option<Confidence> {\n    if support.commits < MIN_COMMITS || support.agree > support.commits {\n        return None;\n    }\n    let lower = wilson_lower_bound(support.agree, support.commits);\n    if lower >= HIGH_AGREEMENT {\n        Some(Confidence::High)\n    } else if lower >= MEDIUM_AGREEMENT {\n        Some(Confidence::Medium)\n    } else {\n        None\n    }\n}",
+          "reason": "This consumes aggregate support to choose a confidence tier rather than counting opportunities and votes."
+        }
+      ],
+      "reason": "Find the statistical owner that prevents many lines in one commit from multiplying independent support."
+    },
+    {
+      "id": "v6-workflow-update-edit-protection",
+      "split": "independent",
+      "kind": "positive",
+      "query": "preserve edited workflow files during package updates",
+      "top": 5,
+      "family": "workflow update admission",
+      "owner_language": "javascript",
+      "relevant": [
+        {
+          "path": "npm/mastermind/bin/update.js",
+          "symbol": "workflowPlan",
+          "line_start": 102,
+          "line_end": 138,
+          "source_excerpt": "// Preflight preserves edited owned files and collisions with unowned names.\n// Repeat it in the fresh package process after npm changes the bundle.\nfunction workflowPlan(home, packageRoot, names, profile) {\n  if (!names.length) return [];\n  const share = path.join(packageRoot, \"share\");\n  const budget = { entries: 0, bytes: 0 };\n  treeDigest(share, budget);\n  const bundle = bundled(share);\n  return names.map((client) => {\n    const root = path.join(home, `.${client}`);\n    directory(root, \"client root\");\n    const manifestPath = path.join(root, MANIFEST);\n    if (entry(manifestPath)) regular(manifestPath, \"ownership manifest\");\n    const previous = readManifest(manifestPath);\n    if (previous && previous.client !== client) throw new Error(`ownership manifest client mismatch: ${manifestPath}`);\n    const selected = profile ?? (previous?.schema_version === 1 ? \"full\" : previous?.profile ?? \"core\");\n    const desired = profileBundle(bundle, selected, share);\n    for (const kind of [\"agents\", \"skills\"]) {\n      if (kind === \"agents\" && client === \"codex\") continue;\n      directory(path.join(root, kind), \"workflow artifact directory\");\n      const owned = previous?.artifacts[kind] ?? [];\n      for (const name of owned) {\n        const installed = path.join(root, kind, name);\n        if (entry(installed) && treeDigest(installed, budget) !== previous.digests[`${kind}/${name}`]) {\n          throw new Error(`edited owned workflow artifact, preserve or restore it before updating: ${installed}`);\n        }\n      }\n      for (const name of desired[kind === \"agents\" ? \"subagents\" : \"skills\"]) {\n        const installed = path.join(root, kind, name);\n        if (!owned.includes(name) && entry(installed)) {\n          throw new Error(`unowned workflow artifact conflicts with the new bundle: ${installed}`);\n        }\n      }\n    }\n    return { client, profile: selected, installed_version: previous?.version ?? null, root };\n  });\n}",
+          "reason": "The update preflight compares owned workflow digests and rejects edited files or collisions with unowned names before returning an installation plan."
+        }
+      ],
+      "distractors": [
+        {
+          "path": "npm/mastermind/bin/update.js",
+          "symbol": "selectedClients",
+          "line_start": 88,
+          "line_end": 100,
+          "source_excerpt": "function selectedClients(home, client) {\n  if (client) return client === \"all\" ? CLIENTS : [client];\n  return CLIENTS.filter((name) => {\n    const root = path.join(home, `.${name}`);\n    if (!directory(root, \"client root\")) return false;\n    const manifest = path.join(root, MANIFEST);\n    if (!entry(manifest)) return false;\n    regular(manifest, \"ownership manifest\");\n    const value = readManifest(manifest);\n    if (value.client !== name) throw new Error(`ownership manifest client mismatch: ${manifest}`);\n    return true;\n  });\n}",
+          "reason": "This selects installed clients through manifests without comparing workflow content."
+        },
+        {
+          "path": "npm/mastermind/bin/update.js",
+          "symbol": "scopeFor",
+          "line_start": 140,
+          "line_end": 172,
+          "source_excerpt": "function scopeFor(packageRoot, installMode, packageName) {\n  const parts = packageName.split(\"/\");\n  const modules = path.resolve(packageRoot, ...parts.map(() => \"..\"));\n  if (path.basename(modules) !== \"node_modules\" || path.join(modules, ...parts) !== packageRoot) {\n    return { reason: \"package layout does not establish an npm installation scope\" };\n  }\n  if (installMode === \"global\") {\n    const parent = path.dirname(modules);\n    if (process.platform !== \"win32\" && path.basename(parent) !== \"lib\") {\n      return { reason: \"package layout does not establish the global npm prefix\" };\n    }\n    const prefix = process.platform === \"win32\" ? parent : path.dirname(parent);\n    return { kind: \"global\", prefix, modules, cwd: prefix,\n      args: [\"install\", \"--global\", \"--prefix\", prefix, \"--include=optional\", \"--no-audit\", \"--no-fund\", `${packageName}@latest`] };\n  }\n  if (installMode !== \"project\") return { reason: `installation mode ${installMode} is not a persistent npm scope` };\n  const prefix = path.dirname(modules);\n  const projectPath = path.join(prefix, \"package.json\");\n  if (!entry(projectPath)) return { reason: \"the owning npm project has no package metadata\" };\n  const project = JSON.parse(regular(projectPath, \"project package metadata\"));\n  if ((project.packageManager && !/^npm@/.test(project.packageManager))\n      || entry(path.join(prefix, \"pnpm-lock.yaml\")) || entry(path.join(prefix, \"yarn.lock\"))) {\n    return { reason: \"the project declares another package manager\" };\n  }\n  const kinds = [\"dependencies\", \"devDependencies\", \"optionalDependencies\"]\n    .filter((kind) => Object.hasOwn(project[kind] ?? {}, packageName));\n  if (kinds.length !== 1 || typeof project[kinds[0]][packageName] !== \"string\"\n      || !project[kinds[0]][packageName].trim() || /[/:#\\\\]/.test(project[kinds[0]][packageName])) {\n    return { reason: \"the package has no unambiguous direct registry dependency in the owning project\" };\n  }\n  const save = { dependencies: \"--save-prod\", devDependencies: \"--save-dev\", optionalDependencies: \"--save-optional\" }[kinds[0]];\n  return { kind: \"project\", prefix, modules, cwd: prefix,\n    args: [\"install\", \"--prefix\", prefix, save, \"--include=optional\", \"--no-audit\", \"--no-fund\", `${packageName}@latest`] };",
+          "reason": "This chooses npm installation scope and dependency arguments rather than protecting workflow files."
+        }
+      ],
+      "reason": "Find the preflight that blocks overwriting locally modified installed workflow content."
+    },
+    {
+      "id": "v6-wrapper-help-before-resolution",
+      "split": "independent",
+      "kind": "positive",
+      "query": "show command help before resolving the native binary",
+      "top": 5,
+      "family": "wrapper help dispatch",
+      "owner_language": "javascript",
+      "relevant": [
+        {
+          "path": "npm/mastermind/bin/help.js",
+          "symbol": "printHelp",
+          "line_start": 106,
+          "line_end": 116,
+          "source_excerpt": "/**\n * Call before binary resolution or installer dispatch. True means help was\n * printed and the wrapper should exit successfully. False means continue.\n * A custom writer receives one complete string including the final newline.\n */\nexport function printHelp(argv, write = (text) => process.stdout.write(text)) {\n  const help = renderHelp(argv);\n  if (help === null) return false;\n  write(help);\n  return true;\n}",
+          "reason": "The wrapper calls this before binary resolution or installer dispatch; it prints help and signals successful early completion."
+        },
+        {
+          "path": "npm/mastermind/bin/help.js",
+          "symbol": "renderHelp",
+          "line_start": 81,
+          "line_end": 104,
+          "source_excerpt": "/**\n * Render wrapper-owned help from argv without the node/script prefix.\n * Return null for execution or native command help so the caller can delegate.\n * This function performs no filesystem, environment, process or network I/O.\n */\nexport function renderHelp(argv) {\n  if (argv.length === 0 || (argv.length === 1 && [\"--help\", \"-h\", \"help\"].includes(argv[0]))) {\n    return TOP_LEVEL;\n  }\n\n  const helpVerb = argv[0] === \"help\";\n  const [command, ...rest] = helpVerb ? argv.slice(1) : argv;\n  const separator = rest.indexOf(\"--\");\n  const options = separator === -1 ? rest : rest.slice(0, separator);\n  if (!helpVerb && !options.some((arg) => arg === \"--help\" || arg === \"-h\")) return null;\n\n  switch (command) {\n    case \"install\": return INSTALL;\n    case \"update\": return UPDATE;\n    case \"list\": return LIST;\n    case \"doctor\": return options.includes(\"--workflow\") ? WORKFLOW_DOCTOR : null;\n    default: return null;\n  }\n}",
+          "reason": "This resolves wrapper-owned help entirely from argv without filesystem, environment, process or network access."
+        }
+      ],
+      "distractors": [],
+      "reason": "Find the help path that can respond even before native executable lookup."
+    },
+    {
+      "id": "v6-immutable-artifact-publication",
+      "split": "independent",
+      "kind": "positive",
+      "query": "publish benchmark artifacts without replacing existing output files",
+      "top": 5,
+      "family": "artifact publication",
+      "owner_language": "python",
+      "relevant": [
+        {
+          "path": "evals/benchmark/artifacts.py",
+          "symbol": "write_new_bytes",
+          "line_start": 135,
+          "line_end": 181,
+          "source_excerpt": "def write_new_bytes(path: Path, body: bytes, *, mode: int = 0o600) -> None:\n    \"\"\"Publish one owned regular file and verify its final name and bytes.\"\"\"\n    if (os.name != \"posix\" or not hasattr(os, \"O_NOFOLLOW\")\n            or not isinstance(body, bytes) or mode not in {0o400, 0o444, 0o555, 0o600}):\n        raise BenchmarkError(\"artifact_platform\", \"verified artifact publication requires POSIX\")\n    target = path.absolute()\n    parent = target.parent\n    if not target.name or target.name in {\".\", \"..\"}:\n        raise BenchmarkError(\"artifact_path\", \"invalid artifact path\")\n    try:\n        if parent.resolve(strict=True) != parent:\n            raise BenchmarkError(\"artifact_path\", \"artifact parent must be canonical without links\")\n        parent_descriptor = os.open(\n            parent, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_NONBLOCK)\n    except BenchmarkError:\n        raise\n    except OSError as error:\n        raise BenchmarkError(\"artifact_path\", \"cannot open artifact parent without links\") from error\n    descriptor = None\n    owned = None\n    published = False\n    expected_parent = os.fstat(parent_descriptor)\n    try:\n        if not stat.S_ISDIR(expected_parent.st_mode):\n            raise BenchmarkError(\"artifact_path\", \"artifact parent is not a directory\")\n        try:\n            descriptor = os.open(\n                target.name,\n                os.O_RDWR | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW | os.O_NONBLOCK,\n                mode,\n                dir_fd=parent_descriptor,\n            )\n            published = True\n        except FileExistsError as error:\n            raise BenchmarkError(\"artifact_exists\", f\"artifact already exists: {target}\") from error\n        opened = os.fstat(descriptor)\n        owned = (opened.st_dev, opened.st_ino)\n        os.fchmod(descriptor, mode)\n        with os.fdopen(os.dup(descriptor), \"wb\") as handle:\n            handle.write(body)\n            handle.flush()\n            os.fsync(handle.fileno())\n        written = os.fstat(descriptor)\n        named = os.stat(target.name, dir_fd=parent_descriptor, follow_symlinks=False)\n        if (not stat.S_ISREG(written.st_mode) or stat.S_IMODE(written.st_mode) != mode\n                or written.st_size != len(body) or not _same_node(written, named)):\n            raise BenchmarkError(\"artifact_changed\", \"artifact changed during publication\")",
+          "reason": "This publishes using exclusive no-follow creation, rejects an existing target and verifies the named regular file."
+        }
+      ],
+      "distractors": [
+        {
+          "path": "evals/benchmark/artifacts.py",
+          "symbol": "parse_json",
+          "line_start": 44,
+          "line_end": 54,
+          "source_excerpt": "def parse_json(body: bytes) -> dict:\n    try:\n        value = json.loads(body, object_pairs_hook=_pairs)\n        if not isinstance(value, dict):\n            raise ValueError(\"expected a JSON object\")\n        # Reject non-finite numbers and unpaired Unicode surrogates, including\n        # inside otherwise unused trace fields, before retaining the event.\n        canonical(value)\n        return value\n    except (RecursionError, UnicodeError) as error:\n        raise ValueError(\"JSON nesting or string encoding is invalid\") from error",
+          "reason": "This validates JSON values rather than publishing output."
+        },
+        {
+          "path": "evals/benchmark/artifacts.py",
+          "symbol": "digest",
+          "line_start": 31,
+          "line_end": 32,
+          "source_excerpt": "def digest(value: object) -> str:\n    return hashlib.sha256(canonical(value)).hexdigest()",
+          "reason": "This hashes canonical values without reserving or writing an output path."
+        }
+      ],
+      "reason": "Find the writer that makes an existing benchmark result path immutable."
+    },
+    {
+      "id": "v6-completion-state-counterexamples",
+      "split": "independent",
+      "kind": "positive",
+      "query": "enumerate completion states and counterexample traces after evidence invalidation",
+      "top": 5,
+      "family": "completion control model",
+      "owner_language": "python",
+      "relevant": [
+        {
+          "path": "evals/control/harness.py",
+          "symbol": "explore",
+          "line_start": 81,
+          "line_end": 118,
+          "source_excerpt": "def explore(omitted_guard: str | None = None) -> dict:\n    initial = State()\n    paths = {initial: ()}\n    queue = deque([initial])\n    edges = publications = 0\n    violations = []\n    while queue:\n        before = queue.popleft()\n        for action, after in successors(before, omitted_guard):\n            edges += 1\n            trace = (*paths[before], action)\n            if action == \"publish\":\n                publications += 1\n                if not publication_valid(before):\n                    violations.append({\"trace\": list(trace), \"before\": vars(before)})\n            if after not in paths:\n                paths[after] = trace\n                queue.append(after)\n    # Existential recovery under a stable environment and successful producers.\n    # This does not assume that an arbitrary real task can be fixed or approved.\n    recovery = (\"preflight\", \"executor_succeeded\", \"checks_passed\", \"audit_held\",\n                \"review_satisfied\", \"history_resolved\", \"publish\")\n    recoverable = 0\n    for state in paths:\n        if state.completed:\n            continue\n        current = state\n        for action in recovery:\n            candidates = dict(successors(current))\n            if action not in candidates:\n                break\n            current = candidates[action]\n        recoverable += int(current.completed)\n    return {\n        \"states\": len(paths), \"transitions\": edges, \"publication_edges\": publications,\n        \"violations\": violations, \"open_states\": sum(not s.completed for s in paths),\n        \"recoverable_open_states\": recoverable, \"recovery_steps_bound\": len(recovery),\n    }",
+          "reason": "This traverses successor states, retains action traces and records publications whose independent obligation oracle fails."
+        }
+      ],
+      "distractors": [
+        {
+          "path": "evals/control/harness.py",
+          "symbol": "test_outcome",
+          "line_start": 249,
+          "line_end": 257,
+          "source_excerpt": "def test_outcome(output: bytes, expected: tuple[str, ...]) -> dict:\n    decoded = output.decode(\"utf-8\", errors=\"replace\")\n    rows = re.findall(r\"^test (\\S+) \\.\\.\\. (ok|FAILED|ignored[^\\n]*)$\", decoded, re.M)\n    passed = [name for name, status in rows if status == \"ok\"]\n    summary = re.findall(r\"^test result: ok\\. (\\d+) passed; (\\d+) failed; (\\d+) ignored;\", decoded, re.M)\n    valid = (sorted(passed) == sorted(expected) and len(rows) == len(expected)\n             and summary == [(str(len(expected)), \"0\", \"0\")])\n    return {\"status\": \"passed\" if valid else \"failed\", \"expected\": list(expected),\n            \"passed\": passed, \"missing\": sorted(set(expected) - set(passed))}",
+          "reason": "This validates sampled Rust test output rather than exploring the completion state model."
+        },
+        {
+          "path": "evals/control/harness.py",
+          "symbol": "ui_outcome",
+          "line_start": 260,
+          "line_end": 274,
+          "source_excerpt": "def ui_outcome(output: bytes, source_root: Path = ROOT) -> dict:\n    \"\"\"Count the existing Lens harness as one aggregate, never its helpers.\"\"\"\n    decoded = output.decode(\"utf-8\", errors=\"replace\")\n    rows = re.findall(r\"^(?:not )?ok \\d+ - .+$\", decoded, re.M)\n    summary = {name: re.findall(rf\"^# {name} (\\d+)$\", decoded, re.M)\n               for name in (\"tests\", \"pass\", \"fail\", \"cancelled\", \"skipped\", \"todo\")}\n    expected_summary = {name: [\"1\" if name in (\"tests\", \"pass\") else \"0\"]\n                        for name in summary}\n    valid = (rows in ([f\"ok 1 - {UI_SUITE}\"], [f\"ok 1 - {source_root / UI_SUITE}\"])\n             and re.findall(r\"^\\d+\\.\\.\\d+$\", decoded, re.M) == [\"1..1\"]\n             and summary == expected_summary\n             and decoded.splitlines().count(f\"# {UI_COMPLETION}\") == 1)\n    return {\"status\": \"passed\" if valid else \"failed\", \"suite\": UI_SUITE,\n            \"aggregation\": \"one_file_suite\", \"expected_suites\": 1,\n            \"passed_suites\": int(valid)}",
+          "reason": "This validates aggregate UI harness output rather than finding state transition counterexamples."
+        }
+      ],
+      "reason": "Find the bounded model explorer for stale evidence and publication obligations."
+    },
+    {
+      "id": "v6-negative-workflow-version-restore",
+      "split": "independent",
+      "kind": "negative",
+      "query": "repair edited workflow files from their previous versions",
+      "top": 5,
+      "family": "unsupported workflow recovery",
+      "owner_language": "javascript",
+      "relevant": [],
+      "distractors": [
+        {
+          "path": "npm/mastermind/bin/update.js",
+          "symbol": "workflowPlan",
+          "line_start": 102,
+          "line_end": 138,
+          "source_excerpt": "// Preflight preserves edited owned files and collisions with unowned names.\n// Repeat it in the fresh package process after npm changes the bundle.\nfunction workflowPlan(home, packageRoot, names, profile) {\n  if (!names.length) return [];\n  const share = path.join(packageRoot, \"share\");\n  const budget = { entries: 0, bytes: 0 };\n  treeDigest(share, budget);\n  const bundle = bundled(share);\n  return names.map((client) => {\n    const root = path.join(home, `.${client}`);\n    directory(root, \"client root\");\n    const manifestPath = path.join(root, MANIFEST);\n    if (entry(manifestPath)) regular(manifestPath, \"ownership manifest\");\n    const previous = readManifest(manifestPath);\n    if (previous && previous.client !== client) throw new Error(`ownership manifest client mismatch: ${manifestPath}`);\n    const selected = profile ?? (previous?.schema_version === 1 ? \"full\" : previous?.profile ?? \"core\");\n    const desired = profileBundle(bundle, selected, share);\n    for (const kind of [\"agents\", \"skills\"]) {\n      if (kind === \"agents\" && client === \"codex\") continue;\n      directory(path.join(root, kind), \"workflow artifact directory\");\n      const owned = previous?.artifacts[kind] ?? [];\n      for (const name of owned) {\n        const installed = path.join(root, kind, name);\n        if (entry(installed) && treeDigest(installed, budget) !== previous.digests[`${kind}/${name}`]) {\n          throw new Error(`edited owned workflow artifact, preserve or restore it before updating: ${installed}`);\n        }\n      }\n      for (const name of desired[kind === \"agents\" ? \"subagents\" : \"skills\"]) {\n        const installed = path.join(root, kind, name);\n        if (!owned.includes(name) && entry(installed)) {\n          throw new Error(`unowned workflow artifact conflicts with the new bundle: ${installed}`);\n        }\n      }\n    }\n    return { client, profile: selected, installed_version: previous?.version ?? null, root };\n  });\n}",
+          "reason": "This refuses modified owned content; it neither retains historical workflow versions nor restores them."
+        }
+      ],
+      "reason": "The inspected update owner protects edits by refusing overwrite and has no version-history restoration operation."
+    },
+    {
+      "id": "v6-negative-go-import-rewrite",
+      "split": "independent",
+      "kind": "negative",
+      "query": "rewrite go imports after renaming local packages",
+      "top": 5,
+      "family": "unsupported source refactoring",
+      "owner_language": "rust",
+      "relevant": [],
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/indexer/go.rs",
+          "symbol": "collect_imports",
+          "line_start": 132,
+          "line_end": 150,
+          "source_excerpt": "/// `import \"fmt\"` / `import f \"fmt\"` / `import ( a \"x\"; b \"y\" )`.\nfn collect_imports(decl: &Node, source: &[u8], pending: &mut PendingFile, module_index: usize) {\n    let line = line_of(decl);\n    let mut cursor = decl.walk();\n    for child in decl.children(&mut cursor) {\n        match child.kind() {\n            \"import_spec\" => emit_import_spec(&child, source, pending, module_index, line),\n            \"import_spec_list\" => {\n                let mut lc = child.walk();\n                for spec in child.children(&mut lc) {\n                    if spec.kind() == \"import_spec\" {\n                        emit_import_spec(&spec, source, pending, module_index, line);\n                    }\n                }\n            }\n            _ => {}\n        }\n    }\n}",
+          "reason": "This reads Go import syntax into pending metadata and does not edit source files."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/indexer/go.rs",
+          "symbol": "emit_import_spec",
+          "line_start": 152,
+          "line_end": 176,
+          "source_excerpt": "fn emit_import_spec(\n    spec: &Node,\n    source: &[u8],\n    pending: &mut PendingFile,\n    module_index: usize,\n    line: u32,\n) {\n    let path_lit = spec\n        .child_by_field_name(\"path\")\n        .and_then(|n| node_text(&n, source))\n        .map(|s| s.trim_matches('\"').to_string());\n    let Some(path) = path_lit else { return };\n    if path.is_empty() {\n        return;\n    }\n    // Leaf: explicit alias if present, else last `/` segment.\n    let leaf = spec\n        .child_by_field_name(\"name\")\n        .and_then(|n| node_text(&n, source))\n        .filter(|n| *n != \"_\" && *n != \".\")\n        .map(str::to_string)\n        .unwrap_or_else(|| path.rsplit('/').next().unwrap_or(&path).to_string());\n    let to_path = Some(format!(\"{path}::*\"));\n    push_import(pending, module_index, leaf, to_path, line);\n}",
+          "reason": "This emits an index relationship, not a replacement import declaration."
+        }
+      ],
+      "reason": "The inspected Go owner extracts syntax and relationships; renaming packages and rewriting their import source is unsupported."
+    },
+    {
+      "id": "v6-negative-artifact-merge",
+      "split": "independent",
+      "kind": "negative",
+      "query": "merge competing edits into existing benchmark artifacts",
+      "top": 5,
+      "family": "unsupported result merge",
+      "owner_language": "python",
+      "relevant": [],
+      "distractors": [
+        {
+          "path": "evals/benchmark/artifacts.py",
+          "symbol": "write_new_bytes",
+          "line_start": 135,
+          "line_end": 181,
+          "source_excerpt": "def write_new_bytes(path: Path, body: bytes, *, mode: int = 0o600) -> None:\n    \"\"\"Publish one owned regular file and verify its final name and bytes.\"\"\"\n    if (os.name != \"posix\" or not hasattr(os, \"O_NOFOLLOW\")\n            or not isinstance(body, bytes) or mode not in {0o400, 0o444, 0o555, 0o600}):\n        raise BenchmarkError(\"artifact_platform\", \"verified artifact publication requires POSIX\")\n    target = path.absolute()\n    parent = target.parent\n    if not target.name or target.name in {\".\", \"..\"}:\n        raise BenchmarkError(\"artifact_path\", \"invalid artifact path\")\n    try:\n        if parent.resolve(strict=True) != parent:\n            raise BenchmarkError(\"artifact_path\", \"artifact parent must be canonical without links\")\n        parent_descriptor = os.open(\n            parent, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_NONBLOCK)\n    except BenchmarkError:\n        raise\n    except OSError as error:\n        raise BenchmarkError(\"artifact_path\", \"cannot open artifact parent without links\") from error\n    descriptor = None\n    owned = None\n    published = False\n    expected_parent = os.fstat(parent_descriptor)\n    try:\n        if not stat.S_ISDIR(expected_parent.st_mode):\n            raise BenchmarkError(\"artifact_path\", \"artifact parent is not a directory\")\n        try:\n            descriptor = os.open(\n                target.name,\n                os.O_RDWR | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW | os.O_NONBLOCK,\n                mode,\n                dir_fd=parent_descriptor,\n            )\n            published = True\n        except FileExistsError as error:\n            raise BenchmarkError(\"artifact_exists\", f\"artifact already exists: {target}\") from error\n        opened = os.fstat(descriptor)\n        owned = (opened.st_dev, opened.st_ino)\n        os.fchmod(descriptor, mode)\n        with os.fdopen(os.dup(descriptor), \"wb\") as handle:\n            handle.write(body)\n            handle.flush()\n            os.fsync(handle.fileno())\n        written = os.fstat(descriptor)\n        named = os.stat(target.name, dir_fd=parent_descriptor, follow_symlinks=False)\n        if (not stat.S_ISREG(written.st_mode) or stat.S_IMODE(written.st_mode) != mode\n                or written.st_size != len(body) or not _same_node(written, named)):\n            raise BenchmarkError(\"artifact_changed\", \"artifact changed during publication\")",
+          "reason": "This rejects an existing artifact path rather than merging with its contents."
+        },
+        {
+          "path": "evals/benchmark/artifacts.py",
+          "symbol": "write_new",
+          "line_start": 222,
+          "line_end": 223,
+          "source_excerpt": "def write_new(path: Path, value: object, *, mode: int = 0o600) -> None:\n    write_new_bytes(path, canonical(value) + b\"\\n\", mode=mode)",
+          "reason": "This canonicalizes a new value and delegates to exclusive publication without reading a merge base."
+        }
+      ],
+      "reason": "The inspected artifact publisher creates immutable records and has no conflict resolution or merging operation."
+    },
+    {
+      "id": "v6-negative-symbol-restoration",
+      "split": "independent",
+      "kind": "negative",
+      "query": "restore deleted symbols from breaking change acknowledgements",
+      "top": 5,
+      "family": "unsupported source restoration",
+      "owner_language": "rust",
+      "relevant": [],
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/spec_removals.rs",
+          "symbol": "unacknowledged",
+          "line_start": 97,
+          "line_end": 110,
+          "source_excerpt": "    pub(crate) fn unacknowledged(&self) -> Result<Vec<(String, String)>, Unresolved> {\n        let baseline = self.baseline.as_ref().map_err(Clone::clone)?;\n        let mut remaining = Vec::new();\n        for key in &self.removed {\n            let symbol = baseline.symbol(key)?;\n            if symbol.kind != \"module\" && !self.acknowledged.contains(key) {\n                let file = &baseline.files[&key.0];\n                let name = ancestry(file, key.1, baseline.deadline)?.join(\".\");\n                remaining.push((key.0.clone(), name));\n            }\n        }\n        remaining.sort();\n        Ok(remaining)\n    }",
+          "reason": "This enumerates missing acknowledgements without restoring declarations."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/spec_removals.rs",
+          "symbol": "accepts_file_removal",
+          "line_start": 133,
+          "line_end": 142,
+          "source_excerpt": "    pub(crate) fn accepts_file_removal(&self, file: &str) -> bool {\n        let Ok(file) = normalize_file(file) else {\n            return false;\n        };\n        if self.baseline.is_err() {\n            return false;\n        }\n        let mut keys = self.removed.iter().filter(|key| key.0 == file).peekable();\n        keys.peek().is_some() && keys.all(|key| self.acknowledged.contains(key))\n    }",
+          "reason": "This accepts an acknowledged file removal and does not reconstruct or write deleted source."
+        }
+      ],
+      "reason": "The inspected removal owner checks acknowledgements against baseline identities and does not restore deleted implementation."
+    }
+  ]
+}

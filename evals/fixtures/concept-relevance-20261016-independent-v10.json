@@ -1,0 +1,410 @@
+{
+  "schema_version": 1,
+  "source_head": "f418b380bf191877f5903f5c85f483f5e0e86632",
+  "source_files_sha256": {
+    "mcp/servers/mmcg/src/commands/init.rs": "2bae3c80e6923958c0b686f7d7947b708d4ebd6372da46be9b53cd5b93ff8fec",
+    "mcp/servers/mmcg/src/context_doctor.rs": "cb462f8556bcacc05949b20021dfc8f6100c75a8d3aa137fecd9992822cca5d2",
+    "mcp/servers/mmcg/src/doctor.rs": "c740b0b7ae18394069a68a851d2e1a1632a25b913c991a4e8fcf2cc0c4263103",
+    "mcp/servers/mmcg/src/indexer/cpp.rs": "46c4981a218c95b5035bcd7513c5de967f61f152cd5e6c03a6f7bb43fdf39aae",
+    "mcp/servers/mmcg/src/indexer/python.rs": "93fbdfdd008b4b9b1bec398a4845099925f8bdd309472e41f6310868074190e1",
+    "mcp/servers/mmcg/src/indexer/rust_lang.rs": "f8fd587882a511e3d7d0d202b8054a92003b31e007dd6341cf66e4681cf3cfb0",
+    "mcp/servers/mmcg/src/indexer/typescript.rs": "b29c4b959a57fd7139c373ad58923360a20eefd2339c74b5699220a6f0b39bda",
+    "mcp/servers/mmcg/src/invocation.rs": "eb331db8d581bfec1d89e7e723c256508d0c0c31da62acbfaa1c335697068bd4",
+    "mcp/servers/mmcg/src/miner/feedback.rs": "fa84ca2cc4b822c44f1a9cb91e674507ba9bfd186df3719b316a371598e18651",
+    "mcp/servers/mmcg/src/miner/hooks/profile_context.rs": "e9b7be71ac2ba02ba3a73fa8d7ec9e99e0ed52095d6399372d86b8188a63a1f8",
+    "mcp/servers/mmcg/src/miner/hooks/semantic.rs": "0256fe512071eef8baebace5f3c1ea7428c0bb5936e81ae31bd013a0a7a7e97a",
+    "mcp/servers/mmcg/src/miner/profile.rs": "c4a239b38d5466d4148ee61d7471e5bf6bd460ebb4d8adba1e66c81e0a4cfecc",
+    "mcp/servers/mmcg/src/miner/range.rs": "d04396e2551ff3057553c52902ba70d2be512b209da92cb3901ee364ea506d34",
+    "mcp/servers/mmcg/src/miner/store/supersession.rs": "7934906c4d48939722fa1458bf43387535651629523af048e730117f5a96045e",
+    "mcp/servers/mmcg/src/miner/workflow.rs": "6216490a5182ec664a7e1b12a22c163a15b090750e4796c70840d0a2b93c8f2b",
+    "mcp/servers/mmcg/src/policy/evidence.rs": "b2e72cadf273dd84bffc3a073aa3a5858e9a3e25dce350ed324984902415a873",
+    "mcp/servers/mmcg/src/setup.rs": "cea9682e2189ecf1407db3a2edab71b7fcbf45286594f2e5ac2f58bbe4c7c076",
+    "mcp/servers/mmcg/src/templates.rs": "cedc114fb9a88a174053a3f051ad92649cdc8cc1fd3403fdb5ae09d8e4b5ffc2"
+  },
+  "cases": [
+    {
+      "id": "v10-positive-01",
+      "split": "independent",
+      "kind": "positive",
+      "query": "Extract template content between the marked copy boundaries",
+      "top": 5,
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/templates.rs",
+          "symbol": "strip_comment",
+          "declaration_line": 17,
+          "line_start": 17,
+          "line_end": 30,
+          "source_excerpt": "pub fn strip_comment(text: &str) -> String {\n    const MARKER_OPEN: &str = \"<!-- ─── COPY FROM HERE ─── -->\";\n    const MARKER_CLOSE: &str = \"<!-- ─── COPY TO HERE ─── -->\";\n    if let Some(start) = text.find(MARKER_OPEN) {\n        let body_start = start + MARKER_OPEN.len();\n        let body_end = text[body_start..]\n            .find(MARKER_CLOSE)\n            .map(|i| body_start + i)\n            .unwrap_or(text.len());\n        text[body_start..body_end].trim().to_string() + \"\\n\"\n    } else {\n        text.to_string()\n    }\n}\n",
+          "reason": "Finds the fixed opening copy marker, takes content through the closing marker or file end, trims it, and adds a newline."
+        }
+      ],
+      "distractors": []
+    },
+    {
+      "id": "v10-positive-02",
+      "split": "independent",
+      "kind": "positive",
+      "query": "Find unfilled angle bracket placeholders outside Markdown code",
+      "top": 5,
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/context_doctor.rs",
+          "symbol": "placeholder_tokens",
+          "declaration_line": 290,
+          "line_start": 290,
+          "line_end": 342,
+          "source_excerpt": "fn placeholder_tokens(text: &str) -> Vec<String> {\n    let mut tokens = BTreeSet::new();\n    for line in prose_lines(text).into_iter().map(|line| line.text) {\n        let mut in_inline_code = false;\n        let chars: Vec<char> = line.chars().collect();\n        let mut index = 0;\n        while index < chars.len() {\n            if chars[index] == '`' {\n                in_inline_code = !in_inline_code;\n                index += 1;\n                continue;\n            }\n            if !in_inline_code && chars[index] == '<' {\n                if let Some(offset) = chars[index + 1..].iter().position(|ch| *ch == '>') {\n                    let end = index + 1 + offset;\n                    let inner: String = chars[index + 1..end].iter().collect();\n                    let trimmed = inner.trim();\n                    if !trimmed.is_empty()\n                        && !trimmed.starts_with('!')\n                        && !trimmed.starts_with('/')\n                        && !matches!(trimmed, \"br\" | \"details\" | \"summary\")\n                    {\n                        tokens.insert(format!(\"<{trimmed}>\"));\n                    }\n                    index = end + 1;\n                    continue;\n                }\n            }\n            index += 1;\n        }\n    }\n    // A standalone placeholder with spaces can be parsed as an HTML block.\n    // Inspect only the block's first node, so examples inside <pre> stay code.\n    let mut html_block_start = None;\n    for (event, range) in Parser::new(text).into_offset_iter() {\n        match event {\n            Event::Start(Tag::HtmlBlock) => html_block_start = Some(range.start),\n            Event::Html(raw) if html_block_start == Some(range.start) => {\n                let trimmed = raw.trim();\n                if let Some(inner) = trimmed.strip_prefix('<').and_then(|v| v.strip_suffix('>')) {\n                    if inner.chars().any(char::is_whitespace)\n                        && !inner.contains(['<', '>', '=', '/', '!'])\n                    {\n                        tokens.insert(format!(\"<{inner}>\"));\n                    }\n                }\n            }\n            Event::End(TagEnd::HtmlBlock) => html_block_start = None,\n            _ => {}\n        }\n    }\n    tokens.into_iter().collect()\n}\n",
+          "reason": "Collects angle bracket tokens from admitted prose, skips inline backtick content, and separately recognizes standalone placeholder HTML blocks."
+        }
+      ],
+      "distractors": []
+    },
+    {
+      "id": "v10-positive-03",
+      "split": "independent",
+      "kind": "positive",
+      "query": "Check for a Mastermind state directory ignore entry",
+      "top": 5,
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/doctor.rs",
+          "symbol": "check_gitignore",
+          "declaration_line": 802,
+          "line_start": 802,
+          "line_end": 851,
+          "source_excerpt": "fn check_gitignore(root: &Path) -> Check {\n    let p = root.join(\".gitignore\");\n    let body = match read_project_text(root, &p) {\n        Ok(Some(body)) => body,\n        Ok(None) => {\n            return Check {\n                name: \"gitignore\",\n                status: Status::Warn,\n                message: \"no .gitignore at project root\".into(),\n                hint: Some(\n                    \"add `.mastermind/` to .gitignore — the index + specs are local state\".into(),\n                ),\n            }\n        }\n        Err(error) => {\n            return Check {\n                name: \"gitignore\",\n                status: Status::Warn,\n                message: format!(\"cannot safely inspect .gitignore: {error}\"),\n                hint: Some(\"use a regular UTF-8 .gitignore no larger than 1 MiB\".into()),\n            }\n        }\n    };\n    let lines: Vec<&str> = body\n        .lines()\n        .map(|l| l.trim())\n        .filter(|l| !l.is_empty() && !l.starts_with('#'))\n        .collect();\n    let mentioned = lines.iter().any(|l| {\n        *l == \".mastermind\" || *l == \".mastermind/\" || *l == \"/.mastermind\" || *l == \"/.mastermind/\"\n    });\n    if mentioned {\n        Check {\n            name: \"gitignore\",\n            status: Status::Ok,\n            message: \".mastermind/ excluded\".into(),\n            hint: None,\n        }\n    } else {\n        Check {\n            name: \"gitignore\",\n            status: Status::Warn,\n            message: \".mastermind/ NOT in .gitignore\".into(),\n            hint: Some(\n                \"add `.mastermind/` to .gitignore — leaking the local index pollutes commits\"\n                    .into(),\n            ),\n        }\n    }\n}\n",
+          "reason": "Safely reads the root ignore file and checks trimmed noncomment lines for four exact spellings of the Mastermind state directory."
+        }
+      ],
+      "distractors": []
+    },
+    {
+      "id": "v10-positive-04",
+      "split": "independent",
+      "kind": "positive",
+      "query": "Launch npm command shims through the Windows command interpreter",
+      "top": 5,
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/setup.rs",
+          "symbol": "npm_launcher_entry",
+          "declaration_line": 248,
+          "line_start": 248,
+          "line_end": 266,
+          "source_excerpt": "fn npm_launcher_entry(platform: NpmLauncherPlatform, command: &str, args: Vec<String>) -> Value {\n    match platform {\n        NpmLauncherPlatform::Other => json!({\n            \"command\": command,\n            \"args\": args,\n        }),\n        NpmLauncherPlatform::Windows => {\n            // npm executables are command shims on Windows, which cannot be\n            // launched directly by every MCP client. Disable cmd AutoRun hooks\n            // and use its stable /s /c parsing path for the shim.\n            let mut shell_args = vec![\"/d\".into(), \"/s\".into(), \"/c\".into(), command.into()];\n            shell_args.extend(args);\n            json!({\n                \"command\": \"cmd.exe\",\n                \"args\": shell_args,\n            })\n        }\n    }\n}\n",
+          "reason": "The Windows branch sets cmd.exe as the command and prepends /d /s /c before the npm shim and its arguments."
+        }
+      ],
+      "distractors": []
+    },
+    {
+      "id": "v10-positive-05",
+      "split": "independent",
+      "kind": "positive",
+      "query": "Summarize touched files and added lines for each commit",
+      "top": 5,
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/workflow.rs",
+          "symbol": "parse_numstat",
+          "declaration_line": 30,
+          "line_start": 30,
+          "line_end": 69,
+          "source_excerpt": "pub(super) fn parse_numstat(\n    raw: &str,\n    is_source: impl Fn(&str) -> bool,\n    is_generated: impl Fn(&str) -> bool,\n) -> HashMap<String, CommitShape> {\n    let mut shapes: HashMap<String, CommitShape> = HashMap::new();\n    let mut current: Option<String> = None;\n    for line in raw.lines() {\n        if let Some(sha) = line.strip_prefix('\\u{1e}') {\n            let sha = sha.trim().to_string();\n            shapes.insert(sha.clone(), CommitShape::default());\n            current = Some(sha);\n            continue;\n        }\n        let Some(shape) = current.as_ref().and_then(|sha| shapes.get_mut(sha)) else {\n            continue;\n        };\n        let mut columns = line.splitn(3, '\\t');\n        let (Some(added), Some(_), Some(path)) = (columns.next(), columns.next(), columns.next())\n        else {\n            continue;\n        };\n        let added = added.parse::<usize>().unwrap_or(0);\n        shape.files += 1;\n        shape.added += added;\n        if let (Some(language), false) = (range::language(path), is_generated(path)) {\n            shape.languages.insert(language);\n            shape.areas.insert(range::area(path));\n        }\n        if is_test_path(path) {\n            shape.test_files += 1;\n        } else if is_doc_path(path) {\n            shape.doc_files += 1;\n        } else if is_source(path) {\n            shape.source_files += 1;\n            shape.source_added += added;\n        }\n    }\n    shapes\n}\n",
+          "reason": "Reads commit record separators and tabular numstat rows into per commit file and added line counts, with source, test, documentation, language, and area subdivisions."
+        }
+      ],
+      "distractors": []
+    },
+    {
+      "id": "v10-positive-06",
+      "split": "independent",
+      "kind": "positive",
+      "query": "Assign repository paths to component areas using container directories",
+      "top": 5,
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/range.rs",
+          "symbol": "area",
+          "declaration_line": 475,
+          "line_start": 475,
+          "line_end": 489,
+          "source_excerpt": "pub(super) fn area(path: &str) -> String {\n    let mut parts = path.split('/');\n    let first = parts.next().unwrap_or(path);\n    let second = parts.next();\n    let area = match (second, parts.next()) {\n        (None, _) => return \"(root)\".to_string(),\n        (Some(second), Some(_)) if CONTAINERS.contains(&first) => format!(\"{first}/{second}\"),\n        _ => first.to_string(),\n    };\n    if inert(&area) {\n        area\n    } else {\n        \"(other)\".to_string()\n    }\n}\n",
+          "reason": "Root files map to root, known container directories retain a component child, other paths use the first segment, and unsafe display areas map to other."
+        }
+      ],
+      "distractors": []
+    },
+    {
+      "id": "v10-positive-07",
+      "split": "independent",
+      "kind": "positive",
+      "query": "Normalize remote repository identities across Git transport formats",
+      "top": 5,
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/profile.rs",
+          "symbol": "normalize_git_remote",
+          "declaration_line": 512,
+          "line_start": 512,
+          "line_end": 542,
+          "source_excerpt": "fn normalize_git_remote(remote: &str) -> Option<String> {\n    let remote = remote.trim();\n    let (host, path) = if let Some((scheme, rest)) = remote.split_once(\"://\") {\n        if !matches!(scheme, \"https\" | \"http\" | \"ssh\" | \"git\") {\n            return None;\n        }\n        let (authority, path) = rest.split_once('/')?;\n        (authority.rsplit('@').next()?, path)\n    } else {\n        let (authority, path) = remote.split_once(':')?;\n        if authority.contains('/') {\n            return None;\n        }\n        (authority.rsplit('@').next()?, path)\n    };\n    let host = host.to_ascii_lowercase();\n    let path = path.trim_matches('/').trim_end_matches(\".git\");\n    let path = if host == \"github.com\" {\n        path.to_ascii_lowercase()\n    } else {\n        path.to_string()\n    };\n    if host.is_empty()\n        || path.is_empty()\n        || host.contains(|c: char| c.is_whitespace())\n        || path.chars().any(|ch| matches!(ch, '?' | '#' | '\\\\'))\n    {\n        return None;\n    }\n    Some(format!(\"{host}/{path}\"))\n}\n",
+          "reason": "Parses network URL or SCP style remotes, removes credentials and the Git suffix, lowercases hosts and GitHub paths, and rejects unsupported or malformed identities."
+        }
+      ],
+      "distractors": []
+    },
+    {
+      "id": "v10-positive-08",
+      "split": "independent",
+      "kind": "positive",
+      "query": "Configure native reviewers with repository read tools only",
+      "top": 5,
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/invocation.rs",
+          "symbol": "native_args",
+          "declaration_line": 1481,
+          "line_start": 1481,
+          "line_end": 1523,
+          "source_excerpt": "fn native_args(max_turns: u32, role: NativeRole) -> Vec<String> {\n    let mut args: Vec<String> = [\n        \"-p\",\n        \"--input-format\",\n        \"text\",\n        \"--output-format\",\n        \"stream-json\",\n        \"--verbose\",\n        \"--tools\",\n        match role {\n            NativeRole::Executor | NativeRole::GuardedExecutor => \"Read,Edit,Write,Grep,Glob,Bash\",\n            NativeRole::Reviewer => \"Read,Grep,Glob\",\n        },\n        \"--permission-mode\",\n        role.permission_mode(),\n        \"--permission-prompts\",\n        \"none\",\n        \"--max-turns\",\n        &max_turns.to_string(),\n        \"--no-session-persistence\",\n        \"--no-chrome\",\n    ]\n    .iter()\n    .map(|arg| (*arg).into())\n    .collect();\n    if role == NativeRole::Reviewer {\n        args.extend(\n            [\n                \"--safe-mode\",\n                \"--restricted\",\n                \"--strict-mcp-config\",\n                \"--mcp-config\",\n                \"{\\\"mcpServers\\\":{}}\",\n                \"--disable-slash-commands\",\n                \"--json-schema\",\n                REVIEW_OUTPUT_SCHEMA,\n            ]\n            .into_iter()\n            .map(str::to_owned),\n        );\n    }\n    args\n}\n",
+          "reason": "Reviewer tools are Read, Grep, and Glob; reviewer arguments add safe mode, restrictions, an empty strict MCP configuration, disabled slash commands, and an output schema."
+        }
+      ],
+      "distractors": []
+    },
+    {
+      "id": "v10-positive-09",
+      "split": "independent",
+      "kind": "positive",
+      "query": "Select literal repository paths from the original user prompt",
+      "top": 5,
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/hooks/profile_context.rs",
+          "symbol": "path_literals",
+          "declaration_line": 123,
+          "line_start": 123,
+          "line_end": 160,
+          "source_excerpt": "fn path_literals(prompt: &str, root: &Path) -> Vec<String> {\n    let mut paths = BTreeSet::new();\n    // Keep quoted paths containing spaces intact, then examine plain tokens.\n    let candidates =\n        prompt\n            .split('`')\n            .skip(1)\n            .step_by(2)\n            .chain(prompt.split('`').step_by(2).flat_map(|part| {\n                part.split(|ch: char| {\n                    ch.is_whitespace()\n                        || matches!(\n                            ch,\n                            '`' | '\"'\n                                | '\\''\n                                | '('\n                                | ')'\n                                | '['\n                                | ']'\n                                | '{'\n                                | '}'\n                                | '<'\n                                | '>'\n                                | ','\n                                | ';'\n                        )\n                })\n            }));\n    for candidate in candidates {\n        if let Some(path) = relative_path(candidate, root) {\n            paths.insert(path);\n            if paths.len() == MAX_PATHS {\n                break;\n            }\n        }\n    }\n    paths.into_iter().collect()\n}\n",
+          "reason": "Keeps backtick quoted paths intact, tokenizes the remaining prompt, validates relative paths, deduplicates them, and stops after 32 selections."
+        }
+      ],
+      "distractors": []
+    },
+    {
+      "id": "v10-positive-10",
+      "split": "independent",
+      "kind": "positive",
+      "query": "Reject personal evidence quotes copied from Markdown code blocks",
+      "top": 5,
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/hooks/semantic.rs",
+          "symbol": "quote_is_user_prose",
+          "declaration_line": 419,
+          "line_start": 419,
+          "line_end": 453,
+          "source_excerpt": "pub(super) fn quote_is_user_prose(text: &str, quote: &str) -> bool {\n    let excluded = excluded_ranges(text);\n    let native_attachment = [\n        \"# Files pasted by the user:\",\n        \"# Files mentioned by the user:\",\n    ]\n    .iter()\n    .any(|prefix| text.trim_start().starts_with(prefix));\n    let request_start = if native_attachment {\n        const REQUEST_MARKER: &str = \"\\n## My request:\";\n        let mut markers = text.match_indices(REQUEST_MARKER);\n        let Some((start, _)) = markers.next() else {\n            return false;\n        };\n        // A document can itself contain this heading. Text-only envelopes do\n        // not authenticate which of several occurrences belongs to the host.\n        if markers.next().is_some() {\n            return false;\n        }\n        start + REQUEST_MARKER.len()\n    } else {\n        0\n    };\n    !quote.is_empty()\n        && text.match_indices(quote).any(|(start, _)| {\n            let end = start + quote.len();\n            // Bind the section boundary and prose checks to this exact occurrence.\n            // An attachment occurrence must not validate a duplicate that appears\n            // only inside code or a quotation in the user's request.\n            start >= request_start\n                && !excluded\n                    .iter()\n                    .any(|range| range.start < end && start < range.end)\n        })\n}\n",
+          "reason": "Accepts an exact quote occurrence only when it falls in eligible request prose and overlaps no excluded range, including fenced code."
+        }
+      ],
+      "distractors": []
+    },
+    {
+      "id": "v10-positive-11",
+      "split": "independent",
+      "kind": "positive",
+      "query": "Replace a reviewed preference while recording its supersession history",
+      "top": 5,
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/store/supersession.rs",
+          "symbol": "supersede_feedback",
+          "declaration_line": 136,
+          "line_start": 136,
+          "line_end": 239,
+          "source_excerpt": "    pub(crate) fn supersede_feedback(\n        &mut self,\n        old: &str,\n        new: &str,\n        old_revision: &str,\n        new_revision: &str,\n    ) -> SqlResult<SupersessionReceipt> {\n        if old == new {\n            return Err(invalid(\"a preference cannot supersede itself\"));\n        }\n        if !super::super::collection::valid_id(old_revision)\n            || !super::super::collection::valid_id(new_revision)\n        {\n            return Err(invalid(\n                \"both review revisions must be full 64-character keys\",\n            ));\n        }\n        let tx = self\n            .conn\n            .transaction_with_behavior(TransactionBehavior::Immediate)?;\n        if let Some(receipt) = committed_receipt(&tx, old, new, old_revision, new_revision)? {\n            return Ok(receipt);\n        }\n        let entries = preferences::read_feedback(&tx)?;\n        let old_entry = entries\n            .iter()\n            .find(|entry| entry.key == old)\n            .ok_or_else(|| invalid(\"old preference missing\"))?;\n        let new_entry = entries\n            .iter()\n            .find(|entry| entry.key == new)\n            .ok_or_else(|| invalid(\"new preference missing\"))?;\n        if old_entry.review_revision() != old_revision\n            || new_entry.review_revision() != new_revision\n        {\n            return Err(invalid(\n                \"review revision changed; inspect both preferences again\",\n            ));\n        }\n        if old_entry.category != new_entry.category || old_entry.scope != new_entry.scope {\n            return Err(invalid(\"replacement requires the same category and scope\"));\n        }\n        for entry in [old_entry, new_entry] {\n            if !matches!(entry.status.as_str(), \"candidate\" | \"active\")\n                || entry.superseded_by.is_some()\n            {\n                return Err(invalid(\n                    \"rejected or superseded preferences cannot take part in a new replacement\",\n                ));\n            }\n        }\n        // Each old node has at most one outgoing edge. Both endpoints must\n        // currently have none, and self-links are forbidden, so an insertion\n        // cannot close a cycle. There is no unbounded ancestry traversal.\n        let bound: bool = tx.query_row(\"SELECT EXISTS(SELECT 1 FROM persona_candidate_feedback p WHERE feedback_key=?1\n            AND NOT EXISTS(SELECT 1 FROM persona_feedback_dismissal d WHERE d.candidate_id=p.candidate_id))\", [new], |r|r.get(0))?;\n        if !bound {\n            return Err(invalid(\n                \"replacement needs a currently verified strict source\",\n            ));\n        }\n        let at: i64 = tx.query_row(\"SELECT unixepoch()\", [], |r| r.get(0))?;\n        tx.execute(\"INSERT INTO feedback_supersession (old_key,new_key,old_revision,new_revision,reviewed_at)\n            VALUES (?1,?2,?3,?4,?5)\", params![old,new,old_revision,new_revision,at])?;\n        tx.execute(\n            \"UPDATE feedback SET status='superseded' WHERE key=?1\",\n            [old],\n        )?;\n        tx.execute(\"DELETE FROM feedback_acceptance WHERE key=?1\", [old])?;\n        tx.execute(\"UPDATE feedback SET status='active' WHERE key=?1\", [new])?;\n        tx.execute(\"INSERT INTO feedback_acceptance(key,revision) VALUES (?1,?2) ON CONFLICT(key) DO UPDATE SET revision=excluded.revision\", params![new,new_revision])?;\n        for (key, event, revision) in [\n            (\n                old,\n                format!(\"superseded:{}->{new}\", old_entry.status),\n                old_revision,\n            ),\n            (\n                new,\n                format!(\"supersedes:{old}:{}->active\", new_entry.status),\n                new_revision,\n            ),\n        ] {\n            tx.execute(\"INSERT INTO feedback_review_event(key,status,at_epoch,reviewed_revision) VALUES (?1,?2,?3,?4)\", params![key,event,at,revision])?;\n        }\n        let count: i64 = tx.query_row(\"SELECT count(*) FROM feedback_supersession\", [], |r| {\n            r.get(0)\n        })?;\n        if count > 20_000 {\n            return Err(invalid(\"preference relation history exceeds 20000 rows\"));\n        }\n        collection::check_size(&tx)?;\n        tx.commit()?;\n        Ok(SupersessionReceipt {\n            old_key: old.into(),\n            new_key: new.into(),\n            old_revision: old_revision.into(),\n            new_revision: new_revision.into(),\n            reviewed_at: at,\n            old_status: \"superseded\".into(),\n            new_status: \"active\".into(),\n            repeated: false,\n        })\n    }\n",
+          "reason": "Under an immediate transaction it compares pinned revisions, checks same scope and category plus eligible sources, records the relation and review events, retires the old preference, and activates its successor."
+        }
+      ],
+      "distractors": []
+    },
+    {
+      "id": "v10-positive-12",
+      "split": "independent",
+      "kind": "positive",
+      "query": "Index Python module constants from nested tuple assignment patterns",
+      "top": 5,
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/indexer/python.rs",
+          "symbol": "extract_module_constants",
+          "declaration_line": 45,
+          "line_start": 45,
+          "line_end": 103,
+          "source_excerpt": "fn extract_module_constants(\n    child: &Node,\n    source: &[u8],\n    pending: &mut PendingFile,\n    module_index: usize,\n) {\n    // tree-sitter-python wraps top-level assignments in `expression_statement`.\n    let assignment = match child.kind() {\n        \"expression_statement\" => child.named_child(0),\n        // Defensive: some grammar versions surface bare assignment at module scope.\n        \"assignment\" => Some(*child),\n        _ => None,\n    };\n    let Some(assignment) = assignment else {\n        return;\n    };\n    if assignment.kind() != \"assignment\" {\n        return;\n    }\n    // Skip augmented assignments (`+=`, etc.) — not declarations. tree-sitter-python\n    // uses a distinct `augmented_assignment` node, so this is mostly redundant —\n    // defensive against grammar shifts.\n    let Some(left) = assignment.child_by_field_name(\"left\") else {\n        return;\n    };\n    if assignment.child_by_field_name(\"right\").is_none() {\n        // `FOO: int` with no value isn't a binding.\n        return;\n    }\n    let signature = node_text(&assignment, source).map(|s| {\n        // Single-line trimmed signature; the value preview helps grep-like search,\n        // but huge dict/list literals would explode storage.\n        let one_line: String = s.split('\\n').next().unwrap_or(s).trim().to_string();\n        if one_line.len() > 120 {\n            // Walk back to a UTF-8 char boundary — slicing at a fixed byte 120\n            // panics inside a multi-byte char (e.g. CJK constants like\n            // `WYNTXT_JA = \"はい、…\"`). `is_char_boundary` is O(1) and walks back\n            // at most 3 bytes (max UTF-8 code-point length is 4).\n            let mut end = 120;\n            while end > 0 && !one_line.is_char_boundary(end) {\n                end -= 1;\n            }\n            format!(\"{}…\", &one_line[..end])\n        } else {\n            one_line\n        }\n    });\n\n    for name in collect_assignment_targets(&left, source) {\n        push_def(\n            pending,\n            name,\n            \"constant\",\n            &assignment,\n            signature.clone(),\n            Some(module_index),\n        );\n    }\n}\n",
+          "reason": "For a valued module assignment it recursively collects left hand identifiers and creates a constant symbol for each, with a bounded UTF8 safe signature."
+        }
+      ],
+      "distractors": []
+    },
+    {
+      "id": "v10-positive-13",
+      "split": "independent",
+      "kind": "positive",
+      "query": "Treat uppercase JSX element names as component call targets",
+      "top": 5,
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/indexer/typescript.rs",
+          "symbol": "jsx_component_target",
+          "declaration_line": 175,
+          "line_start": 175,
+          "line_end": 186,
+          "source_excerpt": "fn jsx_component_target(\n    element: &Node,\n    source: &[u8],\n) -> Option<(String, Option<String>, Option<String>)> {\n    let name_node = element.child_by_field_name(\"name\")?;\n    let (name, path, to_type) = leaf_and_path(&name_node, source)?;\n    if starts_uppercase(&name) {\n        Some((name, path, to_type))\n    } else {\n        None\n    }\n}\n",
+          "reason": "Extracts a JSX name and its source path and returns a call target only if the leaf begins with an uppercase character."
+        }
+      ],
+      "distractors": []
+    },
+    {
+      "id": "v10-positive-14",
+      "split": "independent",
+      "kind": "positive",
+      "query": "Record included header names as imports in C++ source",
+      "top": 5,
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/indexer/cpp.rs",
+          "symbol": "emit_include",
+          "declaration_line": 395,
+          "line_start": 395,
+          "line_end": 416,
+          "source_excerpt": "fn emit_include(decl: &Node, source: &[u8], pending: &mut PendingFile, module_index: usize) {\n    let line = line_of(decl);\n    let Some(path_node) = decl.child_by_field_name(\"path\") else {\n        return;\n    };\n    let raw = node_text(&path_node, source).unwrap_or(\"\").trim();\n    if raw.is_empty() {\n        return;\n    }\n    let cleaned = raw\n        .trim_start_matches(['<', '\"'])\n        .trim_end_matches(['>', '\"']);\n    // Leaf = filename without dir prefix.\n    let leaf = cleaned.rsplit('/').next().unwrap_or(cleaned).to_string();\n    push_import(\n        pending,\n        module_index,\n        leaf,\n        Some(format!(\"{cleaned}::*\")),\n        line,\n    );\n}\n",
+          "reason": "Reads the include path node, removes angle or quote delimiters, and emits an imports edge with the header filename as leaf and the full header path as wildcard target."
+        }
+      ],
+      "distractors": []
+    },
+    {
+      "id": "v10-positive-15",
+      "split": "independent",
+      "kind": "positive",
+      "query": "Preserve aliases while expanding nested Rust import groups",
+      "top": 5,
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/indexer/rust_lang.rs",
+          "symbol": "collect_use_names",
+          "declaration_line": 820,
+          "line_start": 820,
+          "line_end": 926,
+          "source_excerpt": "fn collect_use_names(\n    node: &Node,\n    source: &[u8],\n    pending: &mut PendingFile,\n    module_index: usize,\n    line: u32,\n    prefix: Option<&str>,\n) {\n    match node.kind() {\n        \"identifier\" | \"type_identifier\" => {\n            if let Some(name) = node_text(node, source) {\n                let path = compose_scoped(prefix, name);\n                push_import(pending, module_index, name.to_string(), Some(path), line);\n            }\n        }\n        \"scoped_identifier\" => {\n            // use foo::bar — imports \"bar\", path is the full scoped expression.\n            let full = node_text(node, source).map(String::from);\n            let leaf_path = full.as_deref().unwrap_or(\"\");\n            let combined = if let Some(p) = prefix {\n                format!(\"{p}::{leaf_path}\")\n            } else {\n                leaf_path.to_string()\n            };\n            if let Some(n) = node.child_by_field_name(\"name\") {\n                if let Some(name) = node_text(&n, source) {\n                    push_import(\n                        pending,\n                        module_index,\n                        name.to_string(),\n                        Some(combined),\n                        line,\n                    );\n                }\n            }\n        }\n        \"use_as_clause\" => {\n            // use foo::bar as baz — name=\"baz\", path=\"foo::bar\" (prefix prepended).\n            let alias = node\n                .child_by_field_name(\"alias\")\n                .and_then(|a| node_text(&a, source));\n            let inner_path = node\n                .child_by_field_name(\"path\")\n                .and_then(|p| node_text(&p, source))\n                .map(String::from);\n\n            if let Some(name) = alias {\n                let path = match (prefix, inner_path) {\n                    (Some(p), Some(i)) => Some(format!(\"{p}::{i}\")),\n                    (Some(p), None) => Some(p.to_string()),\n                    (None, Some(i)) => Some(i),\n                    (None, None) => None,\n                };\n                push_import(pending, module_index, name.to_string(), path, line);\n            }\n        }\n        \"use_list\" | \"scoped_use_list\" => {\n            // { a, b, c::d } — recurse into each entry. For scoped_use_list the\n            // path child is the prefix, list holds entries.\n            let new_prefix = if node.kind() == \"scoped_use_list\" {\n                let local = node\n                    .child_by_field_name(\"path\")\n                    .and_then(|p| node_text(&p, source));\n                match (prefix, local) {\n                    (Some(p), Some(l)) => Some(format!(\"{p}::{l}\")),\n                    (Some(p), None) => Some(p.to_string()),\n                    (None, Some(l)) => Some(l.to_string()),\n                    (None, None) => None,\n                }\n            } else {\n                prefix.map(String::from)\n            };\n\n            let entries = if node.kind() == \"scoped_use_list\" {\n                node.child_by_field_name(\"list\")\n            } else {\n                Some(*node)\n            };\n            if let Some(list) = entries {\n                let mut c = list.walk();\n                for ch in list.children(&mut c) {\n                    collect_use_names(\n                        &ch,\n                        source,\n                        pending,\n                        module_index,\n                        line,\n                        new_prefix.as_deref(),\n                    );\n                }\n            }\n        }\n        \"use_wildcard\" => {\n            let path = prefix\n                .map(|p| format!(\"{p}::*\"))\n                .or_else(|| Some(\"*\".to_string()));\n            push_import(pending, module_index, \"*\".to_string(), path, line);\n        }\n        _ => {\n            // Permissive: try the last identifier we can find.\n            if let Some(name) = rightmost_identifier(node, source) {\n                let path = compose_scoped(prefix, &name);\n                push_import(pending, module_index, name, Some(path), line);\n            }\n        }\n    }\n}\n",
+          "reason": "Recursively combines scoped group prefixes, emits each imported leaf, and uses an alias as the imported name while retaining its original path."
+        }
+      ],
+      "distractors": []
+    },
+    {
+      "id": "v10-positive-16",
+      "split": "independent",
+      "kind": "positive",
+      "query": "Resolve included headers relative to their source file directory",
+      "top": 5,
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/policy/evidence.rs",
+          "symbol": "resolve_cpp_include",
+          "declaration_line": 574,
+          "line_start": 574,
+          "line_end": 607,
+          "source_excerpt": "fn resolve_cpp_include(source: &str, encoded: &str, paths: &BTreeSet<String>) -> BTreeSet<String> {\n    let include = encoded\n        .strip_suffix(\"::*\")\n        .unwrap_or(encoded)\n        .replace('\\\\', \"/\");\n    let mut resolved = BTreeSet::new();\n    if let Some(path) = normalize_relative(&include) {\n        if paths.contains(&path) {\n            resolved.insert(path);\n        }\n    }\n    if let Some(parent) = source.rsplit_once('/').map(|(parent, _)| parent) {\n        if let Some(path) = normalize_relative(&format!(\"{parent}/{include}\")) {\n            if paths.contains(&path) {\n                resolved.insert(path);\n            }\n        }\n    }\n    if resolved.is_empty() {\n        let lower = include.to_ascii_lowercase();\n        let basename = lower.rsplit('/').next().unwrap_or(&lower);\n        for candidate in paths {\n            let candidate_lower = candidate.to_ascii_lowercase();\n            if candidate_lower.rsplit('/').next() == Some(basename)\n                && (!lower.contains('/')\n                    || candidate_lower == lower\n                    || candidate_lower.ends_with(&format!(\"/{lower}\")))\n            {\n                resolved.insert(candidate.clone());\n            }\n        }\n    }\n    resolved\n}\n",
+          "reason": "Matches normalized root or source directory relative header paths against supplied repository paths, then uses bounded path set suffix and basename matching if neither match exists."
+        }
+      ],
+      "distractors": []
+    },
+    {
+      "id": "v10-negative-01",
+      "split": "independent",
+      "kind": "negative",
+      "query": "Remove every HTML comment from a copied project template",
+      "top": 5,
+      "relevant": [],
+      "distractors": [],
+      "negative_reason": "The inspected template copier recognizes two exact copy delimiters. With no opening delimiter it returns input unchanged; it does not scan or remove arbitrary HTML comments."
+    },
+    {
+      "id": "v10-negative-02",
+      "split": "independent",
+      "kind": "negative",
+      "query": "Validate ignore patterns using Git repository exclusion rules",
+      "top": 5,
+      "relevant": [],
+      "distractors": [],
+      "negative_reason": "The inspected doctor check compares four literal trimmed entries after removing blank and comment lines. It does not evaluate pattern precedence, wildcard matching, negation, or ask Git for effective exclusions."
+    },
+    {
+      "id": "v10-negative-03",
+      "split": "independent",
+      "kind": "negative",
+      "query": "Count deleted lines when summarizing file changes per commit",
+      "top": 5,
+      "relevant": [],
+      "distractors": [],
+      "negative_reason": "The inspected commit shape parser reads the second numstat column into an ignored binding. Its shape contains additions and touched file subdivisions, with no deletion count output."
+    },
+    {
+      "id": "v10-negative-04",
+      "split": "independent",
+      "kind": "negative",
+      "query": "Canonicalize local filesystem remotes into shared repository identities",
+      "top": 5,
+      "relevant": [],
+      "distractors": [],
+      "negative_reason": "The inspected remote identity function accepts four network schemes or SCP style authority paths. Local paths and file URLs cannot become a normalized remote identity through this boundary; local repository keys are handled separately."
+    },
+    {
+      "id": "v10-negative-05",
+      "split": "independent",
+      "kind": "negative",
+      "query": "Expand wildcard paths before selecting task profile advice",
+      "top": 5,
+      "relevant": [],
+      "distractors": [],
+      "negative_reason": "The inspected prompt path selector tokenizes text and performs lexical path validation. It does not enumerate files or expand glob characters; a wildcard containing filename remains literal when it passes validation."
+    },
+    {
+      "id": "v10-negative-06",
+      "split": "independent",
+      "kind": "negative",
+      "query": "Allow personal evidence quotes from fenced Markdown code",
+      "top": 5,
+      "relevant": [],
+      "distractors": [],
+      "negative_reason": "The inspected semantic citation boundary rejects any matching quote occurrence that intersects excluded ranges. Markdown code blocks explicitly create excluded ranges, including unterminated blocks."
+    },
+    {
+      "id": "v10-negative-07",
+      "split": "independent",
+      "kind": "negative",
+      "query": "Allow native reviewers to execute shell commands during review",
+      "top": 5,
+      "relevant": [],
+      "distractors": [],
+      "negative_reason": "The inspected Unix native reviewer command builder supplies only Read, Grep, and Glob tools. Bash appears only in executor tool lists; reviewer restrictions also disable auxiliary MCP and slash command paths."
+    },
+    {
+      "id": "v10-negative-08",
+      "split": "independent",
+      "kind": "negative",
+      "query": "Resolve C++ headers using compiler configured include search directories",
+      "top": 5,
+      "relevant": [],
+      "distractors": [],
+      "negative_reason": "The inspected include resolver receives only the source path, encoded include text, and repository path set. It matches root, source relative, suffix, or basename paths without compiler arguments or configured include directory inputs."
+    }
+  ]
+}

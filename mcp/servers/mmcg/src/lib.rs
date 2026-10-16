@@ -14,6 +14,7 @@ pub mod audit_bundle;
 pub mod audit_spec;
 mod auto_repair;
 pub mod bounded_fs;
+pub mod concept_review;
 pub mod context;
 pub mod context_doctor;
 mod declared_files;

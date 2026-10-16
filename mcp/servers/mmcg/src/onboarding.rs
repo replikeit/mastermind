@@ -192,9 +192,10 @@ pub fn load(root: &Path) -> Result<Option<Settings>, Error> {
     Ok(read_at(&capability, root)?.map(|(settings, _)| settings))
 }
 
-/// Project profile-delivery budget, fail-soft: a missing or unreadable
-/// `setup.json` must never block profile delivery, so any load error reads as
-/// the default rather than propagating.
+/// Read the project onboarding profile-delivery budget from existing settings.
+///
+/// Missing or unreadable `setup.json` uses the in-memory default rather than
+/// blocking profile delivery. Loading never creates onboarding state.
 pub fn profile_budget_tokens(root: &Path) -> usize {
     load(root)
         .ok()

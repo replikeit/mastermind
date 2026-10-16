@@ -1,0 +1,2944 @@
+{
+  "cases": [
+    {
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/evidence/otel.rs",
+          "reason": "Reads OTLP spans rather than JUnit testcases.",
+          "symbol": "parse"
+        }
+      ],
+      "expect_empty": false,
+      "id": "target-junit-report",
+      "kind": "positive",
+      "phenomena": [
+        "known_topic",
+        "plural",
+        "natural_phrase"
+      ],
+      "query": "read JUnit testcase failures and skipped results with execution durations",
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/evidence/junit.rs",
+          "reason": "Parses JUnit XML testcase events, including failures, skipped results and durations.",
+          "symbol": "parse"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/evidence/junit.rs",
+          "reason": "Carries parsed testcase status, detail and duration.",
+          "symbol": "JunitCase"
+        }
+      ],
+      "source_family": "known_junit_parser",
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/evidence/junit.rs",
+          "reason": "Reads XML testcases rather than OTLP trace relationships.",
+          "symbol": "parse"
+        }
+      ],
+      "expect_empty": false,
+      "id": "target-otlp-parents",
+      "kind": "positive",
+      "phenomena": [
+        "known_topic",
+        "natural_phrase",
+        "format_disambiguation"
+      ],
+      "query": "read OTLP trace span parent identifiers from resource spans JSON",
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/evidence/otel.rs",
+          "reason": "Reads nested resource and scope spans and extracts trace/span/parent identifiers.",
+          "symbol": "parse"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/evidence/otel.rs",
+          "reason": "Represents a span with its optional parent identifier.",
+          "symbol": "OtelSpan"
+        }
+      ],
+      "source_family": "known_otlp_parser",
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/store.rs",
+          "reason": "Only checks whether a grant already exists.",
+          "symbol": "reader_allowed"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/miner/hooks/mod.rs",
+          "reason": "Reuses existing access and never grants new reader access.",
+          "symbol": "configured_profile_client"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/setup.rs",
+          "reason": "Registers an MCP audience without granting profile access.",
+          "symbol": "run_with_profile_client"
+        }
+      ],
+      "expect_empty": false,
+      "id": "target-create-profile-grant",
+      "kind": "positive",
+      "phenomena": [
+        "known_topic",
+        "operation_disambiguation",
+        "natural_phrase"
+      ],
+      "query": "give a repository client permission to read the personal profile",
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/access.rs",
+          "reason": "Validates the repository/client and applies an explicit reader grant.",
+          "symbol": "configure"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/miner/access.rs",
+          "reason": "CLI entry point applying grant or revoke.",
+          "symbol": "set"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/miner/store.rs",
+          "reason": "Mutates the root/client grant row.",
+          "symbol": "set_reader_grant"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/miner/access.rs",
+          "reason": "Owns explicit local profile grants for one project and configured client.",
+          "symbol": "<module>"
+        }
+      ],
+      "source_family": "known_profile_grant",
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/store.rs",
+          "reason": "Lists grants rather than revoking one.",
+          "symbol": "reader_grants"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/onboarding.rs",
+          "reason": "Checks existing access rather than revoking a grant.",
+          "symbol": "profile_access"
+        }
+      ],
+      "expect_empty": false,
+      "id": "target-revoke-profile-grant",
+      "kind": "positive",
+      "phenomena": [
+        "known_topic",
+        "inverse_operation",
+        "natural_phrase"
+      ],
+      "query": "revoke an existing client profile reader grant for one repository",
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/access.rs",
+          "reason": "The allowed=false path removes the explicit client/root grant, preserving absent-store behavior.",
+          "symbol": "configure"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/miner/access.rs",
+          "reason": "CLI entry point reports and applies revocation.",
+          "symbol": "set"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/miner/store.rs",
+          "reason": "Deletes the matching root/client grant when allowed=false.",
+          "symbol": "set_reader_grant"
+        }
+      ],
+      "source_family": "known_profile_grant",
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/lessons.rs",
+          "reason": "Records iteration exhaustion, a different trigger from an audit failure.",
+          "symbol": "append_iteration_budget_candidate"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/lessons.rs",
+          "reason": "Formats a date without deduplicating audit lesson candidates.",
+          "symbol": "today_ymd"
+        }
+      ],
+      "expect_empty": false,
+      "id": "new-repeat-audit-lesson",
+      "kind": "positive",
+      "phenomena": [
+        "new_operation",
+        "repetition",
+        "natural_phrase"
+      ],
+      "query": "keep one lesson candidate when an audit failure happens again",
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/lessons.rs",
+          "reason": "Records deduplicated candidates for Drift/Broken audit findings.",
+          "symbol": "append_audit_candidate"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/lessons.rs",
+          "reason": "Refreshes the existing candidate occurrence instead of appending a duplicate, preserving reviewed text.",
+          "symbol": "merge_candidate"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/lessons.rs",
+          "reason": "Owns durable audit-backed candidates and documents stable IDs and idempotence.",
+          "symbol": "<module>"
+        }
+      ],
+      "source_family": "audit_lesson_candidates",
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/project_claims.rs",
+          "reason": "Hashes source text but does not extract decisions.",
+          "symbol": "source_file_digest"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/context_doctor.rs",
+          "reason": "Checks decision record structure rather than extracting source-bound candidates.",
+          "symbol": "check_decision_schema"
+        }
+      ],
+      "expect_empty": false,
+      "id": "new-project-decision-claims",
+      "kind": "positive",
+      "phenomena": [
+        "new_operation",
+        "plural",
+        "natural_phrase"
+      ],
+      "query": "turn explicit project decisions into claims preserving source declared status",
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/project_claims.rs",
+          "reason": "Extracts one explicit Decision field with source status and source-bound claim records.",
+          "symbol": "extract"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/project_claims.rs",
+          "reason": "Owns deterministic candidates from explicit CONTEXT decision entries; source status is not review.",
+          "symbol": "<module>"
+        }
+      ],
+      "source_family": "project_decision_extraction",
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/document_graph.rs",
+          "reason": "Hashes a value without checking current endpoint or corpus content.",
+          "symbol": "canonical_digest"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/document_sections.rs",
+          "reason": "Constructs Markdown sections without validating an evidence graph snapshot.",
+          "symbol": "split"
+        }
+      ],
+      "expect_empty": false,
+      "id": "new-document-graph-freshness",
+      "kind": "positive",
+      "phenomena": [
+        "new_source_family",
+        "plural",
+        "natural_phrase"
+      ],
+      "query": "verify document evidence snapshots still match endpoint and Markdown corpus bytes",
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/document_graph.rs",
+          "reason": "Validates the selected graph packet and rechecks endpoint/corpus bytes.",
+          "symbol": "check"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/document_graph.rs",
+          "reason": "Runs the same graph check for the index-bound repository.",
+          "symbol": "check_for_store"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/document_graph.rs",
+          "reason": "Owns live validation of portable graph snapshots while preserving unverified relation semantics.",
+          "symbol": "<module>"
+        }
+      ],
+      "source_family": "document_graph_snapshot_validation",
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/task_scaffold.rs",
+          "reason": "Only computes a number from names; it does not hold the lock or publish the spec.",
+          "symbol": "next_task_number"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/task_scaffold.rs",
+          "reason": "Checks slug syntax without allocating or writing a spec.",
+          "symbol": "validate_slug"
+        }
+      ],
+      "expect_empty": false,
+      "id": "new-concurrent-spec-allocation",
+      "kind": "positive",
+      "phenomena": [
+        "new_source_family",
+        "concurrency",
+        "plural",
+        "natural_phrase"
+      ],
+      "query": "allocate task spec numbers safely when concurrent processes create new specs",
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/task_scaffold.rs",
+          "reason": "Holds a scaffold lock to allocate a number and publishes a new spec without clobbering.",
+          "symbol": "create_numbered_spec"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/task_scaffold.rs",
+          "reason": "Owns race-safe allocation of canonical numbered task specifications.",
+          "symbol": "<module>"
+        }
+      ],
+      "source_family": "task_scaffold_allocation",
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/fact_signature.rs",
+          "reason": "Verifies an existing signature rather than creating one.",
+          "symbol": "verify"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/fact_signature.rs",
+          "reason": "Generates keys rather than signing the requested manifest.",
+          "symbol": "generate_keypair"
+        }
+      ],
+      "expect_empty": false,
+      "id": "new-sign-fact-manifest",
+      "kind": "positive",
+      "phenomena": [
+        "new_operation_in_previously_seen_family",
+        "operation_disambiguation",
+        "natural_phrase"
+      ],
+      "query": "sign a fact manifest with private Ed25519 keys without overwriting input",
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/fact_signature.rs",
+          "reason": "Reads a manifest and private key, builds a domain-separated signature, and rejects output aliasing inputs.",
+          "symbol": "sign"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/fact_signature.rs",
+          "reason": "Owns domain-separated Ed25519 trust for the canonical fact manifest.",
+          "symbol": "<module>"
+        }
+      ],
+      "source_family": "fact_manifest_signing",
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/temporal.rs",
+          "reason": "Constructs boundary identity rather than comparing projections.",
+          "symbol": "boundary_key"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/sarif_export.rs",
+          "reason": "Exports policy violations rather than computing temporal deltas.",
+          "symbol": "architecture_policy"
+        }
+      ],
+      "expect_empty": false,
+      "id": "new-temporal-architecture-diff",
+      "kind": "positive",
+      "phenomena": [
+        "new_source_family",
+        "morphology",
+        "natural_phrase"
+      ],
+      "query": "compare architectural boundaries against a Git baseline without checking out files",
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/temporal.rs",
+          "reason": "Runs baseline-to-indexed-worktree architecture analysis for CLI and MCP.",
+          "symbol": "analyze"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/temporal.rs",
+          "reason": "Owns bounded architecture deltas using a private database rewind without checkout or repository-index writes.",
+          "symbol": "<module>"
+        }
+      ],
+      "source_family": "temporal_architecture_comparison",
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/declared_files.rs",
+          "reason": "Only yields declared path strings without admitting their filesystem targets.",
+          "symbol": "paths"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/source_read.rs",
+          "reason": "Reads source content and is a different operation.",
+          "symbol": "load"
+        }
+      ],
+      "expect_empty": false,
+      "id": "new-declared-file-admission",
+      "kind": "positive",
+      "phenomena": [
+        "new_source_family",
+        "operation_disambiguation",
+        "natural_phrase"
+      ],
+      "query": "check declared task file paths before work without reading file contents",
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/declared_files.rs",
+          "reason": "Checks all declared file roles before work through shared bounded admission.",
+          "symbol": "preflight"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/declared_files.rs",
+          "reason": "Owns bounded declared-target admission and its issue classification.",
+          "symbol": "check"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/declared_files.rs",
+          "reason": "Owns declared-file admission explicitly without content reads.",
+          "symbol": "<module>"
+        }
+      ],
+      "source_family": "declared_file_preflight",
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/onboarding.rs",
+          "reason": "Checks runtime profile grants, which are separate from saved onboarding intent.",
+          "symbol": "profile_access"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/onboarding.rs",
+          "reason": "Returns one fail-soft budget rather than the saved settings packet.",
+          "symbol": "profile_budget_tokens"
+        }
+      ],
+      "expect_empty": false,
+      "id": "new-read-onboarding-state",
+      "kind": "positive",
+      "phenomena": [
+        "new_operation",
+        "absence_boundary",
+        "natural_phrase"
+      ],
+      "query": "read project onboarding settings without creating missing state",
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/onboarding.rs",
+          "reason": "Reads saved settings while leaving absent state and directories absent.",
+          "symbol": "load"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/onboarding.rs",
+          "reason": "Reads bounded setup state through a retained root capability.",
+          "symbol": "read_at"
+        }
+      ],
+      "source_family": "onboarding_settings_read",
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/verification.rs",
+          "reason": "Classifies command intent and cannot itself decide whether observed results contradict a pass.",
+          "symbol": "test_runner"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/test_scan.rs",
+          "reason": "Looks for conventional Rust test attributes rather than interpreting an observed test count.",
+          "symbol": "file_has_test_attr"
+        }
+      ],
+      "expect_empty": false,
+      "id": "new-zero-tests-pass",
+      "kind": "positive",
+      "phenomena": [
+        "new_operation",
+        "failure_boundary",
+        "natural_phrase"
+      ],
+      "query": "reject a reported pass when tests ran zero cases",
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/verification.rs",
+          "reason": "Detects nonzero exit or zero observed tests in recognized test commands as contradictions of a claimed pass.",
+          "symbol": "pass_contradiction"
+        }
+      ],
+      "source_family": "reported_verification_contradiction",
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/team.rs",
+          "reason": "Queries an existing federation lock rather than producing its pinning manifest.",
+          "symbol": "map"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/team.rs",
+          "reason": "Creates node names without pinning repository inputs.",
+          "symbol": "component_node_id"
+        }
+      ],
+      "expect_empty": false,
+      "id": "new-federation-lock",
+      "kind": "positive",
+      "phenomena": [
+        "new_source_family",
+        "plural",
+        "natural_phrase"
+      ],
+      "query": "pin multiple repository indexes revisions and WAL bytes in a lock manifest",
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/team.rs",
+          "reason": "Captures each repository root, revision and index/WAL digest into the output lock manifest.",
+          "symbol": "lock"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/team.rs",
+          "reason": "Owns read-only index federation with a manifest pinning identity, revision and SQLite/WAL bytes.",
+          "symbol": "<module>"
+        }
+      ],
+      "source_family": "repository_federation_lock",
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "path": "evals/benchmark/evidence_binding.py",
+          "reason": "Only validates declaration structure and does not compare source bytes.",
+          "symbol": "validate_source_quotes"
+        },
+        {
+          "path": "evals/behavior/evidence.py",
+          "reason": "Checks citation ranges and anchor coverage without checking these literal quote bindings.",
+          "symbol": "check_citations"
+        }
+      ],
+      "expect_empty": false,
+      "id": "new-literal-quote-binding",
+      "kind": "positive",
+      "phenomena": [
+        "new_operation_in_previously_seen_family",
+        "literal_binding",
+        "natural_phrase"
+      ],
+      "query": "validate literal source quotes against pinned bytes without changing review grades",
+      "relevant": [
+        {
+          "path": "evals/benchmark/evidence_binding.py",
+          "reason": "Checks assessment quote anchors against pinned source snapshots and preserves their grades.",
+          "symbol": "audit"
+        },
+        {
+          "path": "evals/benchmark/evidence_binding.py",
+          "reason": "Checks per-anchor source digest and literal quote bytes.",
+          "symbol": "_anchor_result"
+        }
+      ],
+      "source_family": "benchmark_literal_source_binding",
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "path": "evals/benchmark/judge_calibration.py",
+          "reason": "Computes a rate and confidence bound without checking defect localization.",
+          "symbol": "proportion"
+        },
+        {
+          "path": "evals/benchmark/judge_calibration.py",
+          "reason": "Finds text occurrences without deciding whether the judge located the defect.",
+          "symbol": "spans"
+        }
+      ],
+      "expect_empty": false,
+      "id": "new-judge-defect-location",
+      "kind": "positive",
+      "phenomena": [
+        "new_source_family",
+        "semantic_contract",
+        "natural_phrase"
+      ],
+      "query": "measure whether judge identified the mutated defect rather than any failure",
+      "relevant": [
+        {
+          "path": "evals/benchmark/judge_calibration.py",
+          "reason": "Checks that a judge flagged the targeted criterion, unknown, or material-error passage broken by the mutation.",
+          "symbol": "located"
+        }
+      ],
+      "source_family": "judge_calibration_defect_localization",
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/lessons.rs",
+          "reason": "Records a local lesson candidate for broken audits; it does not deploy pods.",
+          "symbol": "append_audit_candidate"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/auto_repair.rs",
+          "reason": "Assesses bounded solution repair eligibility rather than operating a Kubernetes cluster.",
+          "symbol": "assess_semantic"
+        }
+      ],
+      "expect_empty": true,
+      "id": "new-negative-deployment",
+      "kind": "negative",
+      "phenomena": [
+        "unsupported_semantics",
+        "lexical_distractor",
+        "new_domain"
+      ],
+      "query": "deploy Kubernetes pods when audit checks report broken contracts",
+      "relevant": [],
+      "source_family": "unsupported_kubernetes_deployment",
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "path": "evals/benchmark/evidence_binding.py",
+          "reason": "Returns a quote-binding audit record without an email or notification delivery mechanism.",
+          "symbol": "audit"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/miner/feedback.rs",
+          "reason": "Verifies local transcript quotes and does not send emails.",
+          "symbol": "verified_quote"
+        }
+      ],
+      "expect_empty": true,
+      "id": "new-negative-email-quotes",
+      "kind": "negative",
+      "phenomena": [
+        "unsupported_semantics",
+        "lexical_distractor",
+        "new_domain"
+      ],
+      "query": "send notification emails after finding invalid source quotes",
+      "relevant": [],
+      "source_family": "unsupported_email_notification",
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [],
+      "expect_empty": true,
+      "id": "new-negative-biogeochemistry",
+      "kind": "negative",
+      "phenomena": [
+        "unsupported_semantics",
+        "out_of_vocabulary",
+        "new_domain"
+      ],
+      "query": "phenology mycorrhizal carbon sequestration projections",
+      "relevant": [],
+      "source_family": "unsupported_biogeochemistry",
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/bounded_fs.rs",
+          "reason": "Reading a file does not implement atomic replacement.",
+          "symbol": "read_regular_file"
+        }
+      ],
+      "expect_empty": false,
+      "id": "dev-atomic-write",
+      "kind": "positive",
+      "phenomena": [
+        "morphology",
+        "natural_phrase"
+      ],
+      "query": "atomically replace repository files with durable writes",
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/bounded_fs.rs",
+          "reason": "Owns atomic replacement of a repository regular file and documents durability before rename.",
+          "symbol": "write_atomic_regular_file"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/bounded_fs.rs",
+          "reason": "Capability-bound entry point for the same operation.",
+          "symbol": "write_atomic_regular_file_with_capability"
+        }
+      ],
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/feedback.rs",
+          "reason": "Formats a transcript directory name without finding a quoted turn.",
+          "symbol": "claude_project_slug"
+        }
+      ],
+      "expect_empty": false,
+      "id": "dev-human-quotes",
+      "kind": "positive",
+      "phenomena": [
+        "natural_phrase",
+        "extra_terms"
+      ],
+      "query": "find human transcript turns containing a quoted passage",
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/feedback.rs",
+          "reason": "Returns the human turn containing a quote while ignoring whitespace runs.",
+          "symbol": "quoted_turn"
+        }
+      ],
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "path": "evals/behavior/evidence.py",
+          "reason": "Filters answer Markdown visibility rather than constructing document search sections.",
+          "symbol": "answer_lines"
+        }
+      ],
+      "expect_empty": false,
+      "id": "dev-markdown-sections",
+      "kind": "positive",
+      "phenomena": [
+        "natural_phrase",
+        "plural"
+      ],
+      "query": "split Markdown headings outside fenced code blocks",
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/document_sections.rs",
+          "reason": "Splits document sections at visible ATX headings outside fences.",
+          "symbol": "split"
+        }
+      ],
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/scip_overlay.rs",
+          "reason": "Reads an existing overlay and does not import an index.",
+          "symbol": "query"
+        }
+      ],
+      "expect_empty": false,
+      "id": "dev-compiler-import",
+      "kind": "positive",
+      "phenomena": [
+        "morphology",
+        "extra_terms"
+      ],
+      "query": "import compiler resolved semantic SCIP indexes",
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/scip_overlay.rs",
+          "reason": "Imports a verified compiler-resolved SCIP artifact as additive semantic evidence.",
+          "symbol": "import"
+        }
+      ],
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "path": "evals/shared/process.py",
+          "reason": "Supervises subprocesses rather than filesystem events.",
+          "symbol": "run_bounded"
+        }
+      ],
+      "expect_empty": false,
+      "id": "ind-filesystem-watching",
+      "kind": "positive",
+      "phenomena": [
+        "morphology",
+        "natural_phrase"
+      ],
+      "query": "filesystem watchers coalesce rapid changes before reindexing",
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/watcher.rs",
+          "reason": "Runs recursive filesystem watching and queues changes for debounced indexing.",
+          "symbol": "run"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/watcher.rs",
+          "reason": "Indexes only pending changes whose debounce interval has settled.",
+          "symbol": "flush_settled"
+        }
+      ],
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/fact_adapter.rs",
+          "reason": "Imports external evidence into facts instead of exporting policy findings.",
+          "symbol": "adapt"
+        }
+      ],
+      "expect_empty": false,
+      "id": "ind-policy-sarif",
+      "kind": "positive",
+      "phenomena": [
+        "natural_phrase",
+        "plural"
+      ],
+      "query": "export architecture policy violations as SARIF findings",
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/sarif_export.rs",
+          "reason": "Converts architecture rules, violations, and incomplete evidence into SARIF.",
+          "symbol": "architecture_policy"
+        }
+      ],
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/evidence/otel.rs",
+          "reason": "Parses trace spans rather than XML testcases.",
+          "symbol": "parse"
+        }
+      ],
+      "expect_empty": false,
+      "id": "ind-junit-statuses",
+      "kind": "positive",
+      "phenomena": [
+        "plural",
+        "extra_terms"
+      ],
+      "query": "JUnit XML testcases failures skipped results durations",
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/evidence/junit.rs",
+          "reason": "Parses testcase events and records failed, error, skipped, and passed results with durations.",
+          "symbol": "parse"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/evidence/junit.rs",
+          "reason": "Carries parsed testcase status, message, and duration.",
+          "symbol": "JunitCase"
+        }
+      ],
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/evidence/junit.rs",
+          "reason": "Parses testcase evidence without trace relationships.",
+          "symbol": "parse"
+        }
+      ],
+      "expect_empty": false,
+      "id": "ind-trace-parent",
+      "kind": "positive",
+      "phenomena": [
+        "natural_phrase",
+        "plural"
+      ],
+      "query": "OpenTelemetry trace spans with parent span identifiers",
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/evidence/otel.rs",
+          "reason": "Extracts trace, span, and parent-span identifiers from OTLP JSON.",
+          "symbol": "parse"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/evidence/otel.rs",
+          "reason": "Represents an imported span and its optional parent identifier.",
+          "symbol": "OtelSpan"
+        }
+      ],
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/sarif_export.rs",
+          "reason": "Exports graph projections to SARIF, without adapting coverage evidence.",
+          "symbol": "project_map"
+        }
+      ],
+      "expect_empty": false,
+      "id": "ind-coverage-facts",
+      "kind": "positive",
+      "phenomena": [
+        "natural_phrase",
+        "extra_terms"
+      ],
+      "query": "convert coverage artifacts into revision bound fact manifests",
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/fact_adapter.rs",
+          "reason": "Adapts bounded coverage evidence into a manifest bound to the index and revision.",
+          "symbol": "adapt"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/fact_adapter.rs",
+          "reason": "Converts imported evidence snapshots to fact annotations and relationships.",
+          "symbol": "convert_snapshot"
+        }
+      ],
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/verification_receipts.rs",
+          "reason": "Executes checks and is not the display-formatting implementation.",
+          "symbol": "run"
+        }
+      ],
+      "expect_empty": false,
+      "id": "ind-command-display",
+      "kind": "positive",
+      "phenomena": [
+        "natural_phrase",
+        "extra_terms"
+      ],
+      "query": "display executable arguments as a readable command string",
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/verification_receipts.rs",
+          "reason": "Formats argv for stable human-readable display while execution continues to use argv.",
+          "symbol": "display_command"
+        }
+      ],
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/feedback.rs",
+          "reason": "Finds a transcript quote without checking file-and-line citations.",
+          "symbol": "quoted_turn"
+        }
+      ],
+      "expect_empty": false,
+      "id": "ind-source-citations",
+      "kind": "positive",
+      "phenomena": [
+        "natural_phrase",
+        "plural"
+      ],
+      "query": "check source citations against bounded file line ranges",
+      "relevant": [
+        {
+          "path": "evals/behavior/evidence.py",
+          "reason": "Matches unique required source anchors to bounded citations in a fixture.",
+          "symbol": "check_citations"
+        }
+      ],
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/watcher.rs",
+          "reason": "Its event polling does not supervise command execution.",
+          "symbol": "run"
+        }
+      ],
+      "expect_empty": false,
+      "id": "ind-subprocess-supervision",
+      "kind": "positive",
+      "phenomena": [
+        "morphology",
+        "natural_phrase"
+      ],
+      "query": "supervise subprocesses with timeouts output limits and process groups",
+      "relevant": [
+        {
+          "path": "evals/shared/process.py",
+          "reason": "Owns timeout and byte-cap enforcement plus child or process-group cleanup.",
+          "symbol": "run_bounded"
+        }
+      ],
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/access.rs",
+          "reason": "Validates an identifier without applying a reader grant.",
+          "symbol": "valid_client_id"
+        }
+      ],
+      "expect_empty": false,
+      "id": "ind-profile-reader-grants",
+      "kind": "positive",
+      "phenomena": [
+        "morphology",
+        "natural_phrase"
+      ],
+      "query": "grant profile reading access to a client in this repository",
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/access.rs",
+          "reason": "Validates and updates the profile reader grant for a root and client.",
+          "symbol": "configure"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/miner/access.rs",
+          "reason": "CLI entry point that grants or revokes the same access.",
+          "symbol": "set"
+        }
+      ],
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/fingerprint.rs",
+          "reason": "Generic byte hashing alone does not select the structural data to hash.",
+          "symbol": "fnv1a64"
+        }
+      ],
+      "expect_empty": false,
+      "id": "ind-structural-fingerprints",
+      "kind": "positive",
+      "phenomena": [
+        "plural",
+        "extra_terms"
+      ],
+      "query": "structural fingerprints ignoring comments whitespace and line numbers",
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/fingerprint.rs",
+          "reason": "Hashes sorted structural symbol and edge tuples, excluding raw formatting and line positions.",
+          "symbol": "compute_structural_fingerprint"
+        }
+      ],
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/effort.rs",
+          "reason": "Describes input fields without owning the effort decision.",
+          "symbol": "input_schema"
+        }
+      ],
+      "expect_empty": false,
+      "id": "ind-effort-routing-extra-term",
+      "kind": "positive",
+      "phenomena": [
+        "natural_phrase",
+        "unrelated_extra_term"
+      ],
+      "query": "select reasoning effort from agent duties task risk and kumquat",
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/effort.rs",
+          "reason": "Selects requested effort using declared agent, task family, scope, risk, and explicit override. The unrelated final word adds no requirement.",
+          "symbol": "select"
+        }
+      ],
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/verification_receipts.rs",
+          "reason": "Verification receipts record command evidence and cannot issue purchase refunds.",
+          "symbol": "Receipt"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/verification_receipts.rs",
+          "reason": "Runs verification commands and is not a payment processor.",
+          "symbol": "run"
+        }
+      ],
+      "expect_empty": true,
+      "id": "ind-unsupported-payments",
+      "kind": "negative",
+      "phenomena": [
+        "unsupported_semantics",
+        "lexical_distractor"
+      ],
+      "query": "issue payment refunds from credit card purchase receipts",
+      "relevant": [],
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/access.rs",
+          "reason": "Stores local profile reader grants and does not manage OAuth token rotation.",
+          "symbol": "configure"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/miner/access.rs",
+          "reason": "A local client identifier validator has no token expiry or rotation behavior.",
+          "symbol": "valid_client_id"
+        }
+      ],
+      "expect_empty": true,
+      "id": "ind-unsupported-oauth",
+      "kind": "negative",
+      "phenomena": [
+        "unsupported_semantics",
+        "lexical_distractor"
+      ],
+      "query": "rotate OAuth refresh tokens after client access expires",
+      "relevant": [],
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [],
+      "expect_empty": true,
+      "id": "ind-unsupported-domain",
+      "kind": "negative",
+      "phenomena": [
+        "unsupported_semantics",
+        "out_of_vocabulary"
+      ],
+      "query": "geothermal aquifer salinity thermocline forecasting",
+      "relevant": [],
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/terminal.rs",
+          "reason": "Escapes human-readable terminal text with Rust Unicode escape syntax rather than preserving serialized JSON syntax.",
+          "symbol": "escape"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/terminal.rs",
+          "reason": "Only classifies unsafe characters; it does not transform a serialized JSON line.",
+          "symbol": "unsafe_character"
+        }
+      ],
+      "expect_empty": false,
+      "id": "h2-terminal-json-controls",
+      "kind": "positive",
+      "phenomena": [
+        "new_owner",
+        "json_contract",
+        "natural_phrase"
+      ],
+      "query": "make bidi and control characters visible in serialized JSON without changing meaning",
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/terminal.rs",
+          "reason": "Makes raw DEL/C1/bidi controls visible in an already serialized JSON line while preserving JSON meaning.",
+          "symbol": "escape_json_line"
+        }
+      ],
+      "source_family": "terminal_json_visibility",
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/source_read.rs",
+          "reason": "Loads a source snapshot but does not apply a receipt or select uncovered lines.",
+          "symbol": "load"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/source_read.rs",
+          "reason": "Coalesces numeric ranges without checking task/source binding or delivering source text.",
+          "symbol": "merge"
+        }
+      ],
+      "expect_empty": false,
+      "id": "h2-receipt-source-coverage",
+      "kind": "positive",
+      "phenomena": [
+        "new_operation",
+        "binding_boundary",
+        "natural_phrase"
+      ],
+      "query": "deliver only unread source line ranges using a receipt from the same task",
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/source_read.rs",
+          "reason": "Uses task/path/digest-bound receipt ranges to omit already delivered source lines and emits uncovered segments.",
+          "symbol": "deliver"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/source_read.rs",
+          "reason": "Owns source delivery with process-local receipts for previous source ranges.",
+          "symbol": "<module>"
+        }
+      ],
+      "source_family": "source_delivery_receipt_coverage",
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/executor_report.rs",
+          "reason": "Parses legacy claim/verification YAML and cannot establish the canonical schema requirement.",
+          "symbol": "parse_legacy"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/executor_report.rs",
+          "reason": "Assesses an already parsed completion status and does not parse a marker-delimited YAML report.",
+          "symbol": "completion_rejection"
+        }
+      ],
+      "expect_empty": false,
+      "id": "h2-canonical-report-markers",
+      "kind": "positive",
+      "phenomena": [
+        "new_owner",
+        "format_disambiguation",
+        "natural_phrase"
+      ],
+      "query": "parse canonical executor report YAML inside explicit report marker comments",
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/executor_report.rs",
+          "reason": "Requires canonical schema after parsing the provided report text, including explicit report-marker blocks.",
+          "symbol": "parse_canonical_str"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/executor_report.rs",
+          "reason": "Detects canonical report markers, extracts their YAML and parses the canonical value.",
+          "symbol": "parse_str"
+        }
+      ],
+      "source_family": "canonical_executor_report_parsing",
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/indexer/vue.rs",
+          "reason": "Extracts template component calls rather than script declarations.",
+          "symbol": "extract_template"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/indexer/vue.rs",
+          "reason": "Formats a component name without extracting script symbols.",
+          "symbol": "pascal_case"
+        }
+      ],
+      "expect_empty": false,
+      "id": "h2-vue-script-symbols",
+      "kind": "positive",
+      "phenomena": [
+        "new_owner",
+        "language_boundary",
+        "natural_phrase"
+      ],
+      "query": "extract TypeScript script symbols from Vue single file components",
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/indexer/vue.rs",
+          "reason": "Isolates the SFC script, parses its TS/JS tree, and sends it through the TypeScript symbol walker.",
+          "symbol": "extract_script"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/indexer/vue.rs",
+          "reason": "Vue language extractor dispatches script and template extraction for the SFC.",
+          "symbol": "extract"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/indexer/vue.rs",
+          "reason": "Owns the Vue SFC contract: one component file whose script reparses as TS/JS.",
+          "symbol": "<module>"
+        }
+      ],
+      "source_family": "vue_single_file_component_extraction",
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "path": "npm/mastermind/bin/resolve.js",
+          "reason": "Launches an already selected executable and propagates exit/signal behavior without choosing the platform package.",
+          "symbol": "runBinary"
+        }
+      ],
+      "expect_empty": false,
+      "id": "h2-npm-platform-binary",
+      "kind": "positive",
+      "phenomena": [
+        "new_package",
+        "platform_mapping",
+        "natural_phrase"
+      ],
+      "query": "select the native npm binary matching operating system architecture and Linux libc",
+      "relevant": [
+        {
+          "path": "npm/mastermind/bin/resolve.js",
+          "reason": "Maps OS, CPU architecture and Linux libc to the matching native package name.",
+          "symbol": "packageName"
+        },
+        {
+          "path": "npm/mastermind/bin/resolve.js",
+          "reason": "Resolves the selected platform package's native executable, including the Windows suffix.",
+          "symbol": "resolveBinary"
+        }
+      ],
+      "source_family": "npm_native_platform_resolution",
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "path": "scripts/validate.py",
+          "reason": "Checks wiki-link references, a different link syntax and target contract.",
+          "symbol": "validate_wikilinks"
+        },
+        {
+          "path": "scripts/validate.py",
+          "reason": "Only removes code examples; it does not collect local links or check target existence.",
+          "symbol": "_strip_code"
+        }
+      ],
+      "expect_empty": false,
+      "id": "h2-local-markdown-links",
+      "kind": "positive",
+      "phenomena": [
+        "new_owner",
+        "syntax_disambiguation",
+        "natural_phrase"
+      ],
+      "query": "find broken local Markdown links while ignoring fenced examples and external URLs",
+      "relevant": [
+        {
+          "path": "scripts/validate.py",
+          "reason": "Collects local Markdown file links after excluding code examples, external URLs and anchor-only links.",
+          "symbol": "collect_relative_links"
+        },
+        {
+          "path": "scripts/validate.py",
+          "reason": "Resolves collected local link paths and reports missing targets.",
+          "symbol": "validate_relative_links"
+        }
+      ],
+      "source_family": "static_documentation_link_validation",
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "path": "scripts/publish-crate-artifact.py",
+          "reason": "Encodes the Cargo publish wire body without checking metadata against archive identity.",
+          "symbol": "build_publish_body"
+        },
+        {
+          "path": "scripts/publish-crate-artifact.py",
+          "reason": "Rejects duplicate JSON keys but does not compare a metadata object with a crate archive.",
+          "symbol": "_json_without_duplicates"
+        }
+      ],
+      "expect_empty": false,
+      "id": "h2-crate-metadata-identity",
+      "kind": "positive",
+      "phenomena": [
+        "new_owner",
+        "artifact_binding",
+        "natural_phrase"
+      ],
+      "query": "reject crate publish metadata whose package identity differs from the packaged archive",
+      "relevant": [
+        {
+          "path": "scripts/publish-crate-artifact.py",
+          "reason": "Compares publish metadata name/version with the package identity read from the exact .crate archive.",
+          "symbol": "validate_crate_binding"
+        },
+        {
+          "path": "scripts/publish-crate-artifact.py",
+          "reason": "Builds metadata from the packaged crate and validates identity before returning it.",
+          "symbol": "prepare_metadata"
+        }
+      ],
+      "source_family": "release_crate_metadata_identity",
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/commands/uninstall.rs",
+          "reason": "Produces a display label for the selected scope without computing or executing the uninstall plan.",
+          "symbol": "scope_label"
+        }
+      ],
+      "expect_empty": false,
+      "id": "h2-uninstall-preview",
+      "kind": "positive",
+      "phenomena": [
+        "new_owner",
+        "operation_boundary",
+        "natural_phrase"
+      ],
+      "query": "preview project uninstall removals while preserving context and guidance files",
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/commands/uninstall.rs",
+          "reason": "Prints project/global removal plans unless forced and leaves CONTEXT.md and CLAUDE.md untouched.",
+          "symbol": "do_uninstall"
+        }
+      ],
+      "source_family": "uninstall_dry_run_contract",
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/indexer/vue.rs",
+          "reason": "Performs local static symbol extraction; it does not execute scripts or control a browser.",
+          "symbol": "extract_script"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/indexer/vue.rs",
+          "reason": "Scans local template component calls without starting a browser session.",
+          "symbol": "extract_template"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/indexer/vue.rs",
+          "reason": "Describes a static SFC extractor, not a remote browser execution capability.",
+          "symbol": "<module>"
+        }
+      ],
+      "expect_empty": true,
+      "id": "h2-negative-browser-execution",
+      "kind": "negative",
+      "phenomena": [
+        "unsupported_semantics",
+        "lexical_distractor",
+        "new_domain"
+      ],
+      "query": "execute Vue template scripts remotely inside live browser sessions",
+      "relevant": [],
+      "source_family": "unsupported_remote_browser_execution",
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "path": "scripts/publish-crate-artifact.py",
+          "reason": "Uploads exact verified crate bytes to crates.io's fixed registry endpoint, not an S3 bucket.",
+          "symbol": "publish"
+        },
+        {
+          "path": "scripts/publish-crate-artifact.py",
+          "reason": "Extracts a bounded local crate archive and has no remote object-storage operation.",
+          "symbol": "_extract_crate"
+        }
+      ],
+      "expect_empty": true,
+      "id": "h2-negative-s3-crate-upload",
+      "kind": "negative",
+      "phenomena": [
+        "unsupported_semantics",
+        "lexical_distractor",
+        "new_domain"
+      ],
+      "query": "upload crate archives to an Amazon S3 storage bucket",
+      "relevant": [],
+      "source_family": "unsupported_object_storage_upload",
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [],
+      "expect_empty": true,
+      "id": "h2-negative-nautical",
+      "kind": "negative",
+      "phenomena": [
+        "unsupported_semantics",
+        "out_of_vocabulary",
+        "new_domain"
+      ],
+      "query": "bathymetric nautical tides harmonic prediction",
+      "relevant": [],
+      "source_family": "unsupported_nautical_forecasting",
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/find_checks.rs",
+          "reason": "Constructs a failure record without checking the literal text.",
+          "symbol": "unavailable"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/find_checks.rs",
+          "reason": "Maps read failures to reason labels without checking preconditions.",
+          "symbol": "read_reason"
+        }
+      ],
+      "expect_empty": false,
+      "id": "h3-literal-find-preconditions",
+      "kind": "positive",
+      "phenomena": [
+        "new_positive_owner",
+        "literal_match",
+        "natural_phrase"
+      ],
+      "query": "check literal FIND preconditions still occur in current source files",
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/find_checks.rs",
+          "reason": "Runs bounded literal FIND precondition checks against repository source.",
+          "symbol": "check"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/find_checks.rs",
+          "reason": "Reads specified files and checks exact literal find_text occurrence before retaining freshness receipts.",
+          "symbol": "collect"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/find_checks.rs",
+          "reason": "Owns bounded preflight checks for literal FIND preconditions.",
+          "symbol": "<module>"
+        }
+      ],
+      "source_family": "literal_find_precondition_validation",
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/spec_symbols.rs",
+          "reason": "Only splits and validates qualification syntax, without resolving declarations.",
+          "symbol": "components"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/spec_symbols.rs",
+          "reason": "Only normalizes a file scope and does not resolve the declaration.",
+          "symbol": "normalize_file"
+        }
+      ],
+      "expect_empty": false,
+      "id": "h3-qualified-declaration-resolution",
+      "kind": "positive",
+      "phenomena": [
+        "new_positive_owner",
+        "scope_disambiguation",
+        "natural_phrase"
+      ],
+      "query": "resolve qualified declaration names within declared file and language scopes",
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/spec_symbols.rs",
+          "reason": "Resolves a named declaration under the provided name/file/language scopes with index consistency checks.",
+          "symbol": "resolve"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/spec_symbols.rs",
+          "reason": "Matches qualified lexical ancestry and file/language constraints, reporting missing or ambiguous declarations.",
+          "symbol": "resolve_candidates"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/spec_symbols.rs",
+          "reason": "Owns named declaration resolution independently of recorded signature text.",
+          "symbol": "<module>"
+        }
+      ],
+      "source_family": "scoped_declaration_resolution",
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/acceptance.rs",
+          "reason": "Validates criterion and check declarations but does not inspect current observations.",
+          "symbol": "validate"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/acceptance.rs",
+          "reason": "Only reads the optional criterion declarations from the spec.",
+          "symbol": "declared"
+        }
+      ],
+      "expect_empty": false,
+      "id": "h3-acceptance-current-observations",
+      "kind": "positive",
+      "phenomena": [
+        "new_positive_owner",
+        "evidence_mapping",
+        "natural_phrase"
+      ],
+      "query": "map acceptance criteria to current observed verification checks",
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/acceptance.rs",
+          "reason": "Maps each declared criterion to current observed check evidence and blocks missing/noncurrent observations.",
+          "symbol": "evaluate"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/acceptance.rs",
+          "reason": "Read-only entry point collecting the current evidence for declared acceptance criteria.",
+          "symbol": "inspect"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/acceptance.rs",
+          "reason": "Owns declared acceptance criteria backed by current observed checks, excluding executor-authored pass claims.",
+          "symbol": "<module>"
+        }
+      ],
+      "source_family": "acceptance_observation_mapping",
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/executor_claims.rs",
+          "reason": "Only resolves the target declaration; it does not establish that the diff added it.",
+          "symbol": "resolve"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/executor_claims.rs",
+          "reason": "Wraps an existing check result into a status record rather than proving addition.",
+          "symbol": "outcome"
+        }
+      ],
+      "expect_empty": false,
+      "id": "h3-executor-added-function-claims",
+      "kind": "positive",
+      "phenomena": [
+        "new_positive_owner",
+        "change_evidence",
+        "natural_phrase"
+      ],
+      "query": "check executor claims that functions were added in this diff",
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/executor_claims.rs",
+          "reason": "Checks each executor claim under current diff/source evidence and retains its identity and outcome.",
+          "symbol": "evaluate"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/executor_claims.rs",
+          "reason": "For FunctionAdded claims, checks declaration kind, signature, source freshness and membership in added declarations.",
+          "symbol": "check"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/executor_claims.rs",
+          "reason": "Owns checking executor claims once with retained identity and evidence.",
+          "symbol": "<module>"
+        }
+      ],
+      "source_family": "executor_added_declaration_evidence",
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/history_disposition.rs",
+          "reason": "Combines decisions into a status without validating their evidence references.",
+          "symbol": "status"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/history_disposition.rs",
+          "reason": "Checks reason text alone rather than evidence identifiers and decision bindings.",
+          "symbol": "valid_reason"
+        }
+      ],
+      "expect_empty": false,
+      "id": "h3-knowledge-review-evidence",
+      "kind": "positive",
+      "phenomena": [
+        "new_positive_owner",
+        "reference_binding",
+        "natural_phrase"
+      ],
+      "query": "validate context and lesson review decisions against their evidence references",
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/history_disposition.rs",
+          "reason": "Requires well-formed reasons, distinct known evidence IDs and the corresponding context/lessons reference for resolved decisions.",
+          "symbol": "validate"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/history_disposition.rs",
+          "reason": "Owns typed review of the two canonical knowledge files and validates assertion structure without claiming truth.",
+          "symbol": "<module>"
+        }
+      ],
+      "source_family": "knowledge_disposition_validation",
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/audit_bundle.rs",
+          "reason": "Validates an already extracted owner/repository identity but does not normalize remote URL forms.",
+          "symbol": "valid_repository_identity"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/audit_bundle.rs",
+          "reason": "Normalizes a filesystem artifact path rather than a remote repository address.",
+          "symbol": "normalize_relative_path"
+        }
+      ],
+      "expect_empty": false,
+      "id": "h3-remote-repository-identity",
+      "kind": "positive",
+      "phenomena": [
+        "new_positive_owner",
+        "input_normalization",
+        "natural_phrase"
+      ],
+      "query": "normalize github remote addresses into a repository identity",
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/audit_bundle.rs",
+          "reason": "Accepts supported HTTPS/SSH github remote forms, strips .git and rejects unsafe/invalid identities.",
+          "symbol": "normalize_repository_identity"
+        }
+      ],
+      "source_family": "remote_identity_normalization",
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/review_package.rs",
+          "reason": "Only validates the output directory selection.",
+          "symbol": "output_target"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/review_package.rs",
+          "reason": "Renders summary text rather than building and binding the full package.",
+          "symbol": "summary_markdown"
+        }
+      ],
+      "expect_empty": false,
+      "id": "h3-offline-review-export",
+      "kind": "positive",
+      "phenomena": [
+        "new_positive_owner",
+        "artifact_binding",
+        "natural_phrase"
+      ],
+      "query": "export offline review packages bound to the reviewed revision and evidence",
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/review_package.rs",
+          "reason": "Builds the offline package from one validated Lens snapshot and binds external report bytes to the reviewed head.",
+          "symbol": "export"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/review_package.rs",
+          "reason": "Owns deterministic offline PR evidence packages with fail-closed freshness and exact-byte bindings.",
+          "symbol": "<module>"
+        }
+      ],
+      "source_family": "offline_review_package_export",
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/invocation/guard.rs",
+          "reason": "Decides whether one proposed call is permitted rather than reconciling observed calls against recorded decisions.",
+          "symbol": "authorize"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/invocation/guard.rs",
+          "reason": "Collects observed call identities but does not prove agreement with the durable allow ledger.",
+          "symbol": "observe"
+        }
+      ],
+      "expect_empty": false,
+      "id": "h3-native-call-reconciliation",
+      "kind": "positive",
+      "phenomena": [
+        "new_positive_owner",
+        "authorization_evidence",
+        "natural_phrase"
+      ],
+      "query": "reconcile observed native calls with durable tool allow decisions",
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/invocation/guard.rs",
+          "reason": "Builds native guard evidence and reconciles observed calls with the bound durable decision ledger.",
+          "symbol": "reconcile"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/invocation/guard.rs",
+          "reason": "Checks manifest integrity and exact per-call name/input/allow agreement before declaring reconciliation complete.",
+          "symbol": "reconcile_into"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/invocation/guard.rs",
+          "reason": "Owns bounded native hook policy and refuses success when observed calls lack matching durable allow decisions.",
+          "symbol": "<module>"
+        }
+      ],
+      "source_family": "native_guard_decision_reconciliation",
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/commands/pr_comment.rs",
+          "reason": "Verifies a selected bundle and prints Markdown to stdout; it does not post a remote comment.",
+          "symbol": "run"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/commands/pr_comment.rs",
+          "reason": "Constructs a Markdown comment string without any network posting operation.",
+          "symbol": "render"
+        }
+      ],
+      "expect_empty": true,
+      "id": "h3-negative-comment-posting",
+      "kind": "negative",
+      "phenomena": [
+        "unsupported_semantics",
+        "lexical_distractor",
+        "new_operation"
+      ],
+      "query": "post audit bundle comments directly to github pull requests",
+      "relevant": [],
+      "source_family": "unsupported_remote_comment_posting",
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/spec_symbols.rs",
+          "reason": "Resolves indexed source declarations, not host names or DNS packets.",
+          "symbol": "resolve"
+        },
+        {
+          "path": "mcp/servers/mmcg/src/executor_claims.rs",
+          "reason": "Resolves codegraph declarations for executor evidence rather than internet hosts.",
+          "symbol": "resolve"
+        }
+      ],
+      "expect_empty": true,
+      "id": "h3-negative-dns-resolution",
+      "kind": "negative",
+      "phenomena": [
+        "unsupported_semantics",
+        "lexical_distractor",
+        "new_domain"
+      ],
+      "query": "resolve internet host names using encrypted DNS requests",
+      "relevant": [],
+      "source_family": "unsupported_dns_resolution",
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [],
+      "expect_empty": true,
+      "id": "h3-negative-sudoku",
+      "kind": "negative",
+      "phenomena": [
+        "unsupported_semantics",
+        "out_of_vocabulary",
+        "new_domain"
+      ],
+      "query": "solve sudoku puzzles with cage constraints and propagation",
+      "relevant": [],
+      "source_family": "unsupported_sudoku_solving",
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "line_end": 578,
+          "line_start": 572,
+          "path": "mcp/servers/mmcg/src/diff.rs",
+          "reason": "This entry point delegates to the committed range comparison and does not select the requested working tree scope.",
+          "source_excerpt": "pub fn symbols_changed_since(\n    store: &Store,\n    repo_root: &Path,\n    git_ref: &str,\n) -> Result<SymbolDiff, DiffError> {\n    symbols_changed_since_controlled(store, repo_root, git_ref, None, None)\n}",
+          "symbol": "symbols_changed_since"
+        },
+        {
+          "line_end": 534,
+          "line_start": 527,
+          "path": "mcp/servers/mmcg/src/diff.rs",
+          "reason": "This validates revision text rather than comparing declarations.",
+          "source_excerpt": "/// Git repositories currently use full SHA-1 or SHA-256 object IDs. Keep one\n/// lowercase validator for persisted revision bindings across the product.\npub(crate) fn is_full_git_oid(value: &str) -> bool {\n    matches!(value.len(), 40 | 64)\n        && value\n            .bytes()\n            .all(|byte| byte.is_ascii_hexdigit() && !byte.is_ascii_uppercase())\n}",
+          "symbol": "is_full_git_oid"
+        }
+      ],
+      "family": "source change analysis",
+      "id": "v6-working-tree-symbol-diff",
+      "kind": "positive",
+      "owner_language": "rust",
+      "query": "compare symbol changes including staged unstaged and untracked files",
+      "reason": "Find the source comparison entry point suitable before the executor commits changes.",
+      "relevant": [
+        {
+          "line_end": 658,
+          "line_start": 632,
+          "path": "mcp/servers/mmcg/src/diff.rs",
+          "reason": "This public owner selects the working tree scope, including staged, unstaged and untracked changes, and returns the symbol diff.",
+          "source_excerpt": "/// Same symbol comparison as [`symbols_changed_since`], but the file scope is\n/// `git_ref` \u2192 **working tree**: staged, unstaged, and untracked changes count,\n/// not just what has been committed.\n///\n/// Callers that audit work *before* it is committed must use this. The\n/// commit-range scope of [`symbols_changed_since`] is empty by construction\n/// while `HEAD` is still the baseline, which reads as \"the spec named these\n/// files but nothing changed\" rather than \"nothing is committed yet\".\n///\n/// The file set matches [`symbols_changed_in_worktree`] (and therefore\n/// `mastermind impact`); the symbol comparison is `git_ref`'s blobs against the\n/// live index, so a stale index under-reports symbol changes \u2014 it does not\n/// invent them.\npub fn symbols_changed_since_worktree(\n    store: &Store,\n    repo_root: &Path,\n    git_ref: &str,\n) -> Result<SymbolDiff, DiffError> {\n    symbols_changed_in_worktree_controlled(\n        store,\n        repo_root,\n        git_ref,\n        Some(Instant::now() + git_timeout()),\n        None,\n    )\n    .map(|diff| diff.diff)\n    .map_err(|error| worktree_scope_error(git_ref, error))",
+          "symbol": "symbols_changed_since_worktree"
+        }
+      ],
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "line_end": 131,
+          "line_start": 112,
+          "path": "mcp/servers/mmcg/src/spec_removals.rs",
+          "reason": "This checks one acknowledged removed snapshot rather than enumerating missing acknowledgements.",
+          "source_excerpt": "    pub(crate) fn accepts_snapshot(\n        &self,\n        name: &str,\n        scopes: &[Scope<'_>],\n        signature: Option<&str>,\n    ) -> Result<bool, Unresolved> {\n        let baseline = self.baseline.as_ref().map_err(Clone::clone)?;\n        let key = baseline.resolve(name, scopes, None)?;\n        if !self.removed.contains(&key) || !self.acknowledged.contains(&key) {\n            return Ok(false);\n        }\n        let symbol = baseline.symbol(&key)?;\n        if signature.is_some_and(|signature| symbol.signature.as_deref() != Some(signature)) {\n            return Err(Unresolved {\n                reason: \"signature_mismatch\",\n                matches: Some(1),\n            });\n        }\n        Ok(true)\n    }",
+          "symbol": "accepts_snapshot"
+        },
+        {
+          "line_end": 151,
+          "line_start": 145,
+          "path": "mcp/servers/mmcg/src/spec_removals.rs",
+          "reason": "This only projects the scope of a declared acknowledgement.",
+          "source_excerpt": "fn ack_scope(ack: &SymbolSpec) -> Scope<'_> {\n    Scope {\n        name: ack.name(),\n        file: ack.file(),\n        language: ack.language(),\n    }\n}",
+          "symbol": "ack_scope"
+        }
+      ],
+      "family": "breaking change contract",
+      "id": "v6-unacknowledged-removals",
+      "kind": "positive",
+      "owner_language": "rust",
+      "query": "find removed symbols missing explicit breaking change acknowledgements",
+      "reason": "Find the owner that reports omitted breaking change acknowledgements.",
+      "relevant": [
+        {
+          "line_end": 110,
+          "line_start": 97,
+          "path": "mcp/servers/mmcg/src/spec_removals.rs",
+          "reason": "This method lists removed non-module declarations whose parser identity was not acknowledged, with their enclosing names.",
+          "source_excerpt": "    pub(crate) fn unacknowledged(&self) -> Result<Vec<(String, String)>, Unresolved> {\n        let baseline = self.baseline.as_ref().map_err(Clone::clone)?;\n        let mut remaining = Vec::new();\n        for key in &self.removed {\n            let symbol = baseline.symbol(key)?;\n            if symbol.kind != \"module\" && !self.acknowledged.contains(key) {\n                let file = &baseline.files[&key.0];\n                let name = ancestry(file, key.1, baseline.deadline)?.join(\".\");\n                remaining.push((key.0.clone(), name));\n            }\n        }\n        remaining.sort();\n        Ok(remaining)\n    }",
+          "symbol": "unacknowledged"
+        }
+      ],
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "line_end": 198,
+          "line_start": 178,
+          "path": "mcp/servers/mmcg/src/indexer/go.rs",
+          "reason": "This resolves a call target and receiver hint rather than reading import declarations.",
+          "source_excerpt": "/// `(leaf, full_text, to_type)` for a call target. `pkg.Func` \u2192 (\"Func\", \"pkg.Func\", Some(\"pkg\"))\n/// when receiver starts uppercase, else to_type=None. Plain identifier \u2192 just the name.\nfn leaf_and_path(node: &Node, source: &[u8]) -> Option<(String, Option<String>, Option<String>)> {\n    let full = node_text(node, source).map(String::from);\n    match node.kind() {\n        \"identifier\" | \"type_identifier\" => {\n            let n = node_text(node, source)?.to_string();\n            Some((n, full, None))\n        }\n        \"selector_expression\" => {\n            let field = node\n                .child_by_field_name(\"field\")\n                .and_then(|n| node_text(&n, source))?\n                .to_string();\n            let operand = node\n                .child_by_field_name(\"operand\")\n                .and_then(|n| node_text(&n, source))\n                .and_then(|s| s.rsplit('.').next().map(str::to_string));\n            // Uppercase receiver = exported type / package \u2014 useful to_type hint.\n            let to_type = operand.filter(|s| starts_uppercase(s));\n            Some((field, full, to_type))",
+          "symbol": "leaf_and_path"
+        },
+        {
+          "line_end": 130,
+          "line_start": 127,
+          "path": "mcp/servers/mmcg/src/indexer/go.rs",
+          "reason": "This retrieves a node name without extracting an import path or alias relationship.",
+          "source_excerpt": "fn name_field<'a>(node: &Node, source: &'a [u8]) -> Option<&'a str> {\n    node.child_by_field_name(\"name\")\n        .and_then(|n| node_text(&n, source))\n}",
+          "symbol": "name_field"
+        }
+      ],
+      "family": "language import extraction",
+      "id": "v6-go-import-aliases",
+      "kind": "positive",
+      "owner_language": "rust",
+      "query": "extract go import aliases and package paths",
+      "reason": "Find the Go syntax owner for alias-aware import edges.",
+      "relevant": [
+        {
+          "line_end": 150,
+          "line_start": 132,
+          "path": "mcp/servers/mmcg/src/indexer/go.rs",
+          "reason": "This walks both individual and grouped Go import specs.",
+          "source_excerpt": "/// `import \"fmt\"` / `import f \"fmt\"` / `import ( a \"x\"; b \"y\" )`.\nfn collect_imports(decl: &Node, source: &[u8], pending: &mut PendingFile, module_index: usize) {\n    let line = line_of(decl);\n    let mut cursor = decl.walk();\n    for child in decl.children(&mut cursor) {\n        match child.kind() {\n            \"import_spec\" => emit_import_spec(&child, source, pending, module_index, line),\n            \"import_spec_list\" => {\n                let mut lc = child.walk();\n                for spec in child.children(&mut lc) {\n                    if spec.kind() == \"import_spec\" {\n                        emit_import_spec(&spec, source, pending, module_index, line);\n                    }\n                }\n            }\n            _ => {}\n        }\n    }\n}",
+          "symbol": "collect_imports"
+        },
+        {
+          "line_end": 176,
+          "line_start": 152,
+          "path": "mcp/servers/mmcg/src/indexer/go.rs",
+          "reason": "This extracts the quoted package path and explicit alias or default leaf and emits the import relationship.",
+          "source_excerpt": "fn emit_import_spec(\n    spec: &Node,\n    source: &[u8],\n    pending: &mut PendingFile,\n    module_index: usize,\n    line: u32,\n) {\n    let path_lit = spec\n        .child_by_field_name(\"path\")\n        .and_then(|n| node_text(&n, source))\n        .map(|s| s.trim_matches('\"').to_string());\n    let Some(path) = path_lit else { return };\n    if path.is_empty() {\n        return;\n    }\n    // Leaf: explicit alias if present, else last `/` segment.\n    let leaf = spec\n        .child_by_field_name(\"name\")\n        .and_then(|n| node_text(&n, source))\n        .filter(|n| *n != \"_\" && *n != \".\")\n        .map(str::to_string)\n        .unwrap_or_else(|| path.rsplit('/').next().unwrap_or(&path).to_string());\n    let to_path = Some(format!(\"{path}::*\"));\n    push_import(pending, module_index, leaf, to_path, line);\n}",
+          "symbol": "emit_import_spec"
+        }
+      ],
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "line_end": 159,
+          "line_start": 154,
+          "path": "mcp/servers/mmcg/src/miner/codex_transcript.rs",
+          "reason": "This extracts turns after session validation rather than deciding whether session provenance is acceptable.",
+          "source_excerpt": "    pub(super) fn human_turns(&self, text: &str) -> Vec<HumanTurn> {\n        text.lines()\n            .enumerate()\n            .flat_map(|(index, line)| self.record_turns(line, index + 1))\n            .collect()\n    }",
+          "symbol": "human_turns"
+        },
+        {
+          "line_end": 48,
+          "line_start": 33,
+          "path": "mcp/servers/mmcg/src/miner/codex_transcript.rs",
+          "reason": "This validates a project directory but does not reject forked histories.",
+          "source_excerpt": "fn project_path(value: &Value) -> Result<PathBuf, &'static str> {\n    let path = Path::new(value.as_str().ok_or(\"Codex record lacks a project cwd\")?);\n    if !path.is_absolute() {\n        return Err(\"Codex project cwd must be absolute\");\n    }\n    let canonical = path\n        .canonicalize()\n        .map_err(|_| \"Codex project cwd is unavailable\")?;\n    if !canonical.is_dir() {\n        return Err(\"Codex project cwd is not a directory\");\n    }\n    if canonical.to_str().is_none() {\n        return Err(\"Codex canonical project cwd must be UTF-8\");\n    }\n    Ok(canonical)\n}",
+          "symbol": "project_path"
+        }
+      ],
+      "family": "transcript provenance",
+      "id": "v6-forked-transcript-provenance",
+      "kind": "positive",
+      "owner_language": "rust",
+      "query": "reject forked transcript histories as independent human evidence",
+      "reason": "Find the attribution boundary that prevents copied histories from becoming independent human evidence.",
+      "relevant": [
+        {
+          "line_end": 119,
+          "line_start": 70,
+          "path": "mcp/servers/mmcg/src/miner/codex_transcript.rs",
+          "reason": "The session parser requires a user-origin session and rejects non-null fork or parent metadata before retaining provenance.",
+          "source_excerpt": "    pub(super) fn parse(text: &str) -> Result<Self, &'static str> {\n        let mut session: Option<Self> = None;\n        let mut context_records = 0;\n        for (index, line) in text.lines().enumerate() {\n            if index >= MAX_LINES {\n                return Err(\"Codex transcript exceeds 1 million JSONL lines\");\n            }\n            if line.trim().is_empty() {\n                continue;\n            }\n            // Unknown payload fields are skipped without allocating their text.\n            // Invalid JSON anywhere prevents reuse of preceding metadata.\n            let kind: RecordKind<'_> =\n                serde_json::from_str(line).map_err(|_| \"invalid Codex JSONL record\")?;\n            if session.is_none() && kind.kind != \"session_meta\" {\n                return Err(\"Codex transcript must begin with session_meta\");\n            }\n            match kind.kind {\n                \"session_meta\" => {\n                    if session.is_some() {\n                        return Err(\"Codex transcript has multiple session_meta records\");\n                    }\n                    let meta = payload(line)?;\n                    let id = meta[\"id\"]\n                        .as_str()\n                        .and_then(valid_session_id)\n                        .ok_or(\"Codex session_meta lacks a valid id\")?;\n                    if meta\n                        .get(\"session_id\")\n                        .is_some_and(|value| value.as_str() != Some(id))\n                    {\n                        return Err(\"Codex session identifiers disagree\");\n                    }\n                    if !matches!(meta[\"source\"].as_str(), Some(\"cli\" | \"vscode\"))\n                        || meta[\"thread_source\"].as_str() != Some(\"user\")\n                    {\n                        return Err(\"unsupported Codex session attribution; need cli/vscode and thread_source=user\");\n                    }\n                    if meta.as_object().unwrap().iter().any(|(key, value)| {\n                        (key.contains(\"fork\") || key.starts_with(\"parent_\")) && !value.is_null()\n                    }) {\n                        return Err(\n                            \"forked Codex histories cannot establish independent human evidence\",\n                        );\n                    }\n                    session = Some(Self {\n                        id: id.to_string(),\n                        cwd: project_path(&meta[\"cwd\"])?,\n                        metadata_digest: digest(&meta.to_string()),\n                        contexts: HashMap::new(),",
+          "symbol": "parse"
+        }
+      ],
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "line_end": 59,
+          "line_start": 57,
+          "path": "mcp/servers/mmcg/src/context.rs",
+          "reason": "This only bounds request selector text.",
+          "source_excerpt": "fn selector(value: &str, max: usize) -> bool {\n    !value.trim().is_empty() && value.len() <= max && !value.chars().any(char::is_control)\n}",
+          "symbol": "selector"
+        },
+        {
+          "line_end": 115,
+          "line_start": 92,
+          "path": "mcp/servers/mmcg/src/context.rs",
+          "reason": "This packages a layer with its verification status and digest without comparing an offered delivery with current sources.",
+          "source_excerpt": "fn layer(status: &str, data: Value) -> Result<Value, ContextError> {\n    // Retain epistemic status even when the whole payload does not fit. An\n    // `ok` selection alone must not conceal incomplete source verification.\n    let verification: serde_json::Map<String, Value> = [\n        \"source_verification\",\n        \"source_verification_scope\",\n        \"evidence_basis\",\n        \"freshness\",\n        \"review_status\",\n        \"current_checkout\",\n    ]\n    .iter()\n    .filter_map(|key| {\n        data.get(*key)\n            .map(|value| ((*key).to_owned(), value.clone()))\n    })\n    .collect();\n    Ok(json!({\n        \"status\":status,\n        \"revision\":digest(&data)?,\n        \"omitted_reason\":null,\n        \"verification\":verification,\n        \"data\":data,\n    }))",
+          "symbol": "layer"
+        }
+      ],
+      "family": "context delivery trust",
+      "id": "v6-context-delivery-revalidation",
+      "kind": "positive",
+      "owner_language": "rust",
+      "query": "recheck selected context sources immediately before native execution",
+      "reason": "Find the boundary check for evidence that was already selected for delivery.",
+      "relevant": [
+        {
+          "line_end": 203,
+          "line_start": 146,
+          "path": "mcp/servers/mmcg/src/context.rs",
+          "reason": "This revalidates selected project, documentation, code and personal evidence before native execution and rejects changed bindings.",
+          "source_excerpt": "/// Revalidate the evidence actually selected for delivery immediately before\n/// native execution. Work rows are historical previews and are deliberately\n/// excluded: publishing this invocation changes its own work row. This is an\n/// optimistic boundary check, not an atomic snapshot across Git, SQL and files.\npub fn validate_delivery(\n    root: &Path,\n    index_path: &Path,\n    options: &ContextOptions,\n    profile_client: Option<&str>,\n    offered: &Value,\n) -> Result<(), &'static str> {\n    let normalized = options\n        .normalized()\n        .map_err(|_| \"invocation_context_selection_invalid\")?;\n    let options = &normalized;\n    let mut selection = options.clone();\n    // Rechecking a selected layer must not omit it merely because another\n    // optional layer has grown since the initial preview.\n    selection.budget_tokens = MAX_BUDGET;\n    // The personal selection is checked separately, after project source I/O.\n    let current = from_paths(root, index_path, &selection, None)\n        .map_err(|_| \"invocation_context_revalidation_unavailable\")?;\n    if offered[\"repository_identity\"] != current[\"repository_identity\"] {\n        return Err(\"invocation_context_repository_changed\");\n    }\n    for name in [\"project\", \"documentation\", \"code\"] {\n        let previous = &offered[\"layers\"][name];\n        if !previous[\"data\"].is_null()\n            && (previous[\"status\"] != current[\"layers\"][name][\"status\"]\n                || previous[\"revision\"] != current[\"layers\"][name][\"revision\"])\n        {\n            return Err(\"invocation_context_sources_changed\");\n        }\n    }\n    let previous = &offered[\"layers\"][\"person\"][\"data\"];\n    if !previous.is_null() && !previous[\"profile_revision\"].is_null() {\n        // Do this last, after all other source I/O. Compare selected evidence,\n        // not the global store revision or the advisory draft review queue.\n        let client = profile_client.ok_or(\"invocation_profile_audience_missing\")?;\n        let repo = crate::miner::profile::RepoContext::for_root(root);\n        // Fixed ceiling: only status, profile_revision and source_verification are compared, and none depend on the budget.\n        let person = crate::miner::profile::view(\n            &options.paths,\n            repo.as_ref(),\n            crate::onboarding::MAX_PROFILE_BUDGET_TOKENS,\n            Some((root, client)),\n            Some(options.role.as_str()),\n            options.workflow.as_deref(),\n        )\n        .map_err(|_| \"invocation_profile_revalidation_unavailable\")?;\n        if previous[\"status\"] != person[\"status\"]\n            || previous[\"profile_revision\"] != person[\"profile_revision\"]\n            || previous[\"source_verification\"] != person[\"source_verification\"]\n        {\n            return Err(\"invocation_profile_sources_or_grant_changed\");\n        }\n    }\n    Ok(())",
+          "symbol": "validate_delivery"
+        }
+      ],
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "line_end": 32,
+          "line_start": 30,
+          "path": "mcp/servers/mmcg/src/miner/stats.rs",
+          "reason": "This increments a raw count and does not establish eligible commit opportunities.",
+          "source_excerpt": "pub(super) fn bump(c: &mut Counts, key: &str, n: i64) {\n    *c.entry(key.to_string()).or_insert(0) += n;\n}",
+          "symbol": "bump"
+        },
+        {
+          "line_end": 100,
+          "line_start": 85,
+          "path": "mcp/servers/mmcg/src/miner/stats.rs",
+          "reason": "This consumes aggregate support to choose a confidence tier rather than counting opportunities and votes.",
+          "source_excerpt": "/// A claim survives only when enough commits had the opportunity and the lower\n/// Wilson bound of their agreement clears the tier. Returns `None` (\u2192 no rule)\n/// when the signal is weak.\npub(super) fn gate(support: Support) -> Option<Confidence> {\n    if support.commits < MIN_COMMITS || support.agree > support.commits {\n        return None;\n    }\n    let lower = wilson_lower_bound(support.agree, support.commits);\n    if lower >= HIGH_AGREEMENT {\n        Some(Confidence::High)\n    } else if lower >= MEDIUM_AGREEMENT {\n        Some(Confidence::Medium)\n    } else {\n        None\n    }\n}",
+          "symbol": "gate"
+        }
+      ],
+      "family": "profile descriptive statistics",
+      "id": "v6-commit-support-counting",
+      "kind": "positive",
+      "owner_language": "rust",
+      "query": "count eligible commits once when measuring style agreement",
+      "reason": "Find the statistical owner that prevents many lines in one commit from multiplying independent support.",
+      "relevant": [
+        {
+          "line_end": 65,
+          "line_start": 51,
+          "path": "mcp/servers/mmcg/src/miner/stats.rs",
+          "reason": "This counts one opportunity and at most one supporting vote per measurable commit, leaving unmeasurable commits outside the denominator.",
+          "source_excerpt": "/// Each eligible commit votes once: true supports the predicate, false does\n/// not support it (including an ambiguous tie), None was not measurable.\npub(super) fn support(commits: &[&Counts], vote: impl Fn(&Counts) -> Option<bool>) -> Support {\n    let mut support = Support {\n        agree: 0,\n        commits: 0,\n    };\n    for counts in commits {\n        if let Some(agrees) = vote(counts) {\n            support.commits += 1;\n            support.agree += usize::from(agrees);\n        }\n    }\n    support\n}",
+          "symbol": "support"
+        }
+      ],
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "line_end": 100,
+          "line_start": 88,
+          "path": "npm/mastermind/bin/update.js",
+          "reason": "This selects installed clients through manifests without comparing workflow content.",
+          "source_excerpt": "function selectedClients(home, client) {\n  if (client) return client === \"all\" ? CLIENTS : [client];\n  return CLIENTS.filter((name) => {\n    const root = path.join(home, `.${name}`);\n    if (!directory(root, \"client root\")) return false;\n    const manifest = path.join(root, MANIFEST);\n    if (!entry(manifest)) return false;\n    regular(manifest, \"ownership manifest\");\n    const value = readManifest(manifest);\n    if (value.client !== name) throw new Error(`ownership manifest client mismatch: ${manifest}`);\n    return true;\n  });\n}",
+          "symbol": "selectedClients"
+        },
+        {
+          "line_end": 172,
+          "line_start": 140,
+          "path": "npm/mastermind/bin/update.js",
+          "reason": "This chooses npm installation scope and dependency arguments rather than protecting workflow files.",
+          "source_excerpt": "function scopeFor(packageRoot, installMode, packageName) {\n  const parts = packageName.split(\"/\");\n  const modules = path.resolve(packageRoot, ...parts.map(() => \"..\"));\n  if (path.basename(modules) !== \"node_modules\" || path.join(modules, ...parts) !== packageRoot) {\n    return { reason: \"package layout does not establish an npm installation scope\" };\n  }\n  if (installMode === \"global\") {\n    const parent = path.dirname(modules);\n    if (process.platform !== \"win32\" && path.basename(parent) !== \"lib\") {\n      return { reason: \"package layout does not establish the global npm prefix\" };\n    }\n    const prefix = process.platform === \"win32\" ? parent : path.dirname(parent);\n    return { kind: \"global\", prefix, modules, cwd: prefix,\n      args: [\"install\", \"--global\", \"--prefix\", prefix, \"--include=optional\", \"--no-audit\", \"--no-fund\", `${packageName}@latest`] };\n  }\n  if (installMode !== \"project\") return { reason: `installation mode ${installMode} is not a persistent npm scope` };\n  const prefix = path.dirname(modules);\n  const projectPath = path.join(prefix, \"package.json\");\n  if (!entry(projectPath)) return { reason: \"the owning npm project has no package metadata\" };\n  const project = JSON.parse(regular(projectPath, \"project package metadata\"));\n  if ((project.packageManager && !/^npm@/.test(project.packageManager))\n      || entry(path.join(prefix, \"pnpm-lock.yaml\")) || entry(path.join(prefix, \"yarn.lock\"))) {\n    return { reason: \"the project declares another package manager\" };\n  }\n  const kinds = [\"dependencies\", \"devDependencies\", \"optionalDependencies\"]\n    .filter((kind) => Object.hasOwn(project[kind] ?? {}, packageName));\n  if (kinds.length !== 1 || typeof project[kinds[0]][packageName] !== \"string\"\n      || !project[kinds[0]][packageName].trim() || /[/:#\\\\]/.test(project[kinds[0]][packageName])) {\n    return { reason: \"the package has no unambiguous direct registry dependency in the owning project\" };\n  }\n  const save = { dependencies: \"--save-prod\", devDependencies: \"--save-dev\", optionalDependencies: \"--save-optional\" }[kinds[0]];\n  return { kind: \"project\", prefix, modules, cwd: prefix,\n    args: [\"install\", \"--prefix\", prefix, save, \"--include=optional\", \"--no-audit\", \"--no-fund\", `${packageName}@latest`] };",
+          "symbol": "scopeFor"
+        }
+      ],
+      "family": "workflow update admission",
+      "id": "v6-workflow-update-edit-protection",
+      "kind": "positive",
+      "owner_language": "javascript",
+      "query": "preserve edited workflow files during package updates",
+      "reason": "Find the preflight that blocks overwriting locally modified installed workflow content.",
+      "relevant": [
+        {
+          "line_end": 138,
+          "line_start": 102,
+          "path": "npm/mastermind/bin/update.js",
+          "reason": "The update preflight compares owned workflow digests and rejects edited files or collisions with unowned names before returning an installation plan.",
+          "source_excerpt": "// Preflight preserves edited owned files and collisions with unowned names.\n// Repeat it in the fresh package process after npm changes the bundle.\nfunction workflowPlan(home, packageRoot, names, profile) {\n  if (!names.length) return [];\n  const share = path.join(packageRoot, \"share\");\n  const budget = { entries: 0, bytes: 0 };\n  treeDigest(share, budget);\n  const bundle = bundled(share);\n  return names.map((client) => {\n    const root = path.join(home, `.${client}`);\n    directory(root, \"client root\");\n    const manifestPath = path.join(root, MANIFEST);\n    if (entry(manifestPath)) regular(manifestPath, \"ownership manifest\");\n    const previous = readManifest(manifestPath);\n    if (previous && previous.client !== client) throw new Error(`ownership manifest client mismatch: ${manifestPath}`);\n    const selected = profile ?? (previous?.schema_version === 1 ? \"full\" : previous?.profile ?? \"core\");\n    const desired = profileBundle(bundle, selected, share);\n    for (const kind of [\"agents\", \"skills\"]) {\n      if (kind === \"agents\" && client === \"codex\") continue;\n      directory(path.join(root, kind), \"workflow artifact directory\");\n      const owned = previous?.artifacts[kind] ?? [];\n      for (const name of owned) {\n        const installed = path.join(root, kind, name);\n        if (entry(installed) && treeDigest(installed, budget) !== previous.digests[`${kind}/${name}`]) {\n          throw new Error(`edited owned workflow artifact, preserve or restore it before updating: ${installed}`);\n        }\n      }\n      for (const name of desired[kind === \"agents\" ? \"subagents\" : \"skills\"]) {\n        const installed = path.join(root, kind, name);\n        if (!owned.includes(name) && entry(installed)) {\n          throw new Error(`unowned workflow artifact conflicts with the new bundle: ${installed}`);\n        }\n      }\n    }\n    return { client, profile: selected, installed_version: previous?.version ?? null, root };\n  });\n}",
+          "symbol": "workflowPlan"
+        }
+      ],
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [],
+      "family": "wrapper help dispatch",
+      "id": "v6-wrapper-help-before-resolution",
+      "kind": "positive",
+      "owner_language": "javascript",
+      "query": "show command help before resolving the native binary",
+      "reason": "Find the help path that can respond even before native executable lookup.",
+      "relevant": [
+        {
+          "line_end": 116,
+          "line_start": 106,
+          "path": "npm/mastermind/bin/help.js",
+          "reason": "The wrapper calls this before binary resolution or installer dispatch; it prints help and signals successful early completion.",
+          "source_excerpt": "/**\n * Call before binary resolution or installer dispatch. True means help was\n * printed and the wrapper should exit successfully. False means continue.\n * A custom writer receives one complete string including the final newline.\n */\nexport function printHelp(argv, write = (text) => process.stdout.write(text)) {\n  const help = renderHelp(argv);\n  if (help === null) return false;\n  write(help);\n  return true;\n}",
+          "symbol": "printHelp"
+        },
+        {
+          "line_end": 104,
+          "line_start": 81,
+          "path": "npm/mastermind/bin/help.js",
+          "reason": "This resolves wrapper-owned help entirely from argv without filesystem, environment, process or network access.",
+          "source_excerpt": "/**\n * Render wrapper-owned help from argv without the node/script prefix.\n * Return null for execution or native command help so the caller can delegate.\n * This function performs no filesystem, environment, process or network I/O.\n */\nexport function renderHelp(argv) {\n  if (argv.length === 0 || (argv.length === 1 && [\"--help\", \"-h\", \"help\"].includes(argv[0]))) {\n    return TOP_LEVEL;\n  }\n\n  const helpVerb = argv[0] === \"help\";\n  const [command, ...rest] = helpVerb ? argv.slice(1) : argv;\n  const separator = rest.indexOf(\"--\");\n  const options = separator === -1 ? rest : rest.slice(0, separator);\n  if (!helpVerb && !options.some((arg) => arg === \"--help\" || arg === \"-h\")) return null;\n\n  switch (command) {\n    case \"install\": return INSTALL;\n    case \"update\": return UPDATE;\n    case \"list\": return LIST;\n    case \"doctor\": return options.includes(\"--workflow\") ? WORKFLOW_DOCTOR : null;\n    default: return null;\n  }\n}",
+          "symbol": "renderHelp"
+        }
+      ],
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "line_end": 54,
+          "line_start": 44,
+          "path": "evals/benchmark/artifacts.py",
+          "reason": "This validates JSON values rather than publishing output.",
+          "source_excerpt": "def parse_json(body: bytes) -> dict:\n    try:\n        value = json.loads(body, object_pairs_hook=_pairs)\n        if not isinstance(value, dict):\n            raise ValueError(\"expected a JSON object\")\n        # Reject non-finite numbers and unpaired Unicode surrogates, including\n        # inside otherwise unused trace fields, before retaining the event.\n        canonical(value)\n        return value\n    except (RecursionError, UnicodeError) as error:\n        raise ValueError(\"JSON nesting or string encoding is invalid\") from error",
+          "symbol": "parse_json"
+        },
+        {
+          "line_end": 32,
+          "line_start": 31,
+          "path": "evals/benchmark/artifacts.py",
+          "reason": "This hashes canonical values without reserving or writing an output path.",
+          "source_excerpt": "def digest(value: object) -> str:\n    return hashlib.sha256(canonical(value)).hexdigest()",
+          "symbol": "digest"
+        }
+      ],
+      "family": "artifact publication",
+      "id": "v6-immutable-artifact-publication",
+      "kind": "positive",
+      "owner_language": "python",
+      "query": "publish benchmark artifacts without replacing existing output files",
+      "reason": "Find the writer that makes an existing benchmark result path immutable.",
+      "relevant": [
+        {
+          "line_end": 181,
+          "line_start": 135,
+          "path": "evals/benchmark/artifacts.py",
+          "reason": "This publishes using exclusive no-follow creation, rejects an existing target and verifies the named regular file.",
+          "source_excerpt": "def write_new_bytes(path: Path, body: bytes, *, mode: int = 0o600) -> None:\n    \"\"\"Publish one owned regular file and verify its final name and bytes.\"\"\"\n    if (os.name != \"posix\" or not hasattr(os, \"O_NOFOLLOW\")\n            or not isinstance(body, bytes) or mode not in {0o400, 0o444, 0o555, 0o600}):\n        raise BenchmarkError(\"artifact_platform\", \"verified artifact publication requires POSIX\")\n    target = path.absolute()\n    parent = target.parent\n    if not target.name or target.name in {\".\", \"..\"}:\n        raise BenchmarkError(\"artifact_path\", \"invalid artifact path\")\n    try:\n        if parent.resolve(strict=True) != parent:\n            raise BenchmarkError(\"artifact_path\", \"artifact parent must be canonical without links\")\n        parent_descriptor = os.open(\n            parent, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_NONBLOCK)\n    except BenchmarkError:\n        raise\n    except OSError as error:\n        raise BenchmarkError(\"artifact_path\", \"cannot open artifact parent without links\") from error\n    descriptor = None\n    owned = None\n    published = False\n    expected_parent = os.fstat(parent_descriptor)\n    try:\n        if not stat.S_ISDIR(expected_parent.st_mode):\n            raise BenchmarkError(\"artifact_path\", \"artifact parent is not a directory\")\n        try:\n            descriptor = os.open(\n                target.name,\n                os.O_RDWR | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW | os.O_NONBLOCK,\n                mode,\n                dir_fd=parent_descriptor,\n            )\n            published = True\n        except FileExistsError as error:\n            raise BenchmarkError(\"artifact_exists\", f\"artifact already exists: {target}\") from error\n        opened = os.fstat(descriptor)\n        owned = (opened.st_dev, opened.st_ino)\n        os.fchmod(descriptor, mode)\n        with os.fdopen(os.dup(descriptor), \"wb\") as handle:\n            handle.write(body)\n            handle.flush()\n            os.fsync(handle.fileno())\n        written = os.fstat(descriptor)\n        named = os.stat(target.name, dir_fd=parent_descriptor, follow_symlinks=False)\n        if (not stat.S_ISREG(written.st_mode) or stat.S_IMODE(written.st_mode) != mode\n                or written.st_size != len(body) or not _same_node(written, named)):\n            raise BenchmarkError(\"artifact_changed\", \"artifact changed during publication\")",
+          "symbol": "write_new_bytes"
+        }
+      ],
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "line_end": 257,
+          "line_start": 249,
+          "path": "evals/control/harness.py",
+          "reason": "This validates sampled Rust test output rather than exploring the completion state model.",
+          "source_excerpt": "def test_outcome(output: bytes, expected: tuple[str, ...]) -> dict:\n    decoded = output.decode(\"utf-8\", errors=\"replace\")\n    rows = re.findall(r\"^test (\\S+) \\.\\.\\. (ok|FAILED|ignored[^\\n]*)$\", decoded, re.M)\n    passed = [name for name, status in rows if status == \"ok\"]\n    summary = re.findall(r\"^test result: ok\\. (\\d+) passed; (\\d+) failed; (\\d+) ignored;\", decoded, re.M)\n    valid = (sorted(passed) == sorted(expected) and len(rows) == len(expected)\n             and summary == [(str(len(expected)), \"0\", \"0\")])\n    return {\"status\": \"passed\" if valid else \"failed\", \"expected\": list(expected),\n            \"passed\": passed, \"missing\": sorted(set(expected) - set(passed))}",
+          "symbol": "test_outcome"
+        },
+        {
+          "line_end": 274,
+          "line_start": 260,
+          "path": "evals/control/harness.py",
+          "reason": "This validates aggregate UI harness output rather than finding state transition counterexamples.",
+          "source_excerpt": "def ui_outcome(output: bytes, source_root: Path = ROOT) -> dict:\n    \"\"\"Count the existing Lens harness as one aggregate, never its helpers.\"\"\"\n    decoded = output.decode(\"utf-8\", errors=\"replace\")\n    rows = re.findall(r\"^(?:not )?ok \\d+ - .+$\", decoded, re.M)\n    summary = {name: re.findall(rf\"^# {name} (\\d+)$\", decoded, re.M)\n               for name in (\"tests\", \"pass\", \"fail\", \"cancelled\", \"skipped\", \"todo\")}\n    expected_summary = {name: [\"1\" if name in (\"tests\", \"pass\") else \"0\"]\n                        for name in summary}\n    valid = (rows in ([f\"ok 1 - {UI_SUITE}\"], [f\"ok 1 - {source_root / UI_SUITE}\"])\n             and re.findall(r\"^\\d+\\.\\.\\d+$\", decoded, re.M) == [\"1..1\"]\n             and summary == expected_summary\n             and decoded.splitlines().count(f\"# {UI_COMPLETION}\") == 1)\n    return {\"status\": \"passed\" if valid else \"failed\", \"suite\": UI_SUITE,\n            \"aggregation\": \"one_file_suite\", \"expected_suites\": 1,\n            \"passed_suites\": int(valid)}",
+          "symbol": "ui_outcome"
+        }
+      ],
+      "family": "completion control model",
+      "id": "v6-completion-state-counterexamples",
+      "kind": "positive",
+      "owner_language": "python",
+      "query": "enumerate completion states and counterexample traces after evidence invalidation",
+      "reason": "Find the bounded model explorer for stale evidence and publication obligations.",
+      "relevant": [
+        {
+          "line_end": 118,
+          "line_start": 81,
+          "path": "evals/control/harness.py",
+          "reason": "This traverses successor states, retains action traces and records publications whose independent obligation oracle fails.",
+          "source_excerpt": "def explore(omitted_guard: str | None = None) -> dict:\n    initial = State()\n    paths = {initial: ()}\n    queue = deque([initial])\n    edges = publications = 0\n    violations = []\n    while queue:\n        before = queue.popleft()\n        for action, after in successors(before, omitted_guard):\n            edges += 1\n            trace = (*paths[before], action)\n            if action == \"publish\":\n                publications += 1\n                if not publication_valid(before):\n                    violations.append({\"trace\": list(trace), \"before\": vars(before)})\n            if after not in paths:\n                paths[after] = trace\n                queue.append(after)\n    # Existential recovery under a stable environment and successful producers.\n    # This does not assume that an arbitrary real task can be fixed or approved.\n    recovery = (\"preflight\", \"executor_succeeded\", \"checks_passed\", \"audit_held\",\n                \"review_satisfied\", \"history_resolved\", \"publish\")\n    recoverable = 0\n    for state in paths:\n        if state.completed:\n            continue\n        current = state\n        for action in recovery:\n            candidates = dict(successors(current))\n            if action not in candidates:\n                break\n            current = candidates[action]\n        recoverable += int(current.completed)\n    return {\n        \"states\": len(paths), \"transitions\": edges, \"publication_edges\": publications,\n        \"violations\": violations, \"open_states\": sum(not s.completed for s in paths),\n        \"recoverable_open_states\": recoverable, \"recovery_steps_bound\": len(recovery),\n    }",
+          "symbol": "explore"
+        }
+      ],
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "line_end": 138,
+          "line_start": 102,
+          "path": "npm/mastermind/bin/update.js",
+          "reason": "This refuses modified owned content; it neither retains historical workflow versions nor restores them.",
+          "source_excerpt": "// Preflight preserves edited owned files and collisions with unowned names.\n// Repeat it in the fresh package process after npm changes the bundle.\nfunction workflowPlan(home, packageRoot, names, profile) {\n  if (!names.length) return [];\n  const share = path.join(packageRoot, \"share\");\n  const budget = { entries: 0, bytes: 0 };\n  treeDigest(share, budget);\n  const bundle = bundled(share);\n  return names.map((client) => {\n    const root = path.join(home, `.${client}`);\n    directory(root, \"client root\");\n    const manifestPath = path.join(root, MANIFEST);\n    if (entry(manifestPath)) regular(manifestPath, \"ownership manifest\");\n    const previous = readManifest(manifestPath);\n    if (previous && previous.client !== client) throw new Error(`ownership manifest client mismatch: ${manifestPath}`);\n    const selected = profile ?? (previous?.schema_version === 1 ? \"full\" : previous?.profile ?? \"core\");\n    const desired = profileBundle(bundle, selected, share);\n    for (const kind of [\"agents\", \"skills\"]) {\n      if (kind === \"agents\" && client === \"codex\") continue;\n      directory(path.join(root, kind), \"workflow artifact directory\");\n      const owned = previous?.artifacts[kind] ?? [];\n      for (const name of owned) {\n        const installed = path.join(root, kind, name);\n        if (entry(installed) && treeDigest(installed, budget) !== previous.digests[`${kind}/${name}`]) {\n          throw new Error(`edited owned workflow artifact, preserve or restore it before updating: ${installed}`);\n        }\n      }\n      for (const name of desired[kind === \"agents\" ? \"subagents\" : \"skills\"]) {\n        const installed = path.join(root, kind, name);\n        if (!owned.includes(name) && entry(installed)) {\n          throw new Error(`unowned workflow artifact conflicts with the new bundle: ${installed}`);\n        }\n      }\n    }\n    return { client, profile: selected, installed_version: previous?.version ?? null, root };\n  });\n}",
+          "symbol": "workflowPlan"
+        }
+      ],
+      "family": "unsupported workflow recovery",
+      "id": "v6-negative-workflow-version-restore",
+      "kind": "negative",
+      "owner_language": "javascript",
+      "query": "repair edited workflow files from their previous versions",
+      "reason": "The inspected update owner protects edits by refusing overwrite and has no version-history restoration operation.",
+      "relevant": [],
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "line_end": 150,
+          "line_start": 132,
+          "path": "mcp/servers/mmcg/src/indexer/go.rs",
+          "reason": "This reads Go import syntax into pending metadata and does not edit source files.",
+          "source_excerpt": "/// `import \"fmt\"` / `import f \"fmt\"` / `import ( a \"x\"; b \"y\" )`.\nfn collect_imports(decl: &Node, source: &[u8], pending: &mut PendingFile, module_index: usize) {\n    let line = line_of(decl);\n    let mut cursor = decl.walk();\n    for child in decl.children(&mut cursor) {\n        match child.kind() {\n            \"import_spec\" => emit_import_spec(&child, source, pending, module_index, line),\n            \"import_spec_list\" => {\n                let mut lc = child.walk();\n                for spec in child.children(&mut lc) {\n                    if spec.kind() == \"import_spec\" {\n                        emit_import_spec(&spec, source, pending, module_index, line);\n                    }\n                }\n            }\n            _ => {}\n        }\n    }\n}",
+          "symbol": "collect_imports"
+        },
+        {
+          "line_end": 176,
+          "line_start": 152,
+          "path": "mcp/servers/mmcg/src/indexer/go.rs",
+          "reason": "This emits an index relationship, not a replacement import declaration.",
+          "source_excerpt": "fn emit_import_spec(\n    spec: &Node,\n    source: &[u8],\n    pending: &mut PendingFile,\n    module_index: usize,\n    line: u32,\n) {\n    let path_lit = spec\n        .child_by_field_name(\"path\")\n        .and_then(|n| node_text(&n, source))\n        .map(|s| s.trim_matches('\"').to_string());\n    let Some(path) = path_lit else { return };\n    if path.is_empty() {\n        return;\n    }\n    // Leaf: explicit alias if present, else last `/` segment.\n    let leaf = spec\n        .child_by_field_name(\"name\")\n        .and_then(|n| node_text(&n, source))\n        .filter(|n| *n != \"_\" && *n != \".\")\n        .map(str::to_string)\n        .unwrap_or_else(|| path.rsplit('/').next().unwrap_or(&path).to_string());\n    let to_path = Some(format!(\"{path}::*\"));\n    push_import(pending, module_index, leaf, to_path, line);\n}",
+          "symbol": "emit_import_spec"
+        }
+      ],
+      "family": "unsupported source refactoring",
+      "id": "v6-negative-go-import-rewrite",
+      "kind": "negative",
+      "owner_language": "rust",
+      "query": "rewrite go imports after renaming local packages",
+      "reason": "The inspected Go owner extracts syntax and relationships; renaming packages and rewriting their import source is unsupported.",
+      "relevant": [],
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "line_end": 181,
+          "line_start": 135,
+          "path": "evals/benchmark/artifacts.py",
+          "reason": "This rejects an existing artifact path rather than merging with its contents.",
+          "source_excerpt": "def write_new_bytes(path: Path, body: bytes, *, mode: int = 0o600) -> None:\n    \"\"\"Publish one owned regular file and verify its final name and bytes.\"\"\"\n    if (os.name != \"posix\" or not hasattr(os, \"O_NOFOLLOW\")\n            or not isinstance(body, bytes) or mode not in {0o400, 0o444, 0o555, 0o600}):\n        raise BenchmarkError(\"artifact_platform\", \"verified artifact publication requires POSIX\")\n    target = path.absolute()\n    parent = target.parent\n    if not target.name or target.name in {\".\", \"..\"}:\n        raise BenchmarkError(\"artifact_path\", \"invalid artifact path\")\n    try:\n        if parent.resolve(strict=True) != parent:\n            raise BenchmarkError(\"artifact_path\", \"artifact parent must be canonical without links\")\n        parent_descriptor = os.open(\n            parent, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_NONBLOCK)\n    except BenchmarkError:\n        raise\n    except OSError as error:\n        raise BenchmarkError(\"artifact_path\", \"cannot open artifact parent without links\") from error\n    descriptor = None\n    owned = None\n    published = False\n    expected_parent = os.fstat(parent_descriptor)\n    try:\n        if not stat.S_ISDIR(expected_parent.st_mode):\n            raise BenchmarkError(\"artifact_path\", \"artifact parent is not a directory\")\n        try:\n            descriptor = os.open(\n                target.name,\n                os.O_RDWR | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW | os.O_NONBLOCK,\n                mode,\n                dir_fd=parent_descriptor,\n            )\n            published = True\n        except FileExistsError as error:\n            raise BenchmarkError(\"artifact_exists\", f\"artifact already exists: {target}\") from error\n        opened = os.fstat(descriptor)\n        owned = (opened.st_dev, opened.st_ino)\n        os.fchmod(descriptor, mode)\n        with os.fdopen(os.dup(descriptor), \"wb\") as handle:\n            handle.write(body)\n            handle.flush()\n            os.fsync(handle.fileno())\n        written = os.fstat(descriptor)\n        named = os.stat(target.name, dir_fd=parent_descriptor, follow_symlinks=False)\n        if (not stat.S_ISREG(written.st_mode) or stat.S_IMODE(written.st_mode) != mode\n                or written.st_size != len(body) or not _same_node(written, named)):\n            raise BenchmarkError(\"artifact_changed\", \"artifact changed during publication\")",
+          "symbol": "write_new_bytes"
+        },
+        {
+          "line_end": 223,
+          "line_start": 222,
+          "path": "evals/benchmark/artifacts.py",
+          "reason": "This canonicalizes a new value and delegates to exclusive publication without reading a merge base.",
+          "source_excerpt": "def write_new(path: Path, value: object, *, mode: int = 0o600) -> None:\n    write_new_bytes(path, canonical(value) + b\"\\n\", mode=mode)",
+          "symbol": "write_new"
+        }
+      ],
+      "family": "unsupported result merge",
+      "id": "v6-negative-artifact-merge",
+      "kind": "negative",
+      "owner_language": "python",
+      "query": "merge competing edits into existing benchmark artifacts",
+      "reason": "The inspected artifact publisher creates immutable records and has no conflict resolution or merging operation.",
+      "relevant": [],
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "line_end": 110,
+          "line_start": 97,
+          "path": "mcp/servers/mmcg/src/spec_removals.rs",
+          "reason": "This enumerates missing acknowledgements without restoring declarations.",
+          "source_excerpt": "    pub(crate) fn unacknowledged(&self) -> Result<Vec<(String, String)>, Unresolved> {\n        let baseline = self.baseline.as_ref().map_err(Clone::clone)?;\n        let mut remaining = Vec::new();\n        for key in &self.removed {\n            let symbol = baseline.symbol(key)?;\n            if symbol.kind != \"module\" && !self.acknowledged.contains(key) {\n                let file = &baseline.files[&key.0];\n                let name = ancestry(file, key.1, baseline.deadline)?.join(\".\");\n                remaining.push((key.0.clone(), name));\n            }\n        }\n        remaining.sort();\n        Ok(remaining)\n    }",
+          "symbol": "unacknowledged"
+        },
+        {
+          "line_end": 142,
+          "line_start": 133,
+          "path": "mcp/servers/mmcg/src/spec_removals.rs",
+          "reason": "This accepts an acknowledged file removal and does not reconstruct or write deleted source.",
+          "source_excerpt": "    pub(crate) fn accepts_file_removal(&self, file: &str) -> bool {\n        let Ok(file) = normalize_file(file) else {\n            return false;\n        };\n        if self.baseline.is_err() {\n            return false;\n        }\n        let mut keys = self.removed.iter().filter(|key| key.0 == file).peekable();\n        keys.peek().is_some() && keys.all(|key| self.acknowledged.contains(key))\n    }",
+          "symbol": "accepts_file_removal"
+        }
+      ],
+      "family": "unsupported source restoration",
+      "id": "v6-negative-symbol-restoration",
+      "kind": "negative",
+      "owner_language": "rust",
+      "query": "restore deleted symbols from breaking change acknowledgements",
+      "reason": "The inspected removal owner checks acknowledgements against baseline identities and does not restore deleted implementation.",
+      "relevant": [],
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "declaration_line": 12,
+          "line_end": 25,
+          "line_start": 12,
+          "path": "mcp/servers/mmcg/src/miner/hooks/journal/archive.rs",
+          "reason": "This chooses a local digest-based archive path but does not read or verify payload bytes.",
+          "source_excerpt": "fn target(conn: &Connection, digest: &str) -> Result<PathBuf, Error> {\n    if !super::super::collection::valid_id(digest) {\n        return Err(\"invalid episode archive digest\".into());\n    }\n    let database = conn\n        .path()\n        .ok_or(\"episode archive requires a persistent journal\")?;\n    let parent = Path::new(database)\n        .parent()\n        .ok_or(\"journal parent unavailable\")?;\n    Ok(parent\n        .join(\"persona-archive\")\n        .join(format!(\"{digest}.json\")))\n}",
+          "symbol": "target"
+        }
+      ],
+      "family": "cold journal payload integrity",
+      "id": "v7-archived-payload-integrity",
+      "kind": "positive",
+      "owner_language": "rust",
+      "query": "verify archived episode bytes before reading journal payloads",
+      "reason": "Find the integrity boundary for reading cold journal evidence.",
+      "relevant": [
+        {
+          "declaration_line": 27,
+          "line_end": 40,
+          "line_start": 27,
+          "path": "mcp/servers/mmcg/src/miner/hooks/journal/archive.rs",
+          "reason": "This runtime reader opens the local archive as a bounded regular file and rejects a digest mismatch before deserializing the episode.",
+          "source_excerpt": "pub(super) fn read(conn: &Connection, expected: &str) -> Result<Episode, Error> {\n    let (root, path) = bounded_fs::open_file_target(&target(conn, expected)?)?;\n    let file = bounded_fs::read_regular_file_with_capability(\n        &root,\n        &path,\n        MAX_EPISODE_BYTES as u64,\n        MAX_EPISODE_BYTES as u64,\n        ReadControl::default(),\n    )?;\n    if digest(&file.bytes) != expected {\n        return Err(\"episode archive digest changed\".into());\n    }\n    Ok(serde_json::from_slice(&file.bytes)?)\n}",
+          "symbol": "read"
+        }
+      ],
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "declaration_line": 2334,
+          "line_end": 2374,
+          "line_start": 2333,
+          "path": "mcp/servers/mmcg/src/lens.rs",
+          "qualified_symbol": "HttpRequest.parse",
+          "reason": "This parses request syntax and headers but does not enforce same-origin authority.",
+          "source_excerpt": "impl HttpRequest {\n    fn parse(raw: &[u8]) -> Result<Self, &'static str> {\n        let text = std::str::from_utf8(raw).map_err(|_| \"request headers must be UTF-8\")?;\n        let headers_end = text\n            .find(\"\\r\\n\\r\\n\")\n            .ok_or(\"request headers are incomplete\")?;\n        let mut lines = text[..headers_end].split(\"\\r\\n\");\n        let mut start = lines\n            .next()\n            .ok_or(\"request line is missing\")?\n            .split_whitespace();\n        let method = start.next().ok_or(\"method is missing\")?;\n        let target = start.next().ok_or(\"target is missing\")?;\n        let version = start.next().ok_or(\"HTTP version is missing\")?;\n        if start.next().is_some() || version != \"HTTP/1.1\" {\n            return Err(\"only HTTP/1.1 requests are accepted\");\n        }\n        if !target.starts_with('/') || target.starts_with(\"//\") {\n            return Err(\"request target must be origin-form\");\n        }\n        let path = target.split_once('?').map_or(target, |(path, _)| path);\n        let mut headers = Vec::new();\n        for line in lines {\n            let (name, value) = line.split_once(':').ok_or(\"malformed request header\")?;\n            if name.is_empty()\n                || !name\n                    .bytes()\n                    .all(|byte| byte.is_ascii_alphanumeric() || byte == b'-')\n            {\n                return Err(\"malformed request header name\");\n            }\n            if value.chars().any(char::is_control) {\n                return Err(\"request header contains control characters\");\n            }\n            headers.push((name.to_ascii_lowercase(), value.trim().to_string()));\n        }\n        Ok(Self {\n            method: method.to_string(),\n            path: path.to_string(),\n            headers,\n        })\n    }",
+          "symbol": "parse"
+        }
+      ],
+      "family": "local web origin boundary",
+      "id": "v7-local-review-origin",
+      "kind": "positive",
+      "owner_language": "rust",
+      "query": "reject cross origin browser requests to the local review server",
+      "reason": "Find the runtime request admission method for the loopback review interface.",
+      "relevant": [
+        {
+          "declaration_line": 2376,
+          "line_end": 2418,
+          "line_start": 2376,
+          "path": "mcp/servers/mmcg/src/lens.rs",
+          "qualified_symbol": "HttpRequest.validate",
+          "reason": "This request method accepts read methods only and rejects incorrect host, origin or cross-site fetch headers.",
+          "source_excerpt": "    fn validate(&self, authority: &str) -> Result<(), RequestRejection> {\n        if self.method != \"GET\" && self.method != \"HEAD\" {\n            return Err(RequestRejection::new(\n                405,\n                \"Method Not Allowed\",\n                \"Lens is read-only; only GET and HEAD are accepted\",\n            ));\n        }\n        let hosts = self.header_values(\"host\");\n        if hosts.len() != 1 || hosts[0] != authority {\n            return Err(RequestRejection::new(\n                421,\n                \"Misdirected Request\",\n                \"request Host does not match the Lens loopback origin\",\n            ));\n        }\n        let origins = self.header_values(\"origin\");\n        let expected_origin = format!(\"http://{authority}\");\n        if origins.len() > 1\n            || origins\n                .first()\n                .is_some_and(|origin| *origin != expected_origin)\n        {\n            return Err(RequestRejection::new(\n                403,\n                \"Forbidden\",\n                \"cross-origin requests are not accepted\",\n            ));\n        }\n        let fetch_sites = self.header_values(\"sec-fetch-site\");\n        if fetch_sites.len() > 1\n            || fetch_sites\n                .first()\n                .is_some_and(|site| *site != \"same-origin\" && *site != \"none\")\n        {\n            return Err(RequestRejection::new(\n                403,\n                \"Forbidden\",\n                \"cross-site requests are not accepted\",\n            ));\n        }\n        Ok(())\n    }",
+          "symbol": "validate"
+        }
+      ],
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "declaration_line": 718,
+          "line_end": 725,
+          "line_start": 715,
+          "path": "mcp/servers/mmcg/src/spec.rs",
+          "reason": "This collects path tokens from prose, not executable verification obligations.",
+          "source_excerpt": "/// Every backticked token that looks like a path \u2014 directory separator OR file\n/// extension. Deduplicated, stably ordered. audit-spec compares against\n/// `git diff --name-only`.\nfn extract_mentioned_files(body: &str) -> Vec<String> {\n    let mut out: Vec<String> = Vec::new();\n    let mut seen: std::collections::HashSet<String> = std::collections::HashSet::new();\n    for line in crate::context_doctor::prose_lines(body) {\n        extract_mentioned_files_from_line(line.text, &mut out, &mut seen);\n    }\n    out\n}",
+          "symbol": "extract_mentioned_files"
+        }
+      ],
+      "family": "spec command obligations",
+      "id": "v7-command-obligations",
+      "kind": "positive",
+      "owner_language": "rust",
+      "query": "collect executable verification commands while ignoring labels and shell comments",
+      "reason": "Find the owner that turns parsed task metadata into executable verification obligations.",
+      "relevant": [
+        {
+          "declaration_line": 57,
+          "line_end": 68,
+          "line_start": 53,
+          "path": "mcp/servers/mmcg/src/spec.rs",
+          "qualified_symbol": "ParsedSpec.declared_verify_commands",
+          "reason": "This combines explicit command obligations, removes duplicates in declaration order, and filters labels, empty commands and comment-only commands.",
+          "source_excerpt": "impl ParsedSpec {\n    /// Explicit command obligations, in declaration order with duplicates\n    /// removed. Labels, empty commands and ordinary shell fences are excluded.\n    /// Only outside whitespace is normalized.\n    pub fn declared_verify_commands(&self) -> Vec<&str> {\n        let mut seen = HashSet::new();\n        self.frontmatter\n            .iter()\n            .flat_map(|fm| fm.verify.iter())\n            .filter_map(VerifyEntry::command)\n            .chain(self.verify_commands.iter().map(String::as_str))\n            .map(str::trim)\n            .filter(|cmd| is_command_declaration(cmd) && seen.insert(*cmd))\n            .collect()\n    }\n}",
+          "symbol": "declared_verify_commands"
+        }
+      ],
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "declaration_line": 25,
+          "line_end": 49,
+          "line_start": 25,
+          "path": "evals/benchmark/adapters/bundle.py",
+          "reason": "This creates a new frozen adapter runtime; it does not inspect a previously prepared runtime for later changes.",
+          "source_excerpt": "def prepare_runtime(trial: Path, spec: dict, *, kind: str, version: str,\n                    bundle_sources: dict, settings: dict | None = None) -> dict:\n    cli = runtime_identity.runtime_pin(spec[\"cli\"], kind)\n    python_path = Path(sys.executable).resolve(strict=True)\n    python = runtime_identity.runtime_pin({\"path\": str(python_path),\n        \"sha256\": artifact_io.hash_file(python_path, artifact_io.BINARY_BYTE_LIMIT)[\"sha256\"],\n        \"version\": sys.version.split()[0], \"origin\": \"preparation interpreter; dependencies not attested\"}, \"python\")\n    runtime = trial / \"runtime\"\n    runtime.mkdir(mode=0o700)\n    bundle = {}\n    repository = Path(__file__).resolve().parents[3]\n    for name, source in bundle_sources.items():\n        body = artifact_io.read_file(repository / source)\n        destination = runtime / name\n        destination.parent.mkdir(parents=True, exist_ok=True, mode=0o700)\n        artifact_io.write_new_bytes(destination, body, mode=0o555)\n        bundle[name] = hashlib.sha256(body).hexdigest()\n    adapter = {\"kind\": kind, \"path\": str(runtime / \"launch.py\"),\n               \"sha256\": bundle[\"launch.py\"], \"version\": version,\n               \"origin\": \"frozen benchmark implementation bytes\", \"bundle\": bundle,\n               \"cli\": cli, \"python\": python}\n    adapter.update(settings or {})\n    artifact_io.write_new(trial / \"adapter-runtime.json\", adapter, mode=0o444)\n    adapter[\"runtime_sha256\"] = artifact_io.digest(adapter)\n    return adapter",
+          "symbol": "prepare_runtime"
+        }
+      ],
+      "family": "prepared runtime integrity",
+      "id": "v7-prepared-adapter-integrity",
+      "kind": "positive",
+      "owner_language": "python",
+      "query": "detect changes to a prepared adapter bundle before trial execution",
+      "reason": "Find the post-preparation integrity check for a native benchmark adapter.",
+      "relevant": [
+        {
+          "declaration_line": 53,
+          "line_end": 77,
+          "line_start": 53,
+          "path": "evals/benchmark/adapters/bundle.py",
+          "reason": "This rechecks the saved descriptor, exact bundle inventory, implementation file bytes, and pinned executables of an already prepared adapter.",
+          "source_excerpt": "def verify_runtime(trial: Path, adapter: dict, bundle_sources: dict) -> None:\n    expected = {key: value for key, value in adapter.items() if key != \"runtime_sha256\"}\n    if artifact_io.load_json(trial / \"adapter-runtime.json\") != expected or artifact_io.digest(expected) != adapter[\"runtime_sha256\"]:\n        raise artifact_io.BenchmarkError(\"adapter_runtime_changed\", \"adapter runtime descriptor changed\")\n    runtime = trial / \"runtime\"\n    allowed_directories = {parent.as_posix() for path in bundle_sources\n                           for parent in Path(path).parents if parent != Path(\".\")}\n    observed = set()\n    if runtime.is_symlink() or runtime.resolve() != runtime:\n        raise artifact_io.BenchmarkError(\"adapter_bundle_changed\", \"adapter bundle inventory changed\")\n    for directory, directories, files in os.walk(runtime, followlinks=False):\n        for name in directories:\n            path = Path(directory) / name\n            if path.is_symlink() or path.relative_to(runtime).as_posix() not in allowed_directories:\n                raise artifact_io.BenchmarkError(\"adapter_bundle_changed\", \"adapter bundle directory changed\")\n        observed.update((Path(directory) / name).relative_to(runtime).as_posix() for name in files)\n    if observed != set(bundle_sources):\n        raise artifact_io.BenchmarkError(\"adapter_bundle_changed\", \"adapter bundle inventory changed\")\n    if adapter[\"path\"] != str(runtime / \"launch.py\") or set(adapter[\"bundle\"]) != set(bundle_sources):\n        raise artifact_io.BenchmarkError(\"adapter_bundle_changed\", \"adapter entry point or bundle changed\")\n    for name in bundle_sources:\n        if hashlib.sha256(artifact_io.read_file(runtime / name)).hexdigest() != adapter[\"bundle\"][name]:\n            raise artifact_io.BenchmarkError(\"adapter_bundle_changed\", \"adapter implementation bytes changed\")\n    runtime_identity.runtime_pin(adapter[\"cli\"], adapter[\"kind\"])\n    runtime_identity.runtime_pin(adapter[\"python\"], \"python\")",
+          "symbol": "verify_runtime"
+        }
+      ],
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "declaration_line": 33,
+          "line_end": 45,
+          "line_start": 33,
+          "path": "evals/benchmark/source.py",
+          "reason": "This resolves a tool revision and does not export source files or preserve file permissions.",
+          "source_excerpt": "def verify_tool_commit(repo: Path, revision: str, env: dict[str, str]) -> None:\n    try:\n        resolved = git(repo, [\"rev-parse\", \"--verify\", f\"{revision}^{{commit}}\"], env).decode(\"ascii\").strip()\n    except (artifact_io.BenchmarkError, UnicodeError) as error:\n        raise artifact_io.BenchmarkError(\n            \"tool_revision_unavailable\",\n            \"tool revision must be an available exact commit in the selected tool repository\",\n        ) from error\n    if resolved != revision:\n        raise artifact_io.BenchmarkError(\n            \"tool_revision_mismatch\",\n            \"tool revision does not resolve to the requested exact commit\",\n        )",
+          "symbol": "verify_tool_commit"
+        }
+      ],
+      "family": "pinned source projection",
+      "id": "v7-source-export-permissions",
+      "kind": "positive",
+      "owner_language": "python",
+      "query": "export selected source files with their original executable permissions",
+      "reason": "Find the source projection owner that preserves executable file modes.",
+      "relevant": [
+        {
+          "declaration_line": 76,
+          "line_end": 106,
+          "line_start": 76,
+          "path": "evals/benchmark/source.py",
+          "reason": "This exports allowlisted regular Git blobs, restores executable modes, and preserves those raw modes and bytes in the new Git inventory.",
+          "source_excerpt": "def export_source(repo: Path, revision: str, paths: list[str], destination: Path,\n                  env: dict[str, str]) -> tuple[list[dict], str]:\n    resolved = git(repo, [\"rev-parse\", \"--verify\", f\"{revision}^{{commit}}\"], env).decode().strip()\n    if resolved != revision:\n        raise artifact_io.BenchmarkError(\"source_revision_mismatch\", \"source revision is not the requested commit\")\n    destination.mkdir()\n    files, total = [], 0\n    for path in sorted(paths):\n        body, mode = git_regular_blob(\n            repo, revision, path, env, role=\"source\", byte_limit=artifact_io.FILE_BYTE_LIMIT,\n        )\n        total += len(body)\n        if total > condition_contract.SOURCE_BYTE_LIMIT:\n            raise artifact_io.BenchmarkError(\"source_limit\", \"source projection exceeds its total byte limit\")\n        target = destination / path\n        target.parent.mkdir(parents=True, exist_ok=True)\n        target.write_bytes(body)\n        target.chmod(0o755 if mode == \"100755\" else 0o644)\n        files.append({\"path\": path, \"git_mode\": mode, \"bytes\": len(body), \"sha256\": hashlib.sha256(body).hexdigest()})\n    template = destination.parent / \"empty-git-template\"\n    template.mkdir()\n    git(destination, [\"init\", \"-q\", \"-b\", \"benchmark\", f\"--template={template}\"], env)\n    git(destination, [\"config\", \"core.autocrlf\", \"false\"], env)\n    # Preserve raw allowed blobs even when a supplied .gitignore or\n    # .gitattributes would exclude files or transform their contents on add.\n    for item in files:\n        oid = git(destination, [\"hash-object\", \"-w\", \"--no-filters\", \"--\", item[\"path\"]], env).decode().strip()\n        git(destination, [\"update-index\", \"--add\", \"--cacheinfo\", item[\"git_mode\"], oid, item[\"path\"]], env)\n    git(destination, [\"commit\", \"-qm\", \"Allowlisted source projection\"], env)\n    projection_revision = git(destination, [\"rev-parse\", \"HEAD\"], env).decode().strip()\n    return files, projection_revision",
+          "symbol": "export_source"
+        }
+      ],
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "declaration_line": 79,
+          "line_end": 86,
+          "line_start": 79,
+          "path": "evals/persona/replay.py",
+          "reason": "This reads an existing persona database snapshot rather than freezing Git reference membership.",
+          "source_excerpt": "def store_snapshot(home: Path) -> dict:\n    db = home / \".mastermind/style.db\"\n    with sqlite3.connect(db.as_uri() + \"?mode=ro\", uri=True) as conn:\n        commits = conn.execute(\"SELECT sha, authored_at FROM sampled_commit ORDER BY sha\").fetchall()\n        counters = conn.execute(\"SELECT sha, key, value FROM commit_counter ORDER BY sha, key\").fetchall()\n        identities = [r[0] for r in conn.execute(\"SELECT DISTINCT email FROM identity ORDER BY email\")]\n        provenance = conn.execute(\"SELECT commits_total, commits_sampled, added_lines_sampled, extractor FROM repo\").fetchall()\n    return dict(commits=commits, counters=counters, identities=identities, provenance=provenance)",
+          "symbol": "store_snapshot"
+        }
+      ],
+      "family": "persona replay corpus membership",
+      "id": "v7-reachable-commit-corpus",
+      "kind": "positive",
+      "owner_language": "python",
+      "query": "freeze local branches without losing any reachable commits",
+      "reason": "Find the local history corpus constructor that retains all frozen reachable commits.",
+      "relevant": [
+        {
+          "declaration_line": 109,
+          "line_end": 176,
+          "line_start": 109,
+          "path": "evals/persona/replay.py",
+          "reason": "This freezes reference tips and their reachable commit set, creates a local corpus union, and verifies exact membership after the synthetic union.",
+          "source_excerpt": "def corpus(source: Path, output: Path, home: Path, anchor: str,\n           frozen_manifest: Path | None = None) -> tuple[Path, list[dict], dict]:\n    if frozen_manifest:\n        frozen = json.loads(frozen_manifest.read_text())\n        if frozen[\"source\"] != str(source):\n            raise ValueError(\"frozen manifest belongs to a different source\")\n        refs, head, anchor_sha = frozen[\"refs\"], frozen[\"head\"], frozen[\"anchor\"]\n    else:\n        refs = git(source, home, \"for-each-ref\", \"--format=%(refname) %(objectname)\").decode().splitlines()\n        head = git(source, home, \"rev-parse\", \"HEAD^{commit}\").decode().strip()\n        anchor_sha = git(source, home, \"rev-parse\", \"--verify\", anchor + \"^{commit}\").decode().strip()\n    for oid in [head, anchor_sha, *(line.split(\" \", 1)[1] for line in refs)]:\n        if not re.fullmatch(r\"[0-9a-f]{40}|[0-9a-f]{64}\", oid):\n            raise ValueError(\"manifest contains a non-OID history selector\")\n    # Only confirmed non-commit objects may be skipped. Missing/corrupt objects\n    # and transport failures abort instead of silently shrinking the corpus.\n    tips, skipped_refs = {head}, []\n    for record in refs:\n        name, oid = record.split(\" \", 1)\n        kind = git(source, home, \"cat-file\", \"-t\", oid).decode().strip()\n        if kind == \"tag\":\n            oid = git(source, home, \"rev-parse\", \"--verify\", oid + \"^{}\").decode().strip()\n            kind = git(source, home, \"cat-file\", \"-t\", oid).decode().strip()\n        if kind == \"commit\":\n            tips.add(oid)\n        elif kind in (\"tree\", \"blob\"):\n            skipped_refs.append(name)\n        else:\n            raise ValueError(f\"unexpected Git object type: {kind}\")\n    members = set(git(source, home, \"rev-list\", \"--stdin\",\n                      stdin=(\"\\n\".join(sorted(tips)) + \"\\n\").encode()).decode().splitlines())\n    if anchor_sha not in members:\n        raise ValueError(\"anchor must belong to the frozen corpus\")\n    common = Path(git(source, home, \"rev-parse\", \"--path-format=absolute\", \"--git-common-dir\").decode().strip())\n    repo = output / \"corpus.git\"\n    object_format = git(source, home, \"rev-parse\", \"--show-object-format\").decode().strip()\n    git(output, home, \"init\", \"--bare\", \"--object-format=\" + object_format, str(repo))\n    # Objects stay local and immutable; a missing source object fails the run.\n    (repo / \"objects/info/alternates\").write_text(str(common / \"objects\") + \"\\n\")\n    tree = git(source, home, \"rev-parse\", anchor_sha + \"^{tree}\").decode().strip()\n    args = [\"-c\", \"user.name=Persona Replay\", \"-c\", \"user.email=replay@example.invalid\",\n            \"commit-tree\", tree]\n    parents = sorted(tips | {anchor_sha})\n    for tip in parents:\n        args.extend([\"-p\", tip])\n    synthetic = len(parents) > 1\n    snapshot = (git(repo, home, *args, stdin=b\"Local replay corpus union; excluded merge\\n\").decode().strip()\n                if synthetic else parents[0])\n    git(repo, home, \"update-ref\", \"--no-deref\", \"HEAD\", snapshot)\n    excluded = {snapshot} if synthetic else set()\n    observed_members = set(git(repo, home, \"rev-list\", \"HEAD\").decode().splitlines()) - excluded\n    if observed_members != members:\n        raise ValueError(\"synthetic union does not preserve the frozen commit set\")\n    rows = [r for r in metadata(repo, home, snapshot) if r[\"sha\"] not in excluded]\n    regular = [r for r in rows if len(r[\"parents\"]) < 2]\n    ancestry = git(repo, home, \"rev-list\", \"--first-parent\", anchor_sha).decode().splitlines()\n    past = ancestry[len(ancestry) // 2]\n    manifest = dict(source=str(source), refs=refs, head=head, anchor=anchor_sha,\n                    snapshot=snapshot, synthetic_merge=synthetic,\n                    temporal_seed=past, skipped_refs=skipped_refs,\n                    commit_set_sha256=digest(encoded(sorted(members))),\n                    commits=len(rows),\n                    non_merge_commits=len(regular), merge_commits=len(rows)-len(regular),\n                    raw_author_emails=len({r[\"email\"] for r in regular}),\n                    commits_with_coauthor_trailers=sum(r[\"coauthor_trailers\"] > 0 for r in regular))\n    if frozen_manifest and manifest[\"commit_set_sha256\"] != frozen[\"commit_set_sha256\"]:\n        raise ValueError(\"frozen commit membership changed\")\n    return repo, rows, manifest",
+          "symbol": "corpus"
+        }
+      ],
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "declaration_line": 28,
+          "line_end": 37,
+          "line_start": 28,
+          "path": "evals/benchmark/batch.py",
+          "reason": "This validates a batch binding value without acquiring an execution lock.",
+          "source_excerpt": "def validate_batch_binding(value: object) -> dict:\n    if (not isinstance(value, dict)\n            or set(value) != {\"batch_id\", \"plan_sha256\", \"position\"}\n            or not isinstance(value.get(\"batch_id\"), str)\n            or not re.fullmatch(r\"batch-[0-9a-f]{32}\", value[\"batch_id\"])\n            or not isinstance(value.get(\"plan_sha256\"), str)\n            or not re.fullmatch(r\"[0-9a-f]{64}\", value[\"plan_sha256\"])\n            or type(value.get(\"position\")) is not int or value[\"position\"] < 0):\n        raise artifact_io.BenchmarkError(\"invalid_batch_binding\", \"invalid trial batch binding\")\n    return value",
+          "symbol": "validate_batch_binding"
+        }
+      ],
+      "family": "planned batch mutual exclusion",
+      "id": "v7-batch-mutual-exclusion",
+      "kind": "positive",
+      "owner_language": "python",
+      "query": "prevent simultaneous benchmark trials from running within one planned batch",
+      "reason": "Find the execution guard that serializes attempts in a prepared batch.",
+      "relevant": [
+        {
+          "declaration_line": 215,
+          "line_end": 279,
+          "line_start": 214,
+          "path": "evals/benchmark/batch.py",
+          "reason": "This holds a nonblocking exclusive batch lock, rejects a running peer, and validates the batch before yielding an execution snapshot.",
+          "source_excerpt": "@contextmanager\ndef batch_execution_guard(trial: Path, manifest: dict, manifest_bytes: bytes):\n    if \"batch\" not in manifest:\n        yield None\n        return\n    if os.name != \"posix\" or not hasattr(os, \"O_NOFOLLOW\"):\n        raise artifact_io.BenchmarkError(\"batch_platform\", \"batch execution requires POSIX no-follow file locking\")\n    import fcntl\n    root = trial.parent\n    path = root / \"execution.lock\"\n    root_descriptor = None\n    descriptor = None\n    try:\n        root_descriptor = os.open(\n            root, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_NONBLOCK)\n        root_before = os.fstat(root_descriptor)\n        if not stat.S_ISDIR(root_before.st_mode):\n            raise artifact_io.BenchmarkError(\"batch_lock\", \"batch root is not a directory\")\n        _check_batch_root(root, root_descriptor, root_before)\n        descriptor = os.open(\n            \"execution.lock\", os.O_RDWR | os.O_NOFOLLOW | os.O_NONBLOCK,\n            dir_fd=root_descriptor)\n    except OSError as error:\n        if root_descriptor is not None:\n            os.close(root_descriptor)\n        raise artifact_io.BenchmarkError(\"batch_lock\", \"cannot acquire the batch execution lock\") from error\n    except Exception:\n        if root_descriptor is not None:\n            os.close(root_descriptor)\n        raise\n    try:\n        before = os.fstat(descriptor)\n        if not stat.S_ISREG(before.st_mode) or before.st_size != 0:\n            raise artifact_io.BenchmarkError(\"batch_lock\", \"batch execution lock is invalid\")\n        named = os.stat(\"execution.lock\", dir_fd=root_descriptor, follow_symlinks=False)\n        current = path.lstat()\n        if artifact_io.file_identity(before) != artifact_io.file_identity(named) or artifact_io.file_identity(before) != artifact_io.file_identity(current):\n            raise artifact_io.BenchmarkError(\"batch_lock\", \"batch execution lock changed while opening\")\n        try:\n            fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)\n        except BlockingIOError as error:\n            raise artifact_io.BenchmarkError(\"batch_busy\", \"another batch attempt is still running\") from error\n        _check_batch_root(root, root_descriptor, root_before)\n    except OSError as error:\n        os.close(descriptor)\n        os.close(root_descriptor)\n        raise artifact_io.BenchmarkError(\"batch_lock\", \"cannot acquire the batch execution lock\") from error\n    except Exception:\n        os.close(descriptor)\n        os.close(root_descriptor)\n        raise\n    try:\n        snapshot = load_bound_batch(trial, manifest, manifest_bytes)\n        if snapshot[\"root_identity\"][:2] != (root_before.st_dev, root_before.st_ino):\n            raise artifact_io.BenchmarkError(\"batch_lock\", \"batch root changed while validating the execution lock\")\n        _check_batch_root(root, root_descriptor, root_before)\n        receipt, fingerprints = batch_attempt_state(snapshot, claimed=False)\n        snapshot.update(receipt=receipt, fingerprints=fingerprints,\n                        lock_identity=artifact_io.file_identity(before))\n        yield snapshot\n    finally:\n        try:\n            fcntl.flock(descriptor, fcntl.LOCK_UN)\n        finally:\n            os.close(descriptor)\n            os.close(root_descriptor)",
+          "symbol": "batch_execution_guard"
+        }
+      ],
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "declaration_line": 39,
+          "line_end": 61,
+          "line_start": 39,
+          "path": "evals/benchmark/runtime.py",
+          "reason": "This verifies an executable pin and does not construct the trial process environment.",
+          "source_excerpt": "def runtime_pin(spec: object, role: str, revision: str | None = None) -> dict:\n    if not isinstance(spec, dict):\n        raise artifact_io.BenchmarkError(f\"{role}_missing\", f\"an explicit {role} runtime pin is required\")\n    try:\n        path = Path(spec[\"path\"]).resolve(strict=True)\n        expected = spec[\"sha256\"]\n        if not re.fullmatch(r\"[0-9a-f]{64}\", expected):\n            raise ValueError(\"invalid hash\")\n        if artifact_io.hash_file(path, artifact_io.BINARY_BYTE_LIMIT)[\"sha256\"] != expected:\n            raise artifact_io.BenchmarkError(f\"{role}_mismatch\", f\"{role} executable does not match its SHA-256 pin\")\n        if not os.access(path, os.X_OK):\n            raise ValueError(\"not executable\")\n        if revision is not None and spec.get(\"source_revision\") != revision:\n            raise artifact_io.BenchmarkError(f\"{role}_revision_mismatch\", f\"{role} declared source revision does not match instructions\")\n        if not isinstance(spec.get(\"version\"), str) or not spec[\"version\"]:\n            raise ValueError(\"missing version\")\n        if not isinstance(spec.get(\"origin\"), str) or not spec[\"origin\"]:\n            raise ValueError(\"missing origin\")\n        return {\"path\": str(path), \"sha256\": expected, \"version\": spec[\"version\"],\n                \"origin\": spec[\"origin\"], \"source_revision\": spec.get(\"source_revision\"),\n                \"source_provenance\": \"declared_not_attestation_verified\"}\n    except (KeyError, TypeError, ValueError, OSError) as error:\n        raise artifact_io.BenchmarkError(f\"{role}_invalid\", f\"invalid {role} runtime pin\") from error",
+          "symbol": "runtime_pin"
+        }
+      ],
+      "family": "private trial process environment",
+      "id": "v7-private-trial-environment",
+      "kind": "positive",
+      "owner_language": "python",
+      "query": "isolate trial home directories and allow only explicitly supplied credentials",
+      "reason": "Find the environment builder that controls credential inheritance and trial isolation.",
+      "relevant": [
+        {
+          "declaration_line": 16,
+          "line_end": 36,
+          "line_start": 13,
+          "path": "evals/benchmark/runtime.py",
+          "reason": "This constructs private home and temporary directories and returns a fixed environment containing only explicitly supplied allowed credentials.",
+          "source_excerpt": "CREDENTIAL_NAMES = {\"ANTHROPIC_API_KEY\", \"CLAUDE_CODE_OAUTH_TOKEN\", \"OPENAI_API_KEY\"}\n\n\ndef clean_environment(trial: Path, credentials: dict[str, str] | None = None) -> dict[str, str]:\n    credentials = credentials or {}\n    if set(credentials) - CREDENTIAL_NAMES:\n        raise artifact_io.BenchmarkError(\"invalid_credentials\", \"only explicit credential names are accepted\")\n    home = trial / \"home\"\n    temp = trial / \"tmp\"\n    home.mkdir(exist_ok=True)\n    temp.mkdir(exist_ok=True)\n    return {\n        \"PATH\": os.pathsep.join((str(Path(sys.executable).parent), os.defpath)),\n        \"HOME\": str(home), \"XDG_CONFIG_HOME\": str(home / \".config\"),\n        \"XDG_CACHE_HOME\": str(home / \".cache\"), \"TMPDIR\": str(temp),\n        \"LANG\": \"C.UTF-8\", \"LC_ALL\": \"C\", \"TERM\": \"dumb\",\n        \"GIT_CONFIG_NOSYSTEM\": \"1\", \"GIT_CONFIG_GLOBAL\": os.devnull,\n        \"GIT_TERMINAL_PROMPT\": \"0\", \"GIT_OPTIONAL_LOCKS\": \"0\",\n        \"GIT_NO_LAZY_FETCH\": \"1\", \"GIT_ALLOW_PROTOCOL\": \"\",\n        \"GIT_AUTHOR_NAME\": \"Benchmark\", \"GIT_COMMITTER_NAME\": \"Benchmark\",\n        \"GIT_AUTHOR_EMAIL\": \"benchmark@example.invalid\", \"GIT_COMMITTER_EMAIL\": \"benchmark@example.invalid\",\n        \"GIT_AUTHOR_DATE\": \"2000-01-01T00:00:00Z\", \"GIT_COMMITTER_DATE\": \"2000-01-01T00:00:00Z\",\n        **credentials,\n    }",
+          "symbol": "clean_environment"
+        }
+      ],
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "declaration_line": 241,
+          "line_end": 247,
+          "line_start": 241,
+          "path": "npm/mastermind/bin/install.js",
+          "reason": "This selects client names and does not check skill dependency closure.",
+          "source_excerpt": "function expandClients(client) {\n  if (client === \"all\") return Object.keys(CLIENTS);\n  if (!Object.hasOwn(CLIENTS, client)) {\n    throw new Error(`unsupported workflow client ${JSON.stringify(client)}; use claude, codex, or all`);\n  }\n  return [client];\n}",
+          "symbol": "expandClients"
+        }
+      ],
+      "family": "workflow profile closure",
+      "id": "v7-profile-link-closure",
+      "kind": "positive",
+      "owner_language": "javascript",
+      "query": "reject installation profiles missing their linked skill dependencies",
+      "reason": "Find the profile selection owner that rejects omitted linked skills.",
+      "relevant": [
+        {
+          "declaration_line": 214,
+          "line_end": 234,
+          "line_start": 214,
+          "path": "npm/mastermind/bin/install.js",
+          "reason": "This checks every selected skill link against available and selected skills and rejects a profile that is not closed over those links.",
+          "source_excerpt": "export function profileBundle(bundle, profile, share = DEFAULT_SHARE) {\n  assertProfile(profile);\n  const skills = profile === \"full\" ? bundle.skills : [...PROFILE_SKILLS[profile]];\n  const available = new Set(bundle.skills);\n  const selected = new Set(skills);\n  const missing = skills.filter((skill) => !available.has(skill));\n  if (missing.length > 0) {\n    throw new Error(`workflow profile ${profile} references missing skill(s): ${missing.join(\", \")}`);\n  }\n  for (const skill of skills) {\n    for (const linked of linkedSkills(path.join(share, \"skills\", skill))) {\n      if (!available.has(linked)) {\n        throw new Error(`workflow bundle skill ${skill} references missing skill ${linked}`);\n      }\n      if (!selected.has(linked)) {\n        throw new Error(`workflow profile ${profile} is not closed: ${skill} links to ${linked}`);\n      }\n    }\n  }\n  return { subagents: bundle.subagents, skills };\n}",
+          "symbol": "profileBundle"
+        }
+      ],
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [],
+      "family": "launcher installation ownership",
+      "id": "v7-project-install-ownership",
+      "kind": "positive",
+      "owner_language": "javascript",
+      "query": "identify project local npm installs from package ownership metadata",
+      "reason": "Find the launcher ownership check for a persistent project npm installation.",
+      "relevant": [
+        {
+          "declaration_line": 82,
+          "line_end": 103,
+          "line_start": 82,
+          "path": "npm/mastermind/bin/mastermind.js",
+          "reason": "This inspects the owning package metadata, rejects other package managers and ambiguous dependencies, and identifies an unambiguous direct registry dependency as a project installation.",
+          "source_excerpt": "function projectOwner(owner) {\n  const metadata = path.join(owner, \"package.json\");\n  let stat;\n  try { stat = fs.lstatSync(metadata); }\n  catch (error) { return error.code === \"ENOENT\" ? null : \"unknown\"; }\n  if (!stat.isFile() || stat.isSymbolicLink() || stat.size > 1024 * 1024) return \"unknown\";\n  try {\n    const project = JSON.parse(fs.readFileSync(metadata, \"utf8\"));\n    if ((project.packageManager && !/^npm@/.test(project.packageManager))\n        || fs.existsSync(path.join(owner, \"pnpm-lock.yaml\"))\n        || fs.existsSync(path.join(owner, \"yarn.lock\"))) return \"unknown\";\n    const kinds = [\"dependencies\", \"devDependencies\", \"optionalDependencies\"]\n      .filter((kind) => Object.hasOwn(project[kind] ?? {}, pkg.name));\n    if (kinds.length === 1) {\n      const source = project[kinds[0]][pkg.name];\n      if (typeof source === \"string\" && source.trim() && !/[/:#\\\\]/.test(source)) return \"project\";\n    }\n  } catch {\n    // Invalid ownership metadata is handled by the explicit update workflow.\n  }\n  return \"unknown\";\n}",
+          "symbol": "projectOwner"
+        }
+      ],
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "declaration_line": 2376,
+          "line_end": 2383,
+          "line_start": 2376,
+          "path": "mcp/servers/mmcg/src/lens.rs",
+          "qualified_symbol": "HttpRequest.validate",
+          "reason": "The request admission method accepts only read methods and rejects mutation methods.",
+          "source_excerpt": "    fn validate(&self, authority: &str) -> Result<(), RequestRejection> {\n        if self.method != \"GET\" && self.method != \"HEAD\" {\n            return Err(RequestRejection::new(\n                405,\n                \"Method Not Allowed\",\n                \"Lens is read-only; only GET and HEAD are accepted\",\n            ));\n        }",
+          "symbol": "validate"
+        },
+        {
+          "declaration_line": 2495,
+          "line_end": 2508,
+          "line_start": 2495,
+          "path": "mcp/servers/mmcg/src/lens.rs",
+          "reason": "The route table serves static assets and read APIs and exposes no source-save route.",
+          "source_excerpt": "fn route(path: &str, state: &ServerState) -> HttpResponse {\n    match path {\n        \"/\" | \"/index.html\" => HttpResponse::static_asset(\"text/html; charset=utf-8\", INDEX_HTML),\n        \"/app.js\" => HttpResponse::static_asset(\"text/javascript; charset=utf-8\", APP_JS),\n        \"/styles.css\" => HttpResponse::static_asset(\"text/css; charset=utf-8\", STYLES_CSS),\n        \"/mastermind-mark.svg\" => {\n            HttpResponse::static_asset(\"image/svg+xml; charset=utf-8\", MASTERMIND_MARK_SVG)\n        }\n        \"/api/lens\" => api_response(state),\n        \"/api/context\" => context_response(state),\n        \"/favicon.ico\" => HttpResponse::empty(204, \"No Content\"),\n        _ => HttpResponse::text(404, \"Not Found\", \"not found\"),\n    }\n}",
+          "symbol": "route"
+        }
+      ],
+      "family": "unsupported local web mutation",
+      "id": "v7-negative-web-source-edit",
+      "kind": "negative",
+      "owner_language": "rust",
+      "query": "save edited source through the local review web interface",
+      "reason": "The inspected HTTP boundary and complete route table provide read access only; saving edited source is unsupported.",
+      "relevant": [],
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "declaration_line": 42,
+          "line_end": 77,
+          "line_start": 42,
+          "path": "mcp/servers/mmcg/src/miner/hooks/journal/archive.rs",
+          "reason": "This writes exact payload bytes to a private local file and neither creates a remote transport nor accepts a remote destination.",
+          "source_excerpt": "fn write(conn: &Connection, episode: &Episode) -> Result<String, Error> {\n    let bytes = serde_json::to_vec(episode)?;\n    if bytes.len() > MAX_EPISODE_BYTES {\n        return Err(\"episode archive exceeds its bound\".into());\n    }\n    let key = digest(&bytes);\n    let (root, path) = bounded_fs::prepare_file_target(&target(conn, &key)?)?;\n    if let Some(identity) = bounded_fs::inspect_direct_regular_file_identity_with_capability(\n        &root,\n        &path,\n        ReadControl::default(),\n    )? {\n        let file = bounded_fs::read_regular_file_expected(\n            &root,\n            &path,\n            MAX_EPISODE_BYTES as u64,\n            MAX_EPISODE_BYTES as u64,\n            ReadControl::default(),\n            Some(identity),\n        )?;\n        if file.bytes != bytes {\n            return Err(\"existing episode archive differs\".into());\n        }\n    } else {\n        let missing = bounded_fs::inspect_absent_path(&root, &path, ReadControl::default())?\n            .ok_or(BoundedReadError::SnapshotChanged)?;\n        bounded_fs::write_atomic_regular_file_expected_with_capability_mode(\n            &root,\n            &path,\n            &bytes,\n            0o600,\n            AtomicWriteExpectation::Missing(missing),\n        )?;\n    }\n    Ok(key)\n}",
+          "symbol": "write"
+        },
+        {
+          "declaration_line": 12,
+          "line_end": 25,
+          "line_start": 12,
+          "path": "mcp/servers/mmcg/src/miner/hooks/journal/archive.rs",
+          "reason": "Archive destinations are derived from the local journal database parent directory.",
+          "source_excerpt": "fn target(conn: &Connection, digest: &str) -> Result<PathBuf, Error> {\n    if !super::super::collection::valid_id(digest) {\n        return Err(\"invalid episode archive digest\".into());\n    }\n    let database = conn\n        .path()\n        .ok_or(\"episode archive requires a persistent journal\")?;\n    let parent = Path::new(database)\n        .parent()\n        .ok_or(\"journal parent unavailable\")?;\n    Ok(parent\n        .join(\"persona-archive\")\n        .join(format!(\"{digest}.json\")))\n}",
+          "symbol": "target"
+        }
+      ],
+      "family": "unsupported archive transport",
+      "id": "v7-negative-remote-episode-upload",
+      "kind": "negative",
+      "owner_language": "rust",
+      "query": "upload archived episode payloads to remote object storage",
+      "reason": "The complete archive owner stores digest-addressed files beside a persistent local journal and contains no remote object storage upload.",
+      "relevant": [],
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "declaration_line": 214,
+          "line_end": 234,
+          "line_start": 214,
+          "path": "npm/mastermind/bin/install.js",
+          "reason": "This rejects missing linked skills or an incomplete profile; it does not resolve or download a missing dependency.",
+          "source_excerpt": "export function profileBundle(bundle, profile, share = DEFAULT_SHARE) {\n  assertProfile(profile);\n  const skills = profile === \"full\" ? bundle.skills : [...PROFILE_SKILLS[profile]];\n  const available = new Set(bundle.skills);\n  const selected = new Set(skills);\n  const missing = skills.filter((skill) => !available.has(skill));\n  if (missing.length > 0) {\n    throw new Error(`workflow profile ${profile} references missing skill(s): ${missing.join(\", \")}`);\n  }\n  for (const skill of skills) {\n    for (const linked of linkedSkills(path.join(share, \"skills\", skill))) {\n      if (!available.has(linked)) {\n        throw new Error(`workflow bundle skill ${skill} references missing skill ${linked}`);\n      }\n      if (!selected.has(linked)) {\n        throw new Error(`workflow profile ${profile} is not closed: ${skill} links to ${linked}`);\n      }\n    }\n  }\n  return { subagents: bundle.subagents, skills };\n}",
+          "symbol": "profileBundle"
+        },
+        {
+          "declaration_line": 209,
+          "line_end": 212,
+          "line_start": 209,
+          "path": "npm/mastermind/bin/install.js",
+          "reason": "This reads link names from the already bundled local skill file.",
+          "source_excerpt": "function linkedSkills(skillPath) {\n  const text = fs.readFileSync(path.join(skillPath, \"SKILL.md\"), \"utf8\");\n  return [...text.matchAll(/\\[\\[([a-z0-9-]+)\\]\\]/g)].map((match) => match[1]);\n}",
+          "symbol": "linkedSkills"
+        }
+      ],
+      "family": "unsupported remote skill resolution",
+      "id": "v7-negative-fetch-missing-skills",
+      "kind": "negative",
+      "owner_language": "javascript",
+      "query": "download missing linked skills while installing a chosen profile",
+      "reason": "The inspected profile resolver reads the local bundle and fails on missing dependencies instead of downloading linked skills.",
+      "relevant": [],
+      "split": "spent_regression",
+      "top": 5
+    },
+    {
+      "distractors": [
+        {
+          "declaration_line": 16,
+          "line_end": 36,
+          "line_start": 13,
+          "path": "evals/benchmark/runtime.py",
+          "reason": "This returns a fixed environment and admits only explicitly supplied allowlisted credential names, without copying the caller environment.",
+          "source_excerpt": "CREDENTIAL_NAMES = {\"ANTHROPIC_API_KEY\", \"CLAUDE_CODE_OAUTH_TOKEN\", \"OPENAI_API_KEY\"}\n\n\ndef clean_environment(trial: Path, credentials: dict[str, str] | None = None) -> dict[str, str]:\n    credentials = credentials or {}\n    if set(credentials) - CREDENTIAL_NAMES:\n        raise artifact_io.BenchmarkError(\"invalid_credentials\", \"only explicit credential names are accepted\")\n    home = trial / \"home\"\n    temp = trial / \"tmp\"\n    home.mkdir(exist_ok=True)\n    temp.mkdir(exist_ok=True)\n    return {\n        \"PATH\": os.pathsep.join((str(Path(sys.executable).parent), os.defpath)),\n        \"HOME\": str(home), \"XDG_CONFIG_HOME\": str(home / \".config\"),\n        \"XDG_CACHE_HOME\": str(home / \".cache\"), \"TMPDIR\": str(temp),\n        \"LANG\": \"C.UTF-8\", \"LC_ALL\": \"C\", \"TERM\": \"dumb\",\n        \"GIT_CONFIG_NOSYSTEM\": \"1\", \"GIT_CONFIG_GLOBAL\": os.devnull,\n        \"GIT_TERMINAL_PROMPT\": \"0\", \"GIT_OPTIONAL_LOCKS\": \"0\",\n        \"GIT_NO_LAZY_FETCH\": \"1\", \"GIT_ALLOW_PROTOCOL\": \"\",\n        \"GIT_AUTHOR_NAME\": \"Benchmark\", \"GIT_COMMITTER_NAME\": \"Benchmark\",\n        \"GIT_AUTHOR_EMAIL\": \"benchmark@example.invalid\", \"GIT_COMMITTER_EMAIL\": \"benchmark@example.invalid\",\n        \"GIT_AUTHOR_DATE\": \"2000-01-01T00:00:00Z\", \"GIT_COMMITTER_DATE\": \"2000-01-01T00:00:00Z\",\n        **credentials,\n    }",
+          "symbol": "clean_environment"
+        }
+      ],
+      "family": "unsupported ambient credential inheritance",
+      "id": "v7-negative-ambient-login-inheritance",
+      "kind": "negative",
+      "owner_language": "python",
+      "query": "reuse every login credential from the caller environment in trials",
+      "reason": "The complete environment owner intentionally omits ambient login credentials and requires explicit allowed credentials.",
+      "relevant": [],
+      "split": "spent_regression",
+      "top": 5
+    }
+  ],
+  "kind": "mastermind-concept-relevance-suite",
+  "provenance": {
+    "inputs_sha256": {
+      "concept-regression-20261016-repair-v3.json": "ecaafc46db0eddcb36ad20cc4d4d58e2b4e6d6b742426e5c38cb2f5160ae893c",
+      "concept-relevance-20261016-holdout2-repair-v3.json": "b8b91acecd7f7af292298d1692153ebe24855cb8151a04fd6f75d2f7f73e6124",
+      "concept-relevance-20261016-holdout3-repair-v3.json": "ccc1759e0593e2925ca4242014d5745885e8f68283a1f49421363a31eed51e35",
+      "concept-relevance-20261016-independent-v7.json": "ddc3078bac3718759102cd18de7a279fc495b31fb4d40eec879e76b5960a99c5",
+      "concept-relevance-20261016-repair-v3.json": "8bc0420a61040f20dc77b58f998fe8c6676563f6227ea7b95cfc06915b225010",
+      "concept-relevance-20261016-v6-final-regression.json": "bb9fc5e8321442961df4db79579f17746dc6b693c0aad8091e53a40bc3817ea0"
+    },
+    "scope": "all previously exposed cases; sparse legacy anchors require separate exact-identity72-useful check",
+    "strict_contract_sha256": "c32a3ee09056c927b871c9335bf762f6c83769e6ae3a850cb52fe3d35603b507"
+  },
+  "schema_version": 1,
+  "source_files_sha256": {
+    "evals/behavior/evidence.py": "1711c95d144b3a69f63b941097def318d4d85cc4582ace1f898beb47267b5219",
+    "evals/benchmark/adapters/bundle.py": "7d2c546cfa0e3640a9c447cad0bf879f8fa9730e305185460b483b43a0a84fea",
+    "evals/benchmark/artifacts.py": "34f870b53a572b18199969e9f184029d44378943d977b8e20ca0bed936a6f452",
+    "evals/benchmark/batch.py": "120db2208c004da6b173142a0cf578932d279f063652d836c2b70f99d187bade",
+    "evals/benchmark/evidence_binding.py": "ffe54c1c4903a8fde874de183083290413f582d9367f49a4ea66692396a89e4d",
+    "evals/benchmark/judge_calibration.py": "6ce1342cb507e787bcd6ebc34cd2a412ed1484c346812ed13e0d6c75a7e085ee",
+    "evals/benchmark/runtime.py": "bf3e2f6fd95fb71e04a5314464dda5def573b4724fbc419c7d7d00fa6a549a5f",
+    "evals/benchmark/source.py": "c402a862766ee65d8ac1f0ff36a9a205ef3474b00986bf281bfbbb37a475d691",
+    "evals/control/harness.py": "4c3f106baf7b5ce75586d6e2d79c2c9d88339595375a56efed8817dd245a7ed5",
+    "evals/persona/replay.py": "032035ab270bb6b3febd755d53d7bcc6daed170c22f34f80549fbeb87fc577f0",
+    "evals/shared/process.py": "a68118dc9622e42057941ede8c50e0d81de1429307335e2d2cc7a057d2f94ed4",
+    "mcp/servers/mmcg/src/acceptance.rs": "f8b0088eb25187d7571d39f22285aad8bc88767f6293ce132e2be089e3bce054",
+    "mcp/servers/mmcg/src/audit_bundle.rs": "ee39433016e5020f607df2e7db57b0245586f8516823720b0a00879f23ce5a7d",
+    "mcp/servers/mmcg/src/auto_repair.rs": "47a45b4a3900546c56c0034aec9436d38b6bc1bbacdad722f47207206c3c2c19",
+    "mcp/servers/mmcg/src/bounded_fs.rs": "45dc0f2b5ac1d04f3d4fcbf331f126303e8dbe6ec1ba3e4fd009ce787f99336b",
+    "mcp/servers/mmcg/src/commands/pr_comment.rs": "b705f05fd20331f231ff668c5e91320cc7f1134cf6fd18b716d1e2b2acb65a5a",
+    "mcp/servers/mmcg/src/commands/uninstall.rs": "6ac57c97b1c320577ebaa7ee361ed8e881c20ad4497b2f7b105f0c9d4b35edd8",
+    "mcp/servers/mmcg/src/context.rs": "9da783e6a3c2dff10d750493da8699f4866c660120b5d8537ca4243b465a81a9",
+    "mcp/servers/mmcg/src/context_doctor.rs": "cb462f8556bcacc05949b20021dfc8f6100c75a8d3aa137fecd9992822cca5d2",
+    "mcp/servers/mmcg/src/declared_files.rs": "3f20a4069022ff4c21cda8674fdc276c47810ad4e093ab4eb8167ae2158f56f3",
+    "mcp/servers/mmcg/src/diff.rs": "83fc82e35209fdfd5109c3b4e7a749766442915a7cacc0db440c7330ded07aad",
+    "mcp/servers/mmcg/src/document_graph.rs": "690f12a1c3d23e4e27e6032bcbb75c07d7fb3df31f00a65b93f44fba34a4ef73",
+    "mcp/servers/mmcg/src/document_sections.rs": "8f8d18d885d11b11371d5f980f192a5c426f50c3247deaddfe699170298c2e37",
+    "mcp/servers/mmcg/src/effort.rs": "9d344d8b8b9bd7419d4b3578d46b3f4ec17d149efd373a43403504c684c58f00",
+    "mcp/servers/mmcg/src/evidence/junit.rs": "469544fb4a3e27ce2833d1c1530372ce286f1b560122b0fc9b9014bf067b03b2",
+    "mcp/servers/mmcg/src/evidence/otel.rs": "86d68f5616e5cfec89f6ed60bb65d1bd31a4b64214cf39719d69e658678d5ae7",
+    "mcp/servers/mmcg/src/executor_claims.rs": "af1fbb69bb9e0d9310b992828c6750ce440f34e8559dc38d17e31bb26f1e2b04",
+    "mcp/servers/mmcg/src/executor_report.rs": "523d4331cd05ed12cc8ced111f4d9a1ee5080dcd7ee03c9090856ca3643bbe5d",
+    "mcp/servers/mmcg/src/fact_adapter.rs": "0849193ed0461b8919027558d143148f3a020fd659280522288414e073b14f5d",
+    "mcp/servers/mmcg/src/fact_signature.rs": "928a5ab5cc69806d5994d94f5b8d621dc18efee7eb1bd32eab7a223bb5c9ffcf",
+    "mcp/servers/mmcg/src/find_checks.rs": "df55b83739657e54de2e8273780d4ba68cea3148bcbbf47018ec04c79582e7d4",
+    "mcp/servers/mmcg/src/fingerprint.rs": "b796ba2ea09e04a3d4a25bb27e31b8beb183b8259bb72772b8bd8fe1ae55c51f",
+    "mcp/servers/mmcg/src/history_disposition.rs": "3be781710ab2aa945263fd517a550ce817a2e48b0a1a2f2aeab549965eccdae0",
+    "mcp/servers/mmcg/src/indexer/go.rs": "f8c969195b690abfb2b8f72f1d622530965ae14e1c99b76cb467561dabce2888",
+    "mcp/servers/mmcg/src/indexer/vue.rs": "74a8f085dc10e6fa80a01d371be876961f1a0d14f766a95b225b4b8c975f0d49",
+    "mcp/servers/mmcg/src/invocation/guard.rs": "b0762d793d83c10b34303367efedf926f5bdeda686b8227a7dcb10b9eb91bb7c",
+    "mcp/servers/mmcg/src/lens.rs": "46bcb9cd6304320df02a2c1982da1e7b5c0d86b8312e69da21c0f547874d2f2b",
+    "mcp/servers/mmcg/src/lessons.rs": "3dc2341d5e3e7f6e2f2b62de95949db78a1ea906522a5fb9d237672619d164cb",
+    "mcp/servers/mmcg/src/miner/access.rs": "aba42dd3a5434a2945a524239f441760182f9450b8eb954858db58ae5a5034ad",
+    "mcp/servers/mmcg/src/miner/codex_transcript.rs": "17989e9fda7ce8070475f5e94d7c393f1c0899751edc9ebef0e36a5472a403b1",
+    "mcp/servers/mmcg/src/miner/feedback.rs": "fa84ca2cc4b822c44f1a9cb91e674507ba9bfd186df3719b316a371598e18651",
+    "mcp/servers/mmcg/src/miner/hooks/journal/archive.rs": "b55c93d5499f4fafbe4cdc102faf5244926e1e951bf28021fe3ac6118fb63163",
+    "mcp/servers/mmcg/src/miner/hooks/mod.rs": "665f27f73ae0ddf32a9611b0cf660aa4667507f51e78227c34a5583bf7d40f25",
+    "mcp/servers/mmcg/src/miner/stats.rs": "e6989c987de7d3431484beb76c4771d4330d66b1b5f471023a7b99a670617cfc",
+    "mcp/servers/mmcg/src/miner/store.rs": "0bfdcb769cdcbc1ef2dddc2119e38262a0a8648c8c0ddd72ebad252c1776cb9c",
+    "mcp/servers/mmcg/src/onboarding.rs": "7440928a511c3468eedba1c1bd014a1805dfc2a61ba83fa2d64ad07b076910fb",
+    "mcp/servers/mmcg/src/project_claims.rs": "cd0be21e2aaf33713361e6a3c979c2b8e18eeff15af935528cb61846d33b4d77",
+    "mcp/servers/mmcg/src/review_package.rs": "446fc55511a1a807f852d8e99d27ea1dafae6db6f23992fe226bd157d1e38ae4",
+    "mcp/servers/mmcg/src/sarif_export.rs": "b82fa565259a8de10451a87b859312ebe4716c1e664fb295801189866481ea25",
+    "mcp/servers/mmcg/src/scip_overlay.rs": "4eca55134bc8d879e32a427731c0c6be285c2b336d805b204377456a857bba17",
+    "mcp/servers/mmcg/src/setup.rs": "cea9682e2189ecf1407db3a2edab71b7fcbf45286594f2e5ac2f58bbe4c7c076",
+    "mcp/servers/mmcg/src/source_read.rs": "3f53da928ccc6db613ef99df42dc3209873d6ac075d37b0bc3fec27eb03b9ec2",
+    "mcp/servers/mmcg/src/spec.rs": "f73b1ae303193943376cadb021a754ebceb9ea64817fd463b0c9eee316a315d4",
+    "mcp/servers/mmcg/src/spec_removals.rs": "c95bab325c8eab1904eb4e10ee734803713d4484ddd336d5e9d8363e6c14388a",
+    "mcp/servers/mmcg/src/spec_symbols.rs": "4d502e02b8f4ebc4b0b95b95c10e4eb734eb2e863f103561135d250050977be4",
+    "mcp/servers/mmcg/src/task_scaffold.rs": "2f30e61e7ebe38c177691f024672ed93967a6cd6ae9a380d3f008cf00ce72bf3",
+    "mcp/servers/mmcg/src/team.rs": "7ee8ff16eb2f63ce7a215075a1ac7bbcb224eee151acc6e84b69be2e33c05d15",
+    "mcp/servers/mmcg/src/temporal.rs": "8a3e7d0704c8509c7028262b78bfbdb8014a931dacdf2a259cd5288ba4326e01",
+    "mcp/servers/mmcg/src/terminal.rs": "9a31ff078802c805b56042cf3e4121061670915087a14e687df19f58dbb8f930",
+    "mcp/servers/mmcg/src/test_scan.rs": "0c3f77f99a45f6681f2e8246ecf4ec79a6d086802be9732c66412991273b803d",
+    "mcp/servers/mmcg/src/verification.rs": "4b44c5de6d37097811c19e96e85f23a37ef49952864a340e238aa65876c6bead",
+    "mcp/servers/mmcg/src/verification_receipts.rs": "fab9cb2e5df2b6113733d5d507ba9cb3f527fdd76d4f78b61e2b1dfb747e7b45",
+    "mcp/servers/mmcg/src/watcher.rs": "51f72c062260c469fb57d96dcd04af6b3449d776d1fca857cadae7dfff4965f5",
+    "npm/mastermind/bin/help.js": "b194856ee5fde144844367235c17af319e69360ab8cc4c1e3ffd5d2153a24b06",
+    "npm/mastermind/bin/install.js": "b1f721286cf270363202affda4ddd056e7f3de4bd25f58c8c46a51128ac36e76",
+    "npm/mastermind/bin/mastermind.js": "bdec52f052e9316ab0ab55250743596e028e116a8bf28c9d1efa2b5cf6c6a0e4",
+    "npm/mastermind/bin/resolve.js": "ebc4bdda0968a9badcb34e7542065d5ce2dd31dd69c427f01f26aaa2f0075144",
+    "npm/mastermind/bin/update.js": "1b23c1009b8631880be4812b427dc38fceeb36534a4e91c0ad936a23bc845109",
+    "scripts/publish-crate-artifact.py": "d2456d4b4224ab6beb37b401e7671e3638278a058495f5e67bf109bb839c7a88",
+    "scripts/validate.py": "3bd6f849a54344d9538f61796b90dcb8d031ae00a096f7110469904a6d7c1ed2"
+  },
+  "source_head": "f418b380bf191877f5903f5c85f483f5e0e86632",
+  "source_tree_sha256": "01946de15f9f7995b470961d7dfc72c7da648ddd050a3a75f595c992d68ca851"
+}

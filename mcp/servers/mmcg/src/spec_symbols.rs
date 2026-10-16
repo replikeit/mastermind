@@ -91,6 +91,12 @@ pub(crate) fn resolve_snapshot(
     resolve(store, &claim.name, &snapshot_scopes(spec, claim))
 }
 
+/// Resolve a qualified declaration name under supplied file and language scopes.
+///
+/// `.` and `::` qualify lexical parents; empty scopes allow unscoped lookup.
+/// Invalid qualification or scope, missing or ambiguous declarations, query or
+/// ancestry failures, and index data-version changes return `Unresolved`.
+/// This checks index consistency, not whether indexed files match the worktree.
 pub(crate) fn resolve(
     store: &Store,
     name: &str,
@@ -118,6 +124,13 @@ fn resolve_with_hook(
     result
 }
 
+/// Match indexed declarations to qualified lexical ancestry and scope.
+///
+/// Query each scope's leaf name and language, constrain its normalized file,
+/// and require ancestry to satisfy both the requested and scoped names. Modules
+/// and impl containers are not declaration targets. Return the unique symbol,
+/// or `Unresolved` for invalid input, query or ancestry failures, missing
+/// declarations or ambiguity. The caller checks the index data-version.
 fn resolve_candidates(
     store: &Store,
     name: &str,

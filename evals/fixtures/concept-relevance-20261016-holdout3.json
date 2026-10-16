@@ -1,0 +1,444 @@
+{
+  "schema_version": 1,
+  "kind": "concept_search_relevance",
+  "purpose": "Final small qualification set of new positive owners for a retrieval policy fixed before this run.",
+  "frozen_date": "2026-10-16",
+  "source_head": "f418b380bf191877f5903f5c85f483f5e0e86632",
+  "source_files_sha256": {
+    "mcp/servers/mmcg/src/acceptance.rs": "f8b0088eb25187d7571d39f22285aad8bc88767f6293ce132e2be089e3bce054",
+    "mcp/servers/mmcg/src/audit_bundle.rs": "ee39433016e5020f607df2e7db57b0245586f8516823720b0a00879f23ce5a7d",
+    "mcp/servers/mmcg/src/commands/pr_comment.rs": "b705f05fd20331f231ff668c5e91320cc7f1134cf6fd18b716d1e2b2acb65a5a",
+    "mcp/servers/mmcg/src/executor_claims.rs": "adf32891bc91c4555b9f41cb1174c34aa38adfc4e2124e7faf89e258df3a3591",
+    "mcp/servers/mmcg/src/find_checks.rs": "c661f42546ec4d722ff425a17832e773ab89c0e3e3a852250053e3a8810ea998",
+    "mcp/servers/mmcg/src/history_disposition.rs": "3be781710ab2aa945263fd517a550ce817a2e48b0a1a2f2aeab549965eccdae0",
+    "mcp/servers/mmcg/src/invocation/guard.rs": "b0762d793d83c10b34303367efedf926f5bdeda686b8227a7dcb10b9eb91bb7c",
+    "mcp/servers/mmcg/src/review_package.rs": "446fc55511a1a807f852d8e99d27ea1dafae6db6f23992fe226bd157d1e38ae4",
+    "mcp/servers/mmcg/src/spec_symbols.rs": "e0cf607dd5acc5afd9603fdf6637801ba0ed1b1c4fc471c0dd7b26fd8ca7ff1f"
+  },
+  "provenance": {
+    "prepared_by": "same separate relevance-case agent",
+    "new_ranking_implementation_seen": false,
+    "new_retrieval_outputs_seen": false,
+    "prior_holdout_reports_seen": false,
+    "aggregate_context_disclosed": "Root disclosed that previous sets were spent and the general ranking principle was changing. The author received no new policy implementation or per-query results.",
+    "source_snapshot": "/var/folders/21/xj6nw_bs4rn6l5s3h8b9m3t80000gn/T/mmcg-concept-noise-nugw2gbz/source",
+    "source_basis": "Same immutable tracked-working-tree source snapshot after owned parser/grant rustdoc and before ranking edits. Exact source-file SHA256 bindings identify judgment inputs; HEAD alone is insufficient for dirty source."
+  },
+  "selection": {
+    "method": "Selected eight real operations from runtime owners not previously used as positive owners. Read source contracts in the immutable snapshot and authored queries and sparse labels before viewing the corrected policy or output. Three negatives request new unsupported operations/domains.",
+    "independence": "Same author, same repository and purposive selection. This is blindness to the current policy and its outputs, not independence of author, codebase or task taxonomy. Earlier related workflow concepts exist, so no cross-family or population novelty claim is made.",
+    "qualification_use": "Single final qualification. If a change fails this set, its outputs may explain rejection but must not become a tuning loop presented as an independent pass.",
+    "input_contract": "Queries use at most twelve plain whitespace words, avoid mixed-case identifiers and stay within 256 UTF-8 bytes. Validation does not claim the serving tokenizer is equivalent to whitespace splitting.",
+    "limitations": "Small purposive local sample with sparse labels. No random sampling, human ground truth, user-query-frequency estimate, population relevance inference or semantic answer-quality conclusion. The set is spent for independent claims after outputs are inspected."
+  },
+  "denominators": {
+    "independent_positive": 8,
+    "independent_negative": 3,
+    "planned_total": 11
+  },
+  "judgment_contract": {
+    "anchor_match": "Match exact repository-relative path and indexed symbol name. <module> anchors are predeclared only when the module directly owns the requested operation; file co-location alone is not relevance.",
+    "hit_at_k": "Every planned positive query remains in the denominator. A frozen relevant anchor among the first k emitted rows is a useful entry-point hit. Failed executions remain unknown, not empty and not successful.",
+    "anchor_recall_at_k": "Retrieved unique listed relevant anchors divided by listed relevant anchors; sparse anchor recall does not claim completeness over repository relevance.",
+    "judged_precision_at_k": "Listed relevant rows divided by listed relevant plus explicit-distractor rows. Retain returned, judged and unjudged counts; unlisted rows are unjudged, not automatically irrelevant. Undefined with no judged result.",
+    "additional_judgments": "Post-output review belongs in a separate exploratory artifact bound to fixture and output hashes. It cannot rewrite frozen qrels or qualify further tuning as independent.",
+    "negative_queries": "expect_empty is a diagnostic of the complete unsupported requested operation. Lexical candidates are not evidence the capability exists; errors remain errors.",
+    "reporting": "Retain full output and emitted rank order; show planned and successful execution denominators and distinguish module from function/method anchors."
+  },
+  "cases": [
+    {
+      "id": "h3-literal-find-preconditions",
+      "split": "independent",
+      "kind": "positive",
+      "query": "check literal FIND preconditions still occur in current source files",
+      "top": 5,
+      "expect_empty": false,
+      "source_family": "literal_find_precondition_validation",
+      "phenomena": [
+        "new_positive_owner",
+        "literal_match",
+        "natural_phrase"
+      ],
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/find_checks.rs",
+          "symbol": "check",
+          "reason": "Runs bounded literal FIND precondition checks against repository source."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/find_checks.rs",
+          "symbol": "collect",
+          "reason": "Reads specified files and checks exact literal find_text occurrence before retaining freshness receipts."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/find_checks.rs",
+          "symbol": "<module>",
+          "reason": "Owns bounded preflight checks for literal FIND preconditions."
+        }
+      ],
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/find_checks.rs",
+          "symbol": "unavailable",
+          "reason": "Constructs a failure record without checking the literal text."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/find_checks.rs",
+          "symbol": "read_reason",
+          "reason": "Maps read failures to reason labels without checking preconditions."
+        }
+      ]
+    },
+    {
+      "id": "h3-qualified-declaration-resolution",
+      "split": "independent",
+      "kind": "positive",
+      "query": "resolve qualified declaration names within declared file and language scopes",
+      "top": 5,
+      "expect_empty": false,
+      "source_family": "scoped_declaration_resolution",
+      "phenomena": [
+        "new_positive_owner",
+        "scope_disambiguation",
+        "natural_phrase"
+      ],
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/spec_symbols.rs",
+          "symbol": "resolve",
+          "reason": "Resolves a named declaration under the provided name/file/language scopes with index consistency checks."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/spec_symbols.rs",
+          "symbol": "resolve_candidates",
+          "reason": "Matches qualified lexical ancestry and file/language constraints, reporting missing or ambiguous declarations."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/spec_symbols.rs",
+          "symbol": "<module>",
+          "reason": "Owns named declaration resolution independently of recorded signature text."
+        }
+      ],
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/spec_symbols.rs",
+          "symbol": "components",
+          "reason": "Only splits and validates qualification syntax, without resolving declarations."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/spec_symbols.rs",
+          "symbol": "normalize_file",
+          "reason": "Only normalizes a file scope and does not resolve the declaration."
+        }
+      ]
+    },
+    {
+      "id": "h3-acceptance-current-observations",
+      "split": "independent",
+      "kind": "positive",
+      "query": "map acceptance criteria to current observed verification checks",
+      "top": 5,
+      "expect_empty": false,
+      "source_family": "acceptance_observation_mapping",
+      "phenomena": [
+        "new_positive_owner",
+        "evidence_mapping",
+        "natural_phrase"
+      ],
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/acceptance.rs",
+          "symbol": "evaluate",
+          "reason": "Maps each declared criterion to current observed check evidence and blocks missing/noncurrent observations."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/acceptance.rs",
+          "symbol": "inspect",
+          "reason": "Read-only entry point collecting the current evidence for declared acceptance criteria."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/acceptance.rs",
+          "symbol": "<module>",
+          "reason": "Owns declared acceptance criteria backed by current observed checks, excluding executor-authored pass claims."
+        }
+      ],
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/acceptance.rs",
+          "symbol": "validate",
+          "reason": "Validates criterion and check declarations but does not inspect current observations."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/acceptance.rs",
+          "symbol": "declared",
+          "reason": "Only reads the optional criterion declarations from the spec."
+        }
+      ]
+    },
+    {
+      "id": "h3-executor-added-function-claims",
+      "split": "independent",
+      "kind": "positive",
+      "query": "check executor claims that functions were added in this diff",
+      "top": 5,
+      "expect_empty": false,
+      "source_family": "executor_added_declaration_evidence",
+      "phenomena": [
+        "new_positive_owner",
+        "change_evidence",
+        "natural_phrase"
+      ],
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/executor_claims.rs",
+          "symbol": "evaluate",
+          "reason": "Checks each executor claim under current diff/source evidence and retains its identity and outcome."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/executor_claims.rs",
+          "symbol": "check",
+          "reason": "For FunctionAdded claims, checks declaration kind, signature, source freshness and membership in added declarations."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/executor_claims.rs",
+          "symbol": "<module>",
+          "reason": "Owns checking executor claims once with retained identity and evidence."
+        }
+      ],
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/executor_claims.rs",
+          "symbol": "resolve",
+          "reason": "Only resolves the target declaration; it does not establish that the diff added it."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/executor_claims.rs",
+          "symbol": "outcome",
+          "reason": "Wraps an existing check result into a status record rather than proving addition."
+        }
+      ]
+    },
+    {
+      "id": "h3-knowledge-review-evidence",
+      "split": "independent",
+      "kind": "positive",
+      "query": "validate context and lesson review decisions against their evidence references",
+      "top": 5,
+      "expect_empty": false,
+      "source_family": "knowledge_disposition_validation",
+      "phenomena": [
+        "new_positive_owner",
+        "reference_binding",
+        "natural_phrase"
+      ],
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/history_disposition.rs",
+          "symbol": "validate",
+          "reason": "Requires well-formed reasons, distinct known evidence IDs and the corresponding context/lessons reference for resolved decisions."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/history_disposition.rs",
+          "symbol": "<module>",
+          "reason": "Owns typed review of the two canonical knowledge files and validates assertion structure without claiming truth."
+        }
+      ],
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/history_disposition.rs",
+          "symbol": "status",
+          "reason": "Combines decisions into a status without validating their evidence references."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/history_disposition.rs",
+          "symbol": "valid_reason",
+          "reason": "Checks reason text alone rather than evidence identifiers and decision bindings."
+        }
+      ]
+    },
+    {
+      "id": "h3-remote-repository-identity",
+      "split": "independent",
+      "kind": "positive",
+      "query": "normalize github remote addresses into a repository identity",
+      "top": 5,
+      "expect_empty": false,
+      "source_family": "remote_identity_normalization",
+      "phenomena": [
+        "new_positive_owner",
+        "input_normalization",
+        "natural_phrase"
+      ],
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/audit_bundle.rs",
+          "symbol": "normalize_repository_identity",
+          "reason": "Accepts supported HTTPS/SSH github remote forms, strips .git and rejects unsafe/invalid identities."
+        }
+      ],
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/audit_bundle.rs",
+          "symbol": "valid_repository_identity",
+          "reason": "Validates an already extracted owner/repository identity but does not normalize remote URL forms."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/audit_bundle.rs",
+          "symbol": "normalize_relative_path",
+          "reason": "Normalizes a filesystem artifact path rather than a remote repository address."
+        }
+      ]
+    },
+    {
+      "id": "h3-offline-review-export",
+      "split": "independent",
+      "kind": "positive",
+      "query": "export offline review packages bound to the reviewed revision and evidence",
+      "top": 5,
+      "expect_empty": false,
+      "source_family": "offline_review_package_export",
+      "phenomena": [
+        "new_positive_owner",
+        "artifact_binding",
+        "natural_phrase"
+      ],
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/review_package.rs",
+          "symbol": "export",
+          "reason": "Builds the offline package from one validated Lens snapshot and binds external report bytes to the reviewed head."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/review_package.rs",
+          "symbol": "<module>",
+          "reason": "Owns deterministic offline PR evidence packages with fail-closed freshness and exact-byte bindings."
+        }
+      ],
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/review_package.rs",
+          "symbol": "output_target",
+          "reason": "Only validates the output directory selection."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/review_package.rs",
+          "symbol": "summary_markdown",
+          "reason": "Renders summary text rather than building and binding the full package."
+        }
+      ]
+    },
+    {
+      "id": "h3-native-call-reconciliation",
+      "split": "independent",
+      "kind": "positive",
+      "query": "reconcile observed native calls with durable tool allow decisions",
+      "top": 5,
+      "expect_empty": false,
+      "source_family": "native_guard_decision_reconciliation",
+      "phenomena": [
+        "new_positive_owner",
+        "authorization_evidence",
+        "natural_phrase"
+      ],
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/invocation/guard.rs",
+          "symbol": "reconcile",
+          "reason": "Builds native guard evidence and reconciles observed calls with the bound durable decision ledger."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/invocation/guard.rs",
+          "symbol": "reconcile_into",
+          "reason": "Checks manifest integrity and exact per-call name/input/allow agreement before declaring reconciliation complete."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/invocation/guard.rs",
+          "symbol": "<module>",
+          "reason": "Owns bounded native hook policy and refuses success when observed calls lack matching durable allow decisions."
+        }
+      ],
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/invocation/guard.rs",
+          "symbol": "authorize",
+          "reason": "Decides whether one proposed call is permitted rather than reconciling observed calls against recorded decisions."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/invocation/guard.rs",
+          "symbol": "observe",
+          "reason": "Collects observed call identities but does not prove agreement with the durable allow ledger."
+        }
+      ]
+    },
+    {
+      "id": "h3-negative-comment-posting",
+      "split": "independent",
+      "kind": "negative",
+      "query": "post audit bundle comments directly to github pull requests",
+      "top": 5,
+      "expect_empty": true,
+      "source_family": "unsupported_remote_comment_posting",
+      "phenomena": [
+        "unsupported_semantics",
+        "lexical_distractor",
+        "new_operation"
+      ],
+      "relevant": [],
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/commands/pr_comment.rs",
+          "symbol": "run",
+          "reason": "Verifies a selected bundle and prints Markdown to stdout; it does not post a remote comment."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/commands/pr_comment.rs",
+          "symbol": "render",
+          "reason": "Constructs a Markdown comment string without any network posting operation."
+        }
+      ]
+    },
+    {
+      "id": "h3-negative-dns-resolution",
+      "split": "independent",
+      "kind": "negative",
+      "query": "resolve internet host names using encrypted DNS requests",
+      "top": 5,
+      "expect_empty": true,
+      "source_family": "unsupported_dns_resolution",
+      "phenomena": [
+        "unsupported_semantics",
+        "lexical_distractor",
+        "new_domain"
+      ],
+      "relevant": [],
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/spec_symbols.rs",
+          "symbol": "resolve",
+          "reason": "Resolves indexed source declarations, not host names or DNS packets."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/executor_claims.rs",
+          "symbol": "resolve",
+          "reason": "Resolves codegraph declarations for executor evidence rather than internet hosts."
+        }
+      ]
+    },
+    {
+      "id": "h3-negative-sudoku",
+      "split": "independent",
+      "kind": "negative",
+      "query": "solve sudoku puzzles with cage constraints and propagation",
+      "top": 5,
+      "expect_empty": true,
+      "source_family": "unsupported_sudoku_solving",
+      "phenomena": [
+        "unsupported_semantics",
+        "out_of_vocabulary",
+        "new_domain"
+      ],
+      "relevant": [],
+      "distractors": []
+    }
+  ]
+}

@@ -1527,7 +1527,7 @@ pub fn render_concept(
     }
 
     let mut output = format!(
-        "mastermind concept\nschema: v{}\nrepository content: {}\nquery terms: {}\ncoverage: {}/{} ({})\nresult truncated: {}\nunsafe candidates omitted: {}\ntruncation reason: {}\ntop: {}\nfreshness: {}\nextractor contract: {}\nnormalization contract: {}\nlimits: query bytes {} · query terms {} · term bytes {} · top {} · signature shape bytes {}\n\n",
+        "mastermind concept\nschema: v{}\nrepository content: {}\nquery terms: {}\nranking terms (partial): {}\nmatch mode: {}\nminimum matched terms: {}\nminimum ranking terms: {}\ninclude tests: {}\ncoverage: {}/{} ({})\nresult truncated: {}\nunsafe candidates omitted: {}\ntruncation reason: {}\ntop: {}\nfreshness: {}\nextractor contract: {}\nnormalization contract: {}\nlimits: query bytes {} · query terms {} · term bytes {} · top {} · signature shape bytes {}\n\n",
         response.schema_version,
         if response.repository_content_untrusted {
             "untrusted"
@@ -1540,6 +1540,15 @@ pub fn render_concept(
             .map(|term| concept_text_field(term))
             .collect::<Vec<_>>()
             .join(" "),
+        response.ranking_terms.iter().map(|term| concept_text_field(term)).collect::<Vec<_>>().join(" "),
+        match response.match_mode {
+            queries::ConceptMatchMode::AllTerms => "all_terms",
+            queries::ConceptMatchMode::AllAndPartialTerms => "all_and_partial_terms",
+            queries::ConceptMatchMode::PartialTerms => "partial_terms",
+        },
+        response.minimum_matched_terms,
+        response.minimum_ranking_terms,
+        response.include_tests,
         response.count,
         response.indexed_total,
         if response.truncated {
@@ -1566,7 +1575,7 @@ pub fn render_concept(
     output.push_str("candidates\n");
     for candidate in &response.candidates {
         output.push_str(&format!(
-            "name={} kind={} language={} line={} score={}\npath={}\nsignature={}\nmatched={}\ncitation={}\n\n",
+            "name={} kind={} language={} line={} score={}\npath={}\nsignature={}\nmatched={}\nmatched terms={}\ncitation={}\n\n",
             concept_text_field(&candidate.name),
             concept_text_field(&candidate.kind),
             concept_text_field(&candidate.language),
@@ -1578,6 +1587,12 @@ pub fn render_concept(
                 .matched_fields
                 .iter()
                 .map(|field| concept_text_field(field))
+                .collect::<Vec<_>>()
+                .join(" "),
+            candidate
+                .matched_terms
+                .iter()
+                .map(|term| concept_text_field(term))
                 .collect::<Vec<_>>()
                 .join(" "),
             concept_text_field(&candidate.citation),
@@ -2147,9 +2162,14 @@ mod map_tests {
             "\\u00005d\\u000028https\\u00003a\\u00002f\\u00002fevil\\u00002eexample\\u000029\\u00003ca\\u00003e\\u000060file\\u00003a\\u00002f\\u00002f\\u00001b\\u000007\\u00202e\\u00000d\\u00000a"
         );
         let response = queries::ConceptResponse {
-            schema_version: 2,
+            schema_version: 5,
             repository_content_untrusted: true,
+            include_tests: false,
+            ranking_terms: vec![hostile.to_string()],
             query_terms: vec!["handler".to_string()],
+            match_mode: queries::ConceptMatchMode::AllTerms,
+            minimum_matched_terms: 1,
+            minimum_ranking_terms: 1,
             indexed_total: 1,
             count: 1,
             result_truncated: false,
@@ -2178,6 +2198,7 @@ mod map_tests {
                 line: 7,
                 signature_shape: hostile.to_string(),
                 matched_fields: vec!["path".to_string()],
+                matched_terms: vec!["handler".to_string()],
                 citation: format!("{hostile}:7"),
                 score: -1.0,
             }],
@@ -2207,7 +2228,10 @@ mod map_tests {
         partial.truncated = true;
         partial.truncation_reason = Some("top_and_unsafe_candidates");
         let text = render_concept(&partial, crate::ConceptFormat::Text).unwrap();
-        assert!(text.contains("schema: v2\nrepository content: untrusted"));
+        assert!(text.contains("schema: v5\nrepository content: untrusted"));
+        assert!(text.contains("match mode: all_terms\nminimum matched terms: 1"));
+        assert!(text.contains("minimum ranking terms: 1\ninclude tests: false"));
+        assert!(text.contains("matched terms=handler"));
         assert!(text.contains("coverage: 1/7 (partial)"));
         assert!(text.contains("result truncated: true\nunsafe candidates omitted: 2"));
         assert!(text.contains("truncation reason: top\\u00005fand\\u00005funsafe"));

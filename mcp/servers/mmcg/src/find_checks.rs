@@ -30,6 +30,13 @@ struct Checker<'a> {
     bytes: u64,
 }
 
+/// Check literal FIND preconditions against current repository file contents.
+///
+/// Blocks must name contained regular UTF-8 files and nonempty literal text.
+/// A literal absent from the file yields a mismatch. Invalid targets, read
+/// failures, cancellation and exhausted limits yield unavailable findings.
+/// Inspected files are read again to reject changed identities or bytes before
+/// returning the findings.
 pub(crate) fn check(blocks: &[FindBlock], root: &Path, control: ReadControl<'_>) -> Vec<Finding> {
     if blocks.is_empty() {
         return Vec::new();
@@ -125,6 +132,12 @@ impl<'a> Checker<'a> {
         Ok(file)
     }
 
+    /// Read each target and record whether its literal FIND text occurs.
+    ///
+    /// Normalize and contain paths within the retained root, charging work and
+    /// byte limits for each read. Invalid blocks and unreadable or non-UTF-8 files
+    /// produce unavailable findings. Retain identity and digest receipts for
+    /// both matches and mismatches; `finish` owns their later freshness recheck.
     fn collect(&mut self, blocks: &[FindBlock]) -> Collected {
         let mut collected = Collected {
             findings: Vec::with_capacity(blocks.len()),

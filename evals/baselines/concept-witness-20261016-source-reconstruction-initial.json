@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "status": "failed",
+  "base_head": "f418b380bf191877f5903f5c85f483f5e0e86632",
+  "patch": "evals/baselines/concept-source-20261016.patch",
+  "patch_sha256": "a7bf4e847bf08f2966587c718bdaff64f9c2a280d1982dbaf6e17c3a21ac2613",
+  "reconstructed_source_tree_sha256": "08f7c2bc7fcddb5d1ad8db4d0e1b61e1022a799fa4a42d5fb6577ab68b97971a",
+  "expected_source_tree_sha256": "01946de15f9f7995b470961d7dfc72c7da648ddd050a3a75f595c992d68ca851",
+  "temporary_source_removed": true
+}

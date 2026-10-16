@@ -1,0 +1,377 @@
+{
+  "ind-v12-pos-01": {
+    "operation": "Verify portable instruction bytes against recorded file hashes",
+    "constraints": [
+      {
+        "id": "instruction_input",
+        "text": "portable instruction bytes",
+        "kind": "input"
+      },
+      {
+        "id": "reference_hashes",
+        "text": "recorded file hashes",
+        "kind": "input"
+      }
+    ]
+  },
+  "ind-v12-pos-02": {
+    "operation": "Reject abbreviated audit signing key identifiers before verification",
+    "constraints": [
+      {
+        "id": "identifier_form",
+        "text": "abbreviated audit signing key identifiers",
+        "kind": "input"
+      },
+      {
+        "id": "rejection_order",
+        "text": "before verification",
+        "kind": "scope"
+      }
+    ]
+  },
+  "ind-v12-pos-03": {
+    "operation": "Bind acceptance criteria to excerpts from original requests",
+    "constraints": [
+      {
+        "id": "criteria",
+        "text": "acceptance criteria",
+        "kind": "input"
+      },
+      {
+        "id": "binding_target",
+        "text": "excerpts from original requests",
+        "kind": "result"
+      }
+    ]
+  },
+  "ind-v12-pos-04": {
+    "operation": "Count unknown resource measurements separately for each condition",
+    "constraints": [
+      {
+        "id": "measurements",
+        "text": "unknown resource measurements",
+        "kind": "input"
+      },
+      {
+        "id": "separate_counts",
+        "text": "separately",
+        "kind": "result"
+      },
+      {
+        "id": "condition_scope",
+        "text": "for each condition",
+        "kind": "scope"
+      }
+    ]
+  },
+  "ind-v12-pos-05": {
+    "operation": "Calculate observed attempt percentiles with linear interpolation",
+    "constraints": [
+      {
+        "id": "observations",
+        "text": "observed attempt",
+        "kind": "input"
+      },
+      {
+        "id": "calculation_method",
+        "text": "with linear interpolation",
+        "kind": "input"
+      }
+    ]
+  },
+  "ind-v12-pos-06": {
+    "operation": "Deduplicate identical persona candidates within each collection snapshot",
+    "constraints": [
+      {
+        "id": "candidate_input",
+        "text": "identical persona candidates",
+        "kind": "input"
+      },
+      {
+        "id": "snapshot_scope",
+        "text": "within each collection snapshot",
+        "kind": "scope"
+      }
+    ]
+  },
+  "ind-v12-pos-07": {
+    "operation": "Validate reviewer outcomes against frozen acceptance evidence",
+    "constraints": [
+      {
+        "id": "outcomes",
+        "text": "reviewer outcomes",
+        "kind": "input"
+      },
+      {
+        "id": "evidence_state",
+        "text": "frozen acceptance evidence",
+        "kind": "state"
+      }
+    ]
+  },
+  "ind-v12-pos-08": {
+    "operation": "Compare retained profile rules against exact expected text",
+    "constraints": [
+      {
+        "id": "rule_state",
+        "text": "retained profile rules",
+        "kind": "state"
+      },
+      {
+        "id": "comparison_reference",
+        "text": "exact expected text",
+        "kind": "input"
+      }
+    ]
+  },
+  "ind-v12-pos-09": {
+    "operation": "Parse ordered adapter events into terminal result records",
+    "constraints": [
+      {
+        "id": "event_input",
+        "text": "ordered adapter events",
+        "kind": "input"
+      },
+      {
+        "id": "record_result",
+        "text": "terminal result records",
+        "kind": "result"
+      }
+    ]
+  },
+  "ind-v12-pos-10": {
+    "operation": "Publish review artifacts exclusively without replacing existing files",
+    "constraints": [
+      {
+        "id": "artifact_input",
+        "text": "review artifacts",
+        "kind": "input"
+      },
+      {
+        "id": "publication_mode",
+        "text": "exclusively",
+        "kind": "input"
+      },
+      {
+        "id": "preserve_existing",
+        "text": "without replacing existing files",
+        "kind": "result"
+      }
+    ]
+  },
+  "ind-v12-pos-11": {
+    "operation": "Read bounded intake files while detecting concurrent replacement",
+    "constraints": [
+      {
+        "id": "file_input",
+        "text": "bounded intake files",
+        "kind": "input"
+      },
+      {
+        "id": "replacement_detection",
+        "text": "while detecting concurrent replacement",
+        "kind": "result"
+      }
+    ]
+  },
+  "ind-v12-pos-12": {
+    "operation": "Extract Python dependencies across project and development groups",
+    "constraints": [
+      {
+        "id": "dependency_input",
+        "text": "Python dependencies",
+        "kind": "input"
+      },
+      {
+        "id": "group_scope",
+        "text": "across project and development groups",
+        "kind": "scope"
+      }
+    ]
+  },
+  "ind-v12-pos-13": {
+    "operation": "Select changed task folders for continuous integration verification",
+    "constraints": [
+      {
+        "id": "folder_state",
+        "text": "changed task folders",
+        "kind": "state"
+      },
+      {
+        "id": "selection_purpose",
+        "text": "for continuous integration verification",
+        "kind": "scope"
+      }
+    ]
+  },
+  "ind-v12-pos-14": {
+    "operation": "Merge duplicate LCOV line hits using maximum counts",
+    "constraints": [
+      {
+        "id": "hit_input",
+        "text": "duplicate LCOV line hits",
+        "kind": "input"
+      },
+      {
+        "id": "merge_method",
+        "text": "using maximum counts",
+        "kind": "input"
+      }
+    ]
+  },
+  "ind-v12-pos-15": {
+    "operation": "Disable future transcript synchronization while retaining collection evidence",
+    "constraints": [
+      {
+        "id": "synchronization_scope",
+        "text": "future transcript synchronization",
+        "kind": "scope"
+      },
+      {
+        "id": "retained_evidence",
+        "text": "while retaining collection evidence",
+        "kind": "result"
+      }
+    ]
+  },
+  "ind-v12-pos-16": {
+    "operation": "Separate reported reasoning tokens from other output tokens",
+    "constraints": [
+      {
+        "id": "reasoning_input",
+        "text": "reported reasoning tokens",
+        "kind": "input"
+      },
+      {
+        "id": "other_output_input",
+        "text": "other output tokens",
+        "kind": "input"
+      }
+    ]
+  },
+  "ind-v12-neg-01": {
+    "operation": "Calibrate effort changes while also changing role instructions",
+    "constraints": [
+      {
+        "id": "effort_input",
+        "text": "effort changes",
+        "kind": "input"
+      },
+      {
+        "id": "instruction_change",
+        "text": "while also changing role instructions",
+        "kind": "input"
+      }
+    ]
+  },
+  "ind-v12-neg-02": {
+    "operation": "Mark acceptance criteria met without retained answer evidence",
+    "constraints": [
+      {
+        "id": "criteria_input",
+        "text": "acceptance criteria",
+        "kind": "input"
+      },
+      {
+        "id": "criteria_result",
+        "text": "met",
+        "kind": "result"
+      },
+      {
+        "id": "evidence_state",
+        "text": "without retained answer evidence",
+        "kind": "state"
+      }
+    ]
+  },
+  "ind-v12-neg-03": {
+    "operation": "Read review artifacts through symbolic parent directories",
+    "constraints": [
+      {
+        "id": "artifact_input",
+        "text": "review artifacts",
+        "kind": "input"
+      },
+      {
+        "id": "read_path",
+        "text": "through symbolic parent directories",
+        "kind": "input"
+      }
+    ]
+  },
+  "ind-v12-neg-04": {
+    "operation": "Treat negative runtime token counts as complete telemetry",
+    "constraints": [
+      {
+        "id": "count_state",
+        "text": "negative runtime token counts",
+        "kind": "state"
+      },
+      {
+        "id": "telemetry_result",
+        "text": "as complete telemetry",
+        "kind": "result"
+      }
+    ]
+  },
+  "ind-v12-neg-05": {
+    "operation": "Move registered collection sources between different project roots",
+    "constraints": [
+      {
+        "id": "source_state",
+        "text": "registered collection sources",
+        "kind": "state"
+      },
+      {
+        "id": "movement_scope",
+        "text": "between different project roots",
+        "kind": "scope"
+      }
+    ]
+  },
+  "ind-v12-neg-06": {
+    "operation": "Parse intake JSON containing duplicate object keys",
+    "constraints": [
+      {
+        "id": "json_input",
+        "text": "intake JSON",
+        "kind": "input"
+      },
+      {
+        "id": "duplicate_key_input",
+        "text": "containing duplicate object keys",
+        "kind": "input"
+      }
+    ]
+  },
+  "ind-v12-neg-07": {
+    "operation": "Measure native reasoning time from observed tool intervals",
+    "constraints": [
+      {
+        "id": "measurement_result",
+        "text": "native reasoning time",
+        "kind": "result"
+      },
+      {
+        "id": "measurement_input",
+        "text": "from observed tool intervals",
+        "kind": "input"
+      }
+    ]
+  },
+  "ind-v12-neg-08": {
+    "operation": "Compare active profile rules from unsuccessful delivery packets",
+    "constraints": [
+      {
+        "id": "rule_state",
+        "text": "active profile rules",
+        "kind": "state"
+      },
+      {
+        "id": "packet_scope",
+        "text": "from unsuccessful delivery packets",
+        "kind": "scope"
+      }
+    ]
+  }
+}

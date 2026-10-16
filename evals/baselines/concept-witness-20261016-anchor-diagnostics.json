@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "kind": "postflight_anchor_identity_diagnostics",
+  "qualification_status_unchanged": "failed",
+  "original_literal_name_hits": 13,
+  "source_declaration_identity_hits": 15,
+  "qualified_name_format_mismatches": 2,
+  "exact_declarations_absent_from_pool": 1,
+  "rows": [
+    {
+      "case_id": "ind-v12-pos-02",
+      "query": "Reject abbreviated audit signing key identifiers before verification",
+      "frozen_anchor": {
+        "path": "mcp/servers/mmcg/src/commands/audit.rs",
+        "symbol": "validate_key_ids",
+        "declaration_line": 93
+      },
+      "classification": "exact_declaration_not_retrieved",
+      "returned_exact_path_line_leaf": [],
+      "anchor_leaf_present_in_pool": false
+    },
+    {
+      "case_id": "ind-v12-pos-10",
+      "query": "Publish review artifacts exclusively without replacing existing files",
+      "frozen_anchor": {
+        "path": "evals/benchmark/review_io.py",
+        "symbol": "Root.write_new",
+        "declaration_line": 201
+      },
+      "classification": "qualified_name_format_mismatch",
+      "returned_exact_path_line_leaf": [
+        {
+          "id": "ee8aeb27d88b708cb857226d06b56a448b1a2649a917c97cc1371acab448630e",
+          "path": "evals/benchmark/review_io.py",
+          "name": "write_new",
+          "line_start": 201,
+          "line_end": 299,
+          "source_sha256": "7014411a97cbfb9bdc768596b27c917e075c82ba513642e17598671099a6c567"
+        }
+      ],
+      "anchor_leaf_present_in_pool": true
+    },
+    {
+      "case_id": "ind-v12-pos-15",
+      "query": "Disable future transcript synchronization while retaining collection evidence",
+      "frozen_anchor": {
+        "path": "mcp/servers/mmcg/src/miner/store/collection.rs",
+        "symbol": "ProfileStore::set_source_sync_enabled",
+        "declaration_line": 234
+      },
+      "classification": "qualified_name_format_mismatch",
+      "returned_exact_path_line_leaf": [
+        {
+          "id": "bf0b1e9e6327c5945a966945942df231c45f4cfc2d55261bce57ed49b99a4e31",
+          "path": "mcp/servers/mmcg/src/miner/store/collection.rs",
+          "name": "set_source_sync_enabled",
+          "line_start": 234,
+          "line_end": 261,
+          "source_sha256": "dd7397c50b136e2b8f48e4de563b32ee77477675fa8f24f99f9b5f61635fee20"
+        }
+      ],
+      "anchor_leaf_present_in_pool": true
+    }
+  ],
+  "limitations": [
+    "Postflight diagnostic only; frozen fixture, original scorer and failed qualification are unchanged.",
+    "Qualified source names are paired with an emitted leaf name only at exactly the same source path and declaration line, with independent semantic confirmation.",
+    "No semantic judgment or candidate order was changed."
+  ]
+}

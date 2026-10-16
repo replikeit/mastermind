@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "policy_freeze_sha256": "2ff13423072905ccdfee863ce1779556f4d8912ab4b167264ac233727b0d836d",
+  "producer": "/Users/alinaglumova/Documents/personal/mastermind/.mastermind/research/concept-witness-20261016/score_v12.py",
+  "producer_sha256": "b34deaef7b00fb93b10e130c078e5962bb4e3346b841d97fea660db92cc72c70",
+  "before_any_v12_retrieval": true
+}

@@ -1,0 +1,7 @@
+Start with the requested action, object and explicit conditions, already fixed in the query-only ledger. Describe observable state separately from request options and selected identifiers. A different operation that shares words cannot satisfy a condition merely by changing its interpretation.
+
+For each candidate, inspect its own branch or contained implementation before choosing its role. A concrete branch may own the requested domain operation even inside a broad handler or module. Delegation alone does not make an entrypoint context. A generic prerequisite may be mandatory yet still contribute navigation rather than the requested result or defining constraint.
+
+Useful context explains a specific existing operation through inspected selection, fallback, type/API dispatch, preparation, projection, an operation-specific caller/consumer or readiness boundary. Name that benefit and bind the operation path. Mere call-graph membership is insufficient. Do not drop useful navigation merely because it does not implement the whole operation.
+
+Every declared constraint needs inspected evidence and an explicit status. Unknown evidence does not become a match; contrary evidence does not become ambiguity. Genuine unresolved intent stays visible without weakening explicit state, scope or result conditions. The server validates the structure, completeness, binding and declared consistency of these claims, not their semantic truth.

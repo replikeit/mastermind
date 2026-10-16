@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "role_contract": "operation-roles-v3",
+  "planned_cases": 24,
+  "positive_anchors": 16,
+  "negative_cases": 8,
+  "protected_useful_identities": 574,
+  "files_sha256": {
+    "/Users/alinaglumova/Documents/personal/mastermind/.mastermind/research/concept-witness-20261016/mcp_workflow.py": "4d4fd578f6dfed9f70be9a679502c99d1ccd48f333b9c8018cf56bb40bd00145",
+    "/Users/alinaglumova/Documents/personal/mastermind/.mastermind/research/concept-witness-20261016/source_review.py": "a5529e300cc361359dc5b98af6f7a7b68835d650a92e52ecdc4307b1ccfae687",
+    "/Users/alinaglumova/Documents/personal/mastermind/.mastermind/research/concept-witness-20261016/blind_witness.py": "65cdebc0c7b798f68155c5f0755eaf828da7cace51d443f4611f5dc802f84cc1",
+    "/Users/alinaglumova/Documents/personal/mastermind/.mastermind/research/concept-witness-20261016/preservation.py": "2720f86c66b67a87b0d6dec0847bf55b42531632a81772e3a759fa11b6d6986b",
+    "/Users/alinaglumova/Documents/personal/mastermind/.mastermind/research/concept-witness-20261016/development_migration.py": "8e1e38f8dc0c5acf419eb729b3a676a89179df4f7eec7356cc53cd1622940e49",
+    "/Users/alinaglumova/Documents/personal/mastermind/.mastermind/research/concept-witness-20261016/source-assessment-instructions.md": "70e2a285f8516f2ad35a0e09750c7fb3e56f4b07c60679a7fa33010855299b05",
+    "/Users/alinaglumova/Documents/personal/mastermind/.mastermind/research/concept-witness-20261016/context-navigation-guidance.md": "e208eed85469ac526c0a764074b4ffa9266a0eba6bba6ea6ae816134f2baddc9",
+    "/Users/alinaglumova/Documents/personal/mastermind/.mastermind/research/concept-witness-20261016/v12-query-plan.json": "7cb32b13dc1bdc0e46169e65a2ed8f991dca4e8dc64e160b2c85711df65253a9",
+    "/Users/alinaglumova/Documents/personal/mastermind/.mastermind/research/concept-witness-20261016/query-only-plan.json": "bdcfe18a4cc7e96fcafec3687430220fc7917829831782379c4ee55bc8e19def",
+    "/Users/alinaglumova/Documents/personal/mastermind/.mastermind/research/concept-witness-20261016/query-only-input.json": "7fa2562d7109754094abf8ade862ba0cbbba83d9056f7c4361c553b854a8a4e2",
+    "/Users/alinaglumova/Documents/personal/mastermind/.mastermind/research/concept-witness-20261016/query-id-map.json": "1a8845e0b39c48c1d5d73f6c1601ed10144aa5394bbedf6ea8c14a090f672675",
+    "/Users/alinaglumova/Documents/personal/mastermind/.mastermind/research/concept-witness-20261016/v12-request-contracts.json": "d9d6d0df465dd7c8486cb555b14dc3d25a5917d119ca949f9d859568597d4b10",
+    "/Users/alinaglumova/Documents/personal/mastermind/.mastermind/research/concept-witness-20261016/development-corrections.json": "a09088ad5c74a012cd9c5b871831cc573298ba56dd500839df319d9080a93799",
+    "/Users/alinaglumova/Documents/personal/mastermind/.mastermind/research/concept-witness-20261016/protection-plan.json": "82f786b9a0e966a5455b2747077cdc0accc5b1cb747e82bd85f0340b9df849aa",
+    "/Users/alinaglumova/Documents/personal/mastermind/.mastermind/research/concept-witness-20261016/development-inputs/inputs.json": "79e6edcdf72888a7a43f1625be237e15fe8440017058f432791bc580baf93710",
+    "/Users/alinaglumova/Documents/personal/mastermind/.mastermind/research/concept-witness-20261016/development-inputs/plan.json": "d856caf72ec282bf8da4a277773e9fcd620e7b97dd91883b3105c8baf8424c8c",
+    "/Users/alinaglumova/Documents/personal/mastermind/.mastermind/research/concept-witness-20261016/build-source-bindings.json": "f46c69beb67093e6702ad402b0bb9fa9a7fcf35cedcb0a2204a6b9a2d7f1f269",
+    "/Users/alinaglumova/Documents/personal/mastermind/.mastermind/research/concept-witness-20261016/v12-root-preflight.json": "19404ea30b541ebbdbd0ea2ae9367973b03d0b8b92a626a9347cd38dc9428e8c",
+    "/Users/alinaglumova/Documents/personal/mastermind/evals/fixtures/concept-relevance-20261016-independent-v12.json": "8afc609cec54e7bcf9a6b932ef0c6901cb201aa3ac6611235a4d59106a6d361f",
+    "/Users/alinaglumova/Documents/personal/mastermind/evals/fixtures/concept-relevance-20261016-independent-v12.freeze.json": "9f4ce4b1e8837623c1fbfac441447f42cf08f298eb20fd596acdddbcc41eee73",
+    "/Users/alinaglumova/Documents/personal/mastermind/evals/fixtures/concept-relevance-20261016-independent-v12.source-evidence.json": "89be268b436ec50e9ea4c63a4d3be32efc7564f34b9b28a7767d46ade425718f"
+  },
+  "semantic_gate": {
+    "false_useful": 0,
+    "unknown_emitted": 0,
+    "semantic_context_disagreements": 0,
+    "positive_anchor_hits": 16,
+    "negative_full_pages_empty": 8
+  },
+  "runtime_binding": "runtime-binding.json is bound before native calls; build pins are above",
+  "original_query_authoritative": true,
+  "relevance_truth_claim": false
+}

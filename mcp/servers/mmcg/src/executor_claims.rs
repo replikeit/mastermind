@@ -91,6 +91,13 @@ pub(crate) struct Context<'a> {
     pub deadline: Instant,
 }
 
+/// Evaluate executor claims against the supplied declaration diff and source.
+///
+/// Preserve every claim's position and outcome in report order. An incomplete
+/// diff, more than 256 claims, unavailable or changed index, unreadable or stale
+/// indexed source, parse failure, or exhausted deadline yields unresolved
+/// checks. Added declarations and integration calls use separate evidence;
+/// a compatible call candidate does not establish runtime integration behavior.
 pub(crate) fn evaluate(report: &ExecutorReport, context: &Context<'_>) -> Vec<ClaimCheck> {
     evaluate_with_hook(report, context, || {})
 }
@@ -215,6 +222,14 @@ fn current_source(
     result
 }
 
+/// Check one executor claim for an added declaration or a compatible call.
+///
+/// Function additions require a resolved function, method or constructor whose
+/// current source matches the index, optional signature matches, and declaration
+/// belongs to this diff's added set. Unavailable or ambiguous additions remain
+/// unresolved. Integration claims support only `calls` between declarations in
+/// the same language with one compatible call candidate. Cache file freshness
+/// checks for this evaluation; resolution and source failures are not evidence.
 fn check(
     index: usize,
     claim: &Claim,

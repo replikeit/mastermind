@@ -247,7 +247,7 @@ Create a local configuration with actual identities:
     "index_contract": {
       "schema_version": "9",
       "extractor_contract_version": "mmcg-extractors-v10",
-      "concept_normalization_version": "mmcg-concepts-v3"
+      "concept_normalization_version": "mmcg-concepts-v5"
     }
   },
   "limits": {
@@ -798,3 +798,161 @@ python3 -m unittest tests.evals.benchmark.test_trials tests.evals.benchmark.test
 
 These checks exercise real disposable files/processes and fixture adapters.
 They make no model calls and do not measure model quality.
+
+## Compare local concept retrieval
+
+Use a frozen relevance fixture, source snapshot and native binary with
+`python3 -m evals.benchmark.concept_relevance --help` to select the required
+inputs and a new immutable output path. Retain the source, fixture, binary,
+runner, database and active WAL bindings with the output. Rebuild an index when
+its extractor or concept normalization contract is stale.
+
+The current schema-v5 CLI and MCP exclude recognized Rust test scopes before
+counting and limiting: parsed `test`, `rstest`, or namespaced `::test` attributes,
+plus descendants of canonical `#[cfg(test)]` modules. CLI `--include-tests` and
+MCP `include_tests: true` restore all otherwise qualifying rows. The module
+check requires kind `mod`, exactly the decorator list `,cfg,`, and a raw
+signature of at most 65,536 bytes starting with `#[cfg(test)]` after removing
+spaces, tabs, CR and LF. The cfg-module check does not recognize compound
+expressions, comments within that prefix or additional attributes. Unmarked
+scopes and other languages remain unclassified.
+Queries with at least three distinct terms retain full AND matches
+first and allow qualifying partial candidates to supplement the page, even
+when full matches exist. `all_and_partial_terms` reports both groups in the
+qualified corpus; exact `indexed_total` includes both before the page limit.
+Partial admission requires the existing overall half-terms floor and
+`min(3, overall floor, ranking_terms count)` informative matches. Retain both
+thresholds and `include_tests` when comparing outputs from different policies.
+
+Check each previously useful row and frozen anchor per query, alongside the
+planned-query failure denominator and explicit negative queries. Aggregate
+hit@5 can hide losses offset by gains elsewhere. Keep sparse frozen labels and
+post-output source judgments separate; unjudged rows remain unknown. Lexical
+coverage does not prove that a candidate implements the requested operation.
+After inspecting a qualification set, treat it as development data and use a
+new independently authored set for the next qualification.
+
+## Evaluate operation relevance with source review
+
+Freeze the queries and exact source anchors before retrieving a qualification
+set. Build one native binary and index over that source snapshot, then prepare
+packets in a new directory outside the snapshot:
+
+```sh
+python3 -m evals.benchmark.concept_operation prepare \
+  --binary /absolute/path/to/mmcg --index /absolute/path/to/index.db \
+  --source /absolute/path/to/frozen-source --suite /absolute/path/to/suite.json \
+  --output-dir /absolute/path/to/new-preparation
+```
+
+For agent-expanded recall, add `--hints /absolute/path/to/frozen-hints.json`.
+This file maps every case ID to at most eight short plain hints. Generate hints
+from query-only packets before viewing retrieval outputs, without anchors,
+labels or code access, and retain their generator and hash. The runner binds
+this input and passes repeated native `--hint` flags. Hints do not change the
+query used for source assessment or scoring. Report plain and expanded recall
+separately if comparing those mechanisms.
+
+Generate a query-only operation ledger before retrieval, without source,
+anchors or labels. Add `--request-contracts /absolute/path/to/contracts.json`:
+this JSON object must map every frozen case ID to `{operation, constraints}`.
+Each constraint has a unique `id`, exact query quote `text`, and `kind`:
+`input`, `state`, `scope` or `result`. The runner binds its hash, passes one
+native `--request-contract` per case and rejects drift before finish. Omission
+uses the whole query with no parsed constraints; it does not remove constraints
+from the original query.
+
+Give the source reviewer only `packets/*.json` and the bound source files.
+Withhold the suite, anchors, case kinds and preparation manifest. The reviewer
+uses each packet's assessment template, checks actual operations against the
+query and saves one assessment per opaque packet filename in a new directory.
+Use `unknown` for insufficient inspection. Every candidate needs an explicit
+judgment; a missing assessment remains a failed planned query.
+
+Freeze the packet's `operation-roles-v3` rubric before qualification. Assign
+each relevant declaration `implementation`, `entrypoint`, `contract`,
+`essential_helper` or `supporting_context`. Cite its own behavior, then bind
+non-implementation roles to inspected caller/consumer/implementation ranges
+with `supporting_evidence` objects containing `path`, `source_sha256`,
+`start_line` and `end_line`. Entrypoints, contracts and helpers require evidence
+outside their declaration. Preserve unresolved intent in `query_ambiguities`;
+useful results for an ambiguous query may only be supporting context.
+Context must navigate to an existing requested operation satisfying every
+explicit constraint under a plausible interpretation. Opposite behavior,
+unsupported constraints, narrower operations and locations for implementing
+missing features are irrelevant. Keep uninspected constraints unknown. Prefer
+semantic roles for necessary operation-specific steps and concrete result
+entrypoints, including cached-result paths. A role-contract change requires
+new preparation and assessment; replayed historical labels measure compatibility
+separately from source reassessment under the new criterion.
+
+For every relevant judgment, record `witness.behavior`, a typed `relation`
+matching its role, and one matched source-bound `constraint_checks` entry for
+every declared constraint. Inspect the declaration's own contribution before
+selecting a role. Generic prerequisites are context; own operation-specific
+branches can establish a module or entrypoint role. State/result requirements
+cannot be replaced by omitted selectors or rendered instructions. MCP validates
+structure, bindings and declared consistency; independent source reviewers
+must still verify the claims. See the [full witness schema](../../docs/reference/mmcg.md#local-symbol-concept-search).
+
+Preparation adds a bounded `owned_scope` channel after lexical/body retrieval:
+at most two nominated file owners and sixteen additional matching runtime
+functions/methods per owner. Freeze and report this recall policy as part of
+the experiment. Source and candidate omissions remain coverage limits.
+
+```sh
+python3 -m evals.benchmark.concept_operation finish \
+  --prepared /absolute/path/to/new-preparation/preparation.json \
+  --assessments /absolute/path/to/new-assessments \
+  --output /absolute/path/to/new-operation-report.json
+```
+
+The runner makes native CLI calls and checks source, binary, database/WAL,
+fixture, runner, packet and assessment hashes. It does not invoke a model.
+Record the external reviewer and its inspection limits separately. Keep model
+assessment quality separate from deterministic protocol tests, and source
+review all emitted results with a second reviewer who cannot see variant,
+rank, prior labels or the first assessment. Protect previous useful results
+using case/path/name/declaration-line identities and exact source hashes.
+Protect navigation on the full returned `candidates` page. Report semantic
+quality on `semantic_candidates` separately from `supporting_context`; these
+two arrays partition the returned page, while their totals count assessed
+entries before `top` truncation. A retained useful helper/context declaration
+must not silently become proof that it implements the whole requested
+operation. Retain prior labels and role disagreements alongside adjudication.
+
+Unknown assessments, query ambiguities, retrieval truncation and source omissions prevent a
+complete-absence claim. Keep incomplete negatives separate from known-empty
+negatives. If inputs drift, retain the attempt and create a new preparation;
+do not rewrite a packet or existing report. After inspecting qualification
+outputs, use a newly authored frozen set for further changes to retrieval or
+the review rubric.
+
+## Plan development resource repetitions
+
+Before running a resource screen, simulate its exact task-level sign-flip test:
+
+```sh
+python3 -m evals.benchmark.resource_power \
+  --output /absolute/path/to/new-resource-power.json \
+  --simulations 20000 --seed 20261015
+```
+
+This standard-library calculation makes no model calls. It evaluates eight
+independent tasks, a true token ratio of 0.90, paired run log-ratio SD 0.25,
+task SDs 0.03/0.05/0.08 and even repetitions from 8 through 64 per arm. The
+output includes exact-test rejection fractions, Monte Carlo intervals, a null
+size check, input hashes and producer-attempt costs for two or four arms. It
+also evaluates 12 and 16 tasks with eight repetitions under task SDs 0.05/0.08.
+It selects the first tested repetition count whose marginal Wilson lower bound
+reaches 80%; nuisance uncertainty remains separate. Existing outputs are never
+replaced; use a new path when changing inputs or the simulation.
+
+The primary contrast is low-effort lexical map on versus map off. Four-arm costs
+assume equal repetitions in every effort × map cell; the interaction needs its
+own variance and effect-size plan. These are Normal-model development planning
+estimates. Detection at an assumed 10% reduction does not establish a reduction
+of at least 10%, acceptance non-inferiority or product qualification. Inspect
+the sensitivity results before freezing a design.
+
+See the [source-witness study](../baselines/concept-witness-20261016.md) for source and runtime bindings, useful-result preservation, independent relevance results and the limits of retained local historical evidence.

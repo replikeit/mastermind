@@ -11,7 +11,7 @@ CLI, Lens and MCP read the same indexed state.
 
 | Interface | Contract |
 |---|---|
-| MCP | 37 tools: 21 queries that may refresh the managed index, 14 read-only operations, 2 additive writes (scratchpad and task mining) |
+| MCP | 39 tools: 22 queries that may refresh the managed index, 15 read-only operations, 2 additive writes (scratchpad and task mining) |
 | CLI | Indexing, spec gates, setup, ingestion, review export and profile mining |
 | npm commands | `mastermind` and `mmcg` |
 | Cargo command | `mmcg`, used in the examples below |
@@ -446,7 +446,159 @@ of producing a successful JSON response with a zero count.
 
 ### Local symbol concept search
 
-`mmcg_concept` and `mastermind concept` use one schema-v2 query builder over a
+For requests about behavior, use the source review workflow. It keeps the
+lexical page, adds candidates retrieved from operation bodies, then expands
+matching functions and methods within up to two nominated file owners. This
+`owned_scope` channel admits at most sixteen additional declarations per owner;
+it can expose a coordinator with weak vocabulary without replacing the earlier
+candidate pool. The calling agent checks the original action, object and
+constraints against source. Topic mentions, dispatchers and nearby operations
+are insufficient evidence.
+
+```sh
+mmcg concept-review prepare "check current source preconditions" --top 5 \
+  --request-contract request-contract.json > packet.json
+jq '.assessment_template' packet.json > assessment.json
+```
+
+The calling agent can supply alternative implementation vocabulary with repeated
+`--hint` flags or MCP `hints`. The packet records these separately from the
+original query. Use at most eight hints of 64 UTF-8 bytes each, with at most
+sixteen normalized extra terms and thirty-two combined recall terms. Hints
+nominate candidates; the original query defines relevance. The server contains
+no built-in synonym list and does not generate hints itself.
+
+Before retrieval, write `request-contract.json` from the query alone. Pass it
+as CLI `--request-contract PATH` or MCP `request_contract`. The ledger contains
+`operation` and up to eight `constraints`, each with a unique `id`, an exact
+nonblank query substring in `text`, and `kind`: `input`, `state`, `scope` or
+`result`. Operation/text limits are 256 UTF-8 bytes; IDs allow 64 bytes. For example:
+
+```json
+{"operation":"check current source preconditions","constraints":[{"id":"fresh","text":"current source","kind":"state"}]}
+```
+
+Freeze this input before seeing candidates. The default ledger keeps the whole
+query as its operation and no parsed constraints; it does not establish that
+the query has no constraints. The original query remains authoritative. An
+omitted CLI selector does not prove missing runtime state; rendering an
+instruction does not perform its requested side effect.
+
+Inspect each candidate's source excerpts and follow its exact path and line
+range when the excerpt is incomplete. Edit every assessment entry with a
+concrete reason and `relevant`, `irrelevant` or `unknown`. The packet's
+`role_contract: "operation-roles-v3"` requires each relevant entry to declare
+one role and cite its own declaration in `citations`:
+
+| Role | Required source proof |
+|---|---|
+| `implementation` | Performs the requested operation or its defining decision. A direct file owner may cite its contained implementation. |
+| `entrypoint` | Exposes or produces the requested result through a mandatory inspected implementation path, including an otherwise specific cached-result path. |
+| `contract` | Operation-specific input or output consumed or produced by the inspected implementation. |
+| `essential_helper` | Performs a necessary domain-specific step, with its caller or consumer inspected. It need not implement the whole workflow. |
+| `supporting_context` | Specific inspected navigation or explanation for an existing requested operation satisfying every explicit query constraint; does not itself meet a semantic role. |
+
+Establish the requested operation before admitting its context. Nearby code,
+opposite behavior, an explicitly narrower scope, or a place to add missing
+behavior is irrelevant. A source link alone is insufficient. Use `unknown`
+when a required constraint has not been inspected. Prefer a supported semantic
+role for a declaration that exposes the result or enforces an essential step;
+it need not implement the whole workflow. Type dispatch and inspected consumer
+relationships can establish that path.
+For context, explain a concrete selection, fallback, type/API dispatch point,
+projection or direct operation-specific caller/consumer relationship. Its failure
+to perform the whole operation does not disqualify useful navigation; generic
+call-graph membership without that relationship remains insufficient.
+
+Each relevant entry also needs `witness` with `behavior` (its own observed
+contribution, at most 2,048 UTF-8 bytes), `relation`, and `constraint_checks`.
+Choose the relation after inspecting behavior:
+
+| Relation | Role |
+|---|---|
+| `performs_operation` | `implementation` |
+| `exposes_result` | `entrypoint` |
+| `operation_contract` | `contract` |
+| `domain_contribution` | `essential_helper` |
+| `operation_navigation`, `generic_prerequisite` | `supporting_context` |
+
+Every declared constraint needs exactly one check with `constraint_id`,
+`status: "matched"` and one to sixteen source-bound `evidence` ranges in the
+same format as `supporting_evidence`. Contradicted or uninspected constraints
+cannot support a relevant judgment. Generic readiness gates are context unless
+their own behavior enforces a defining query condition. A broad handler or
+module can qualify through its inspected query-specific branch; merely sharing
+a file or delegating does not establish its role.
+
+All non-implementation roles need `supporting_evidence`: at most sixteen
+objects with `path`, `source_sha256`, `start_line` and `end_line`. Copy the
+exact path and hash from `packet.source_files`, inspect those source ranges,
+and explain their relationship in the reason. Entrypoints, contracts and
+essential helpers need at least one supporting range outside their own
+declaration. A generic primitive's presence somewhere in a call graph is
+insufficient. Irrelevant and unknown judgments leave `role` null or omitted.
+
+Record unresolved original-query terms or intent in `query_ambiguities`, up to
+eight nonblank strings of 256 UTF-8 bytes each, without control characters.
+With ambiguities, relevant entries may only be `supporting_context`; retain
+recognized-operation navigation under a plausible original interpretation while
+respecting every explicit constraint. Ambiguity does not make opposite or
+missing behavior useful. Resolve the intent before making a semantic operation
+claim. A new role-contract version requires a new packet and source assessment.
+
+Existing useful lexical entries retain their order. Put additional relevant
+entries in the desired supplemental order, then:
+
+```sh
+mmcg concept-review finish --packet packet.json --assessment assessment.json
+```
+
+MCP uses `mmcg_concept_prepare` followed by `mmcg_read` for additional source
+and `mmcg_concept_finish` with the unchanged packet and complete assessment.
+These tools do not launch a model. The calling agent supplies the semantic
+assessment. The finish step checks packet, declaration and source bindings;
+it does not independently establish that the assessment or role is correct.
+`candidates` retains the full useful page, including navigation.
+`semantic_candidates` and `supporting_context` partition that returned page.
+`relevant_total`, `semantic_total` and `context_total` count assessed entries
+before the requested `top` truncation. Measure semantic quality on the semantic
+partition and useful-result preservation on the full page.
+
+The packet contains bounded source text. Its body recall uses a temporary
+in-memory FTS corpus and does not persist source bodies in the index. It
+excludes indexed child declaration spans from container evidence and applies
+the same recognized Rust test scopes as lexical retrieval. The packet reports
+source omissions, candidate truncation and evidence truncation. Unknown
+assessments stay separate from relevant results and make the review incomplete.
+Unresolved query ambiguities also make the review incomplete.
+An empty bounded result cannot establish that the repository lacks the
+capability, even when every supplied candidate was assessed. Source changes require a
+new packet and assessment. Review every new result against source when measuring
+quality, and protect prior useful results by exact declaration identity.
+
+| Source review bound | Limit |
+|---|---|
+| Indexed inventory | 512 files, 20,000 declarations, 32 MiB source total |
+| Source per file / operation | 1 MiB / 32 KiB |
+| Candidate pool | Up to 50 lexical entries, 64 body entries and 2 × 16 `owned_scope` entries, deduplicated |
+| Source excerpts / packet | 1,536 bytes per entry / 512 KiB serialized packet |
+| Final useful page | Requested `top`, from 1 through 50; semantic and context partitions share that page |
+
+Run preparation from the indexed repository. For an external index, pass
+`--index` and keep its recorded root and source hashes current. If preparation
+reports stale or changed source, rebuild the index and create a new packet.
+Keep `assessment_complete` separate from `coverage_complete`: judging every
+supplied entry does not inspect omitted source or candidates outside the pool.
+When a user clarifies query scope, prepare a new packet whose query states that
+scope explicitly. Retain the original review and the clarification; recall
+hints do not replace an original constraint. Distinguish database snapshot
+checks, content checks for executor-claim files and whole-index freshness.
+The [source-witness study](../../evals/baselines/concept-witness-20261016.md)
+records independent source judgments, preserved useful identities and actual
+stdio MCP calls separately from the Desktop connection. Historical raw studies
+are retained locally with immutable hashes recorded in that report.
+
+`mmcg_concept` and `mastermind concept` use one schema-v5 query builder over a
 private derived corpus. Searchable fields are normalized symbol names,
 repository-relative paths, bounded declaration shapes, and owned documentation
 for an explicit first language set. Source bodies and raw comments/docstrings
@@ -479,21 +631,80 @@ not contain matched text.
 The query is plain text up to 256 UTF-8 bytes. Shared normalization applies
 Unicode lowercase without claiming canonical equivalence, splits punctuation,
 paths, snake/kebab/camel/acronym transitions and letter/digit boundaries, and
-admits at most 16 terms of 64 bytes each. Every term is escaped, quoted, and
-joined by a fixed `AND`, so callers cannot supply FTS syntax, column selectors,
-boolean operators, or prefix wildcards. `top` is an integer from 1 through 50.
+admits at most 16 terms of 64 bytes each. SQLite FTS5 applies Porter stemming
+with `unicode61 remove_diacritics 0 tokenchars '_'` to both the corpus and
+query. Terms with the same FTS token sequence count once; the first spelling
+is retained in `query_terms`. This prevents variants such as `concept concepts`
+from supplying two matches toward a partial-match threshold. Porter stemming
+is an English lexical heuristic and does not establish semantic equivalence.
+Every term is escaped and quoted, so callers cannot supply FTS syntax, column
+selectors, boolean operators, or prefix wildcards. `top` is an integer from 1
+through 50.
 
-SQLite FTS5 ranks with fixed BM25 weights: name 10, path 4, declaration shape
-2, and documentation 1. The total tie order is score,
+Recognized Rust test scopes are excluded by default: parsed `test`, `rstest`,
+or namespaced `::test` attributes, and descendants of canonical `cfg(test)`
+modules. A module is recognized only with indexed kind `mod`, exactly the
+decorator list `,cfg,`, and a raw signature of at most 65,536 bytes starting
+with `#[cfg(test)]` after removing spaces, tabs, CR and LF. The cfg-module check
+does not recognize compound expressions, comments within that prefix or
+additional attributes. Unmarked scopes and other languages remain unclassified.
+Set MCP `include_tests: true`
+or CLI `--include-tests` to restore all otherwise qualifying rows. This filter
+runs before the full-match decision, count and page limit.
+
+```sh
+mmcg concept "payment retry handler" --include-tests --format json
+```
+
+Let `n` be the number of query terms after tokenizer-equivalent deduplication.
+
+| `match_mode` | Selection | `minimum_matched_terms` |
+|---|---|---|
+| `all_terms` | Queries with fewer than three distinct terms require every term. Also reported when full matches exist and no additional partial candidate qualifies. | `n` |
+| `all_and_partial_terms` | Full AND matches precede additional qualifying partial candidates, before applying the page limit. | `max(2, ceil(n / 2))` |
+| `partial_terms` | The full query has zero indexed matches and `n >= 3`; candidates must satisfy both the overall floor and the informative-term floor below. | `max(2, ceil(n / 2))` |
+
+For `n >= 3`, partial candidates remain eligible even when full matches exist.
+The combined pool retains full-match precedence and fills spare page positions
+with qualifying partial results. Each candidate reports its `matched_terms`
+using the retained query spellings, including when only their stems match.
+Owned documentation remains valid evidence for generic names such as
+`configure` or `audit`. The response reports the selected mode and thresholds
+even if that mode returns no candidates.
+
+A fixed list of English articles, demonstratives,
+common prepositions, pronouns, copulas and conjunctions receives no primary
+partial-ranking weight when other terms remain. Actions and polarity words
+(`or/not/without`) retain weight. If every query term is a function word, all
+terms retain weight. Every `query_term` remains eligible for the overall floor;
+no term is removed from the MATCH conditions. Partial candidates additionally
+need `minimum_ranking_terms = min(3, minimum_matched_terms, ranking_terms.len())`
+matches among `ranking_terms`. The `all_terms` mode already requires every
+ranking term and reports `minimum_ranking_terms: ranking_terms.len()`; the two
+modes admitting partial candidates report the smaller floor above. This prevents
+partial candidates from qualifying primarily through grammar words. The rule does not interpret intent
+or negation and can still return unrelated operations sharing the same terms.
+
+Combined and partial results sort by matched `ranking_terms` count, then all
+matched-term count, both descending. Full AND matches have maximal values for
+both counts, so they precede every partial supplement. SQLite FTS5 BM25 follows
+with fixed weights: name10, path4, declaration shape2 and documentation1.
+Within the full-match group these term counts are equal, so BM25 orders it.
+The remaining total tie order is
 lowercase repository path, line, kind, name, then symbol ID. Scores are local
 to one query, lower is better, and they are not confidence values. Each
 candidate contains `name`, `kind`, `language`, `path`, `line`, a declaration
-`signature_shape` capped at 256 bytes, `matched_fields`, `citation`, and
-`score`. The envelope reports exact `indexed_total`, returned `count`,
+`signature_shape` capped at 256 bytes, `matched_fields`, `matched_terms`, `citation`, and
+`score`. The envelope reports exact combined-pool `indexed_total`, returned `count`,
 `result_truncated`, observed `unsafe_candidates_omitted`, overall `truncated`
-and `truncation_reason`, plus normalized `query_terms`, requested top,
+and `truncation_reason`, plus effective `query_terms`, `ranking_terms`, `match_mode`,
+`minimum_matched_terms`, `minimum_ranking_terms`, `include_tests`, requested top,
 freshness, limits, and precision notes. The count and ranked page are read from
-one SQLite snapshot. The default text format reports the same coverage,
+one SQLite snapshot, with test scope and both partial-match floors applied
+before count and page limit. The reported mode describes the qualified corpus,
+even when a small page contains only its full matches. Output-safety omissions
+do not change the admission policy. The default
+text format reports the same match policy, coverage,
 omissions, reason, freshness contracts, and limits before listing candidates.
 It does not reduce a bounded or safety-filtered page to its returned count.
 
@@ -504,10 +715,20 @@ Symbol mutations dirty the independent normalization contract, including
 writes from older schema-v7 binaries. Managed queries may perform one bounded
 full refresh and retry when the extractor or concept contract drifts.
 Finalization checks symbol/concept parity and FTS integrity before stamping the
-extractor and normalization contracts current. Custom external indexes open
+extractor and normalization contracts current. The active normalization
+contract is `mmcg-concepts-v5`. It retains compound components as whole tokens
+alongside their parts: `parse_JUnit` includes `junit`, and `read_TraceSpan`
+includes `tracespan`. This normalization change invalidates v4 concept corpora.
+Custom external indexes open
 read-only, are never migrated, and return `index_stale` or
-`schema_incompatible` when the required corpus is unavailable. Stable query
-failures also include `invalid_arguments`, `snapshot_changed`,
+`schema_incompatible` when the required corpus is unavailable. To rebuild an
+older custom index, supply its path and repository root explicitly, then retry:
+
+```bash
+mmcg --index /path/to/index.db index /path/to/repository --force
+```
+
+Stable query failures also include `invalid_arguments`, `snapshot_changed`,
 `work_limit_exceeded`, `cancelled`, and `internal_error`.
 
 This is deterministic local retrieval, not semantic inference: no embeddings,
@@ -1501,7 +1722,9 @@ or stdin, with a 16 KiB input limit. Neither interface changes an active chat.
 | `mmcg_change_class` | `file` | Classify a file's last change as `structural`, `cosmetic`, or `first-seen`. Backed by an FNV-1a 64-bit hash of the file's parsed structural shape — line numbers and whitespace excluded. Pre-edit signal for planner and auditor: large diffs that are mostly cosmetic have smaller real scope than line count suggests. |
 | `mmcg_unreferenced` | optional `kind`, `language`, `top` (default 100, max 500) | Symbols with no indexed reference candidates, with per-symbol precision and explicit `precision_notes`. MCP responses expose the exact filtered `total`, returned `count`, `truncated`, and `row_limit`. Narrow by kind or language when truncated. The CLI retains its complete local listing. These are not proven dead code. **Review manually** — see Limitations for false-positive scenarios. |
 | `mmcg_api_surface` | `prefix`, optional `language`, `top` (default 100, max 500) | Symbols under the literal `prefix` with at least one outside syntactic name-and-kind reference candidate. MCP responses expose the exact filtered `total`, returned `count`, `truncated`, `row_limit`, per-symbol edge precision, and response precision notes. Narrow the prefix or add language when truncated. The CLI retains its complete local listing. Same-named definitions may be false-positive boundary candidates, so this empirical map is not compiler-resolved identity or declared visibility. |
-| `mmcg_concept` | `query`, optional `top` (default 10, max 50) | Deterministic schema-v2 symbol candidates from normalized names, repository paths, declaration shapes, and owned Rust/Python/JavaScript/TypeScript documentation tokens. Plain terms are escaped and fixed-AND joined. No raw FTS syntax, embeddings, model calls, network, source bodies, raw comments/docstrings, literals, or defaults. The response reports exact indexed-match coverage, bounded-page truncation, and observed safety omissions from one SQLite snapshot. BM25 score is query-local and lower-is-better, not confidence. Managed drift gets at most one refresh/retry. Custom indexes remain read-only and fail closed. |
+| `mmcg_concept` | `query`, optional `top` (default 10, max 50), optional `include_tests` (boolean, default false) | Deterministic schema-v5 symbol candidates from normalized names, repository paths, declaration shapes, and owned Rust/Python/JavaScript/TypeScript documentation tokens. Terms are escaped, Porter-stemmed, and deduplicated by FTS token sequence. Full AND matches precede qualifying partial supplements for queries with at least three distinct terms. Partial admission requires `max(2, ceil(n / 2))` total matches plus `min(3, overall floor, ranking_terms count)` informative matches. `all_and_partial_terms` reports both groups in the qualified corpus, and exact `indexed_total` counts their union before the page limit. Ranking prioritizes informative-term coverage, then total coverage and BM25. Recognized Rust test scopes (parsed `test`/`rstest`/namespaced `::test` attributes and descendants of bounded canonical `#[cfg(test)]` modules) are excluded before count and limit unless opted in; other cfg-module forms (compound expressions, comments within the canonical prefix or additional attributes), unmarked scopes and other languages remain unclassified. The response discloses query/ranking terms, both thresholds, test scope, matched terms, exact qualified coverage, page truncation and safety omissions from one SQLite snapshot. No raw FTS syntax, embeddings, model calls, network, source bodies, raw comments/docstrings, literals, or defaults. BM25 score is query-local and lower-is-better, not confidence or semantic relevance. Managed drift gets at most one refresh/retry. Custom indexes remain read-only and fail closed. |
+| `mmcg_concept_prepare` | `query`, optional `top`, `include_tests`, `hints`, `request_contract` | Source-bound operation review packet with the lexical page plus broad body recall, exact declaration identities, source excerpts, assessment template and explicit coverage limits. Caller hints broaden recall; the original query defines relevance. No model invocation. |
+| `mmcg_concept_finish` | unchanged `packet`, complete `assessment` | Revalidates current source and packet, requires one judgment per candidate and source citations for relevant entries, then preserves relevant lexical entries before supplements in assessment order. Unknowns remain explicit. Semantic judgments belong to the calling agent. |
 
 ### Architecture and change analysis
 

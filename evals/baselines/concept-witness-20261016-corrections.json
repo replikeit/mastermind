@@ -1,0 +1,259 @@
+{
+  "changes": [
+    {
+      "candidate_id": "47460c7ef02f475d62bb40801d4ff705517d8f8597f565ea5df10e6dba96e5f6",
+      "case_id": "v11:current:e762f7383e5341e8b935ddfdafeb11e4",
+      "citations": [
+        {
+          "end_line": 1148,
+          "start_line": 1137
+        }
+      ],
+      "identity": {
+        "id": "47460c7ef02f475d62bb40801d4ff705517d8f8597f565ea5df10e6dba96e5f6",
+        "kind": "method",
+        "language": "rust",
+        "line_end": 1149,
+        "line_start": 1137,
+        "name": "processor_admission",
+        "path": "mcp/servers/mmcg/src/miner/hooks/background.rs",
+        "source_sha256": "173220bd7cf4925773f27e99b2d3a75926c065a2899901cf30b33502df052347",
+        "symbol_id": 4274
+      },
+      "reason": "Checks current capture/configuration admission and rejects processor fingerprint drift. It never checks or increments attempts. The inspected before_attempt caller charges and persists the budget after this readiness prerequisite.",
+      "role": "supporting_context",
+      "supporting_evidence": [
+        {
+          "end_line": 1165,
+          "path": "mcp/servers/mmcg/src/miner/hooks/background.rs",
+          "source_sha256": "173220bd7cf4925773f27e99b2d3a75926c065a2899901cf30b33502df052347",
+          "start_line": 1157
+        }
+      ],
+      "verdict": "relevant",
+      "witness": {
+        "behavior": "Verifies runtime admission and processor configuration before the caller charges and records its call budget.",
+        "constraint_checks": [],
+        "relation": "generic_prerequisite"
+      }
+    },
+    {
+      "candidate_id": "5d540a72f50388e4494b189c2651314db2ec932bb4d224f93952342a076c193b",
+      "case_id": "v11:current:e79c90e8367c47aaa0f97faf925c679c",
+      "citations": [
+        {
+          "end_line": 1066,
+          "start_line": 1052
+        }
+      ],
+      "identity": {
+        "id": "5d540a72f50388e4494b189c2651314db2ec932bb4d224f93952342a076c193b",
+        "kind": "module",
+        "language": "rust",
+        "line_end": 1272,
+        "line_start": 1,
+        "name": "<module>",
+        "path": "mcp/servers/mmcg/src/miner/hooks/mod.rs",
+        "source_sha256": "665f27f73ae0ddf32a9611b0cf660aa4667507f51e78227c34a5583bf7d40f25",
+        "symbol_id": 4550
+      },
+      "reason": "The owned processor_receipt branch passes the captured input.client to native::provider and propagates a mismatched-provider error before fingerprinting. That branch enforces the requested identity constraint through the inspected provider comparison; it contributes more than call-graph navigation.",
+      "role": "essential_helper",
+      "supporting_evidence": [
+        {
+          "end_line": 18,
+          "path": "mcp/servers/mmcg/src/miner/hooks/native.rs",
+          "source_sha256": "05a58da1752fe9cfc73884a19aeda991ebc64ebbd0476b1f7c3865065ffd9ca2",
+          "start_line": 10
+        }
+      ],
+      "verdict": "relevant",
+      "witness": {
+        "behavior": "Checks the requested provider against the captured episode client while constructing the processor receipt, rejecting mismatch before continuation.",
+        "constraint_checks": [],
+        "relation": "domain_contribution"
+      }
+    },
+    {
+      "candidate_id": "950c213dcc3b09cec4cef43d8b57a07610dada565e219b60fd20f84bf04c3abf",
+      "case_id": "v11:current:0c852f44be804658a35d72530b2f8d54",
+      "citations": [
+        {
+          "end_line": 496,
+          "start_line": 469
+        }
+      ],
+      "identity": {
+        "id": "950c213dcc3b09cec4cef43d8b57a07610dada565e219b60fd20f84bf04c3abf",
+        "kind": "function",
+        "language": "rust",
+        "line_end": 538,
+        "line_start": 329,
+        "name": "receive",
+        "path": "mcp/servers/mmcg/src/miner/hooks/mod.rs",
+        "source_sha256": "665f27f73ae0ddf32a9611b0cf660aa4667507f51e78227c34a5583bf7d40f25",
+        "symbol_id": 4582
+      },
+      "reason": "For an admitted recorded UserPromptSubmit episode, this concrete branch begins a durable intake, runs the processor only for the returned pending receipt, and finishes that same receipt. The inspected journal checks existing id or episode before inserting and committing, establishing the at-most-once path exposed here.",
+      "role": "entrypoint",
+      "supporting_evidence": [
+        {
+          "end_line": 142,
+          "path": "mcp/servers/mmcg/src/miner/hooks/journal/intake.rs",
+          "source_sha256": "08ca7da0fe454a7c5790fe85291c5503ee527058ebed5dc230bc0e5404ffc2b7",
+          "start_line": 134
+        },
+        {
+          "end_line": 186,
+          "path": "mcp/servers/mmcg/src/miner/hooks/journal/intake.rs",
+          "source_sha256": "08ca7da0fe454a7c5790fe85291c5503ee527058ebed5dc230bc0e5404ffc2b7",
+          "start_line": 181
+        }
+      ],
+      "verdict": "relevant",
+      "witness": {
+        "behavior": "Exposes the recorded-event intake path, dispatching processing only after the journal durably admits a new pending attempt for the captured episode.",
+        "constraint_checks": [],
+        "relation": "exposes_result"
+      }
+    },
+    {
+      "candidate_id": "5d540a72f50388e4494b189c2651314db2ec932bb4d224f93952342a076c193b",
+      "case_id": "v11:current:0c852f44be804658a35d72530b2f8d54",
+      "citations": [
+        {
+          "end_line": 496,
+          "start_line": 469
+        }
+      ],
+      "identity": {
+        "id": "5d540a72f50388e4494b189c2651314db2ec932bb4d224f93952342a076c193b",
+        "kind": "module",
+        "language": "rust",
+        "line_end": 1272,
+        "line_start": 1,
+        "name": "<module>",
+        "path": "mcp/servers/mmcg/src/miner/hooks/mod.rs",
+        "source_sha256": "665f27f73ae0ddf32a9611b0cf660aa4667507f51e78227c34a5583bf7d40f25",
+        "symbol_id": 4550
+      },
+      "reason": "This file owns the actual receive branch that begins a captured-episode intake, processes only its pending receipt, and persists its result. The linked journal refuses another id or episode and commits before exposing the receipt. The file owner directly contains that operation-specific implementation.",
+      "role": "implementation",
+      "supporting_evidence": [
+        {
+          "end_line": 142,
+          "path": "mcp/servers/mmcg/src/miner/hooks/journal/intake.rs",
+          "source_sha256": "08ca7da0fe454a7c5790fe85291c5503ee527058ebed5dc230bc0e5404ffc2b7",
+          "start_line": 134
+        },
+        {
+          "end_line": 186,
+          "path": "mcp/servers/mmcg/src/miner/hooks/journal/intake.rs",
+          "source_sha256": "08ca7da0fe454a7c5790fe85291c5503ee527058ebed5dc230bc0e5404ffc2b7",
+          "start_line": 181
+        }
+      ],
+      "verdict": "relevant",
+      "witness": {
+        "behavior": "Owns the admitted UserPromptSubmit branch that starts and finishes one durable intake attempt for a captured episode using the journal deduplication gate.",
+        "constraint_checks": [],
+        "relation": "performs_operation"
+      }
+    },
+    {
+      "candidate_id": "06156b730d69496875de78be581c5051174d213abc4d3c3c8cccca423bee2fe9",
+      "case_id": "v11:current:4d5fffeee7e54fd689d84dac4ddcdf69",
+      "citations": [
+        {
+          "end_line": 501,
+          "start_line": 493
+        }
+      ],
+      "identity": {
+        "id": "06156b730d69496875de78be581c5051174d213abc4d3c3c8cccca423bee2fe9",
+        "kind": "struct",
+        "language": "rust",
+        "line_end": 501,
+        "line_start": 493,
+        "name": "ResumeArgs",
+        "path": "mcp/servers/mmcg/src/main.rs",
+        "source_sha256": "f6ea634957a86ffa5daae25b74e5b8687eadded227625847eca0aca09aac703b",
+        "symbol_id": 3635
+      },
+      "reason": "An optional CLI --task selects a pending task when omitted; it is not an absent runtime active_task binding. The continuation parser explicitly rejects ContinueActive when input.active_task is absent, so these arguments do not navigate to the requested unbound continuation operation.",
+      "role": null,
+      "supporting_evidence": [
+        {
+          "end_line": 319,
+          "path": "mcp/servers/mmcg/src/miner/hooks/refiner.rs",
+          "source_sha256": "3a31d151a839100edba03f003a05f3f5f2151b9a278973488a003bd93a5743ec",
+          "start_line": 317
+        },
+        {
+          "end_line": 4384,
+          "path": "mcp/servers/mmcg/src/workflow_status.rs",
+          "source_sha256": "acf2d2dfc6c04c56b2ec2a8d0118df384c24b8fef606a305fa46fb98a6809367",
+          "start_line": 4354
+        }
+      ],
+      "verdict": "irrelevant",
+      "witness": null
+    },
+    {
+      "candidate_id": "8a527a46967fbadceee059ef56574058c4f9aec820886c4987a52df731124f87",
+      "case_id": "v11:current:4d5fffeee7e54fd689d84dac4ddcdf69",
+      "citations": [
+        {
+          "end_line": 4384,
+          "start_line": 4354
+        },
+        {
+          "end_line": 4552,
+          "start_line": 4547
+        }
+      ],
+      "identity": {
+        "id": "8a527a46967fbadceee059ef56574058c4f9aec820886c4987a52df731124f87",
+        "kind": "method",
+        "language": "rust",
+        "line_end": 4553,
+        "line_start": 4318,
+        "name": "render_resume_text",
+        "path": "mcp/servers/mmcg/src/workflow_status.rs",
+        "source_sha256": "acf2d2dfc6c04c56b2ec2a8d0118df384c24b8fef606a305fa46fb98a6809367",
+        "symbol_id": 7720
+      },
+      "reason": "Selects an existing task and renders phase-dependent instructions for a user to paste; it does not continue execution without a runtime task binding. The requested ContinueActive-without-active_task state is explicitly rejected in the refiner, so this adjacent renderer cannot be context for an existing matching operation.",
+      "role": null,
+      "supporting_evidence": [
+        {
+          "end_line": 319,
+          "path": "mcp/servers/mmcg/src/miner/hooks/refiner.rs",
+          "source_sha256": "3a31d151a839100edba03f003a05f3f5f2151b9a278973488a003bd93a5743ec",
+          "start_line": 317
+        }
+      ],
+      "verdict": "irrelevant",
+      "witness": null
+    }
+  ],
+  "disclosure": "Prior independent findings identified the six identities; each disposition is justified by newly inspected frozen implementation ranges. Incidental rg output exposed test names/line snippets; no test text was used as implementation evidence. This spent development adjudication is not the fresh V12 quality audit.",
+  "input_file_sha256": {
+    "/Users/alinaglumova/Documents/personal/mastermind/.mastermind/research/concept-context-20261016/final-runtime-mcp-preparation/preparation.json": "7d382c6850cab8121d24eafd42df0cd665cece9f47915179cf4c447af37118cd",
+    "/Users/alinaglumova/Documents/personal/mastermind/.mastermind/research/concept-witness-20261016/protection-plan.json": "82f786b9a0e966a5455b2747077cdc0accc5b1cb747e82bd85f0340b9df849aa"
+  },
+  "kind": "spent_v11_source_adjudication",
+  "review_is_blind": false,
+  "schema_version": 1,
+  "source_file_sha256": {
+    "mcp/servers/mmcg/src/main.rs": "f6ea634957a86ffa5daae25b74e5b8687eadded227625847eca0aca09aac703b",
+    "mcp/servers/mmcg/src/miner/hooks/background.rs": "173220bd7cf4925773f27e99b2d3a75926c065a2899901cf30b33502df052347",
+    "mcp/servers/mmcg/src/miner/hooks/journal/intake.rs": "08ca7da0fe454a7c5790fe85291c5503ee527058ebed5dc230bc0e5404ffc2b7",
+    "mcp/servers/mmcg/src/miner/hooks/mod.rs": "665f27f73ae0ddf32a9611b0cf660aa4667507f51e78227c34a5583bf7d40f25",
+    "mcp/servers/mmcg/src/miner/hooks/native.rs": "05a58da1752fe9cfc73884a19aeda991ebc64ebbd0476b1f7c3865065ffd9ca2",
+    "mcp/servers/mmcg/src/miner/hooks/refiner.rs": "3a31d151a839100edba03f003a05f3f5f2151b9a278973488a003bd93a5743ec",
+    "mcp/servers/mmcg/src/workflow_status.rs": "acf2d2dfc6c04c56b2ec2a8d0118df384c24b8fef606a305fa46fb98a6809367"
+  },
+  "source_reinspection_performed": true,
+  "source_root": "/private/var/folders/21/xj6nw_bs4rn6l5s3h8b9m3t80000gn/T/mmcg-concept-repair-gx6h652k/source"
+}

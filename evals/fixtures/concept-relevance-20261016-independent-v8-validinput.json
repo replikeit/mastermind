@@ -1,0 +1,502 @@
+{
+  "schema_version": 1,
+  "kind": "mastermind-concept-relevance",
+  "purpose": "Fresh independent source-grounded qualification requests frozen before any v8 concept-search execution.",
+  "frozen_date": "2026-10-16",
+  "source_head": "f418b380bf191877f5903f5c85f483f5e0e86632",
+  "source_files_sha256": {
+    "mcp/servers/mmcg/src/audit_spec.rs": "12a91b6736c4fb0a666af83dd983e016fc4a6543969390e0ee5b3c6d9de9e24d",
+    "mcp/servers/mmcg/src/facts.rs": "6a224d44a8af719aa6573e78d45af0d9044321250f508b69077f968ceb2388ce",
+    "mcp/servers/mmcg/src/miner/curation.rs": "fc62c7a02fec20be40dc649ec427a8a2d041271cebb0f24b9af0f90e3d5cfe85",
+    "mcp/servers/mmcg/src/miner/habit.rs": "45ee940aa15ba6425bda7d915d6218a6964664c7e4bb7e4c1e3b51d9c3bbd376",
+    "mcp/servers/mmcg/src/miner/range/imports.rs": "ef9456eb6d46afb4984d4e65a81aa7bb51af6fd2456c48eff58dfd586c458994",
+    "mcp/servers/mmcg/src/miner/tooling.rs": "a0e3a6bf2b2a014cefa6d5a045249434fa44b62c33c4eac1822fa04b8a621a48",
+    "mcp/servers/mmcg/src/policy.rs": "9b04f78cc9c3f61c68bbfd19d8a39334165b1b8afc2282d2fa874c52c66a7d23",
+    "mcp/servers/mmcg/src/review_invocation.rs": "04fbfbee4a442b9a68c71980fdd615d9972fbc53fa5685e2b5399f843637a2e5",
+    "mcp/servers/mmcg/src/run_task.rs": "50c33dddbc26caf1dc29516fbc8fc8e43a72b7c25ca41b67fd1f3e120bb5ed72",
+    "mcp/servers/mmcg/src/task_review.rs": "483cfd94ac3f7ede4e10eb64bfe916520fbc9ecdf3cd8ef620e4c5f21ce78f30",
+    "mcp/servers/mmcg/src/verify_spec.rs": "9a2564670cb48f99bc44e2376a4f6b36903a1e085c7309a08d81748b32307de5",
+    "mcp/servers/mmcg/src/workflow_status.rs": "acf2d2dfc6c04c56b2ec2a8d0118df384c24b8fef606a305fa46fb98a6809367"
+  },
+  "source_basis": "The supplied frozen corpus is bound by an independently recomputed full source-tree digest and the selected owner-file hashes. The Git head identifies its base commit only.",
+  "provenance": {
+    "authorship": "Model-authored purposive sample, not human gold.",
+    "author_role": "Separate fixture author with no access to the current retrieval implementation, policy contents or result artifacts.",
+    "selection_source": "/var/folders/21/xj6nw_bs4rn6l5s3h8b9m3t80000gn/T/mmcg-concept-repair-gx6h652k/source",
+    "source_tree_sha256": "01946de15f9f7995b470961d7dfc72c7da648ddd050a3a75f595c992d68ca851",
+    "current_retrieval_blindness": "No current query/ranking implementation, retrieval policy file, concept-search execution, baseline report or candidate output was inspected.",
+    "historical_context_exposure": "The required initial memory registry check exposed an October 15 historical retrieval summary before case selection. This fixture is blind to the current implementation and outputs, but not to all historical algorithmic background.",
+    "prior_fixture_inspection": "Only anchor path/symbol identities, source-file key sets and schema/metadata were inspected to exclude spent owners. Earlier queries and retrieval outputs were not consulted.",
+    "spent_fixture_allowlist": [
+      "concept-relevance-20261016-holdout2-repair-v2.json",
+      "concept-relevance-20261016-holdout2-repair-v3.json",
+      "concept-relevance-20261016-holdout2-repair.json",
+      "concept-relevance-20261016-holdout2.json",
+      "concept-relevance-20261016-holdout3-repair-v2.json",
+      "concept-relevance-20261016-holdout3-repair-v3.json",
+      "concept-relevance-20261016-holdout3-repair.json",
+      "concept-relevance-20261016-holdout3.json",
+      "concept-relevance-20261016-independent-v6-initial-source.json",
+      "concept-relevance-20261016-independent-v6-intermediate-source.json",
+      "concept-relevance-20261016-independent-v6.json",
+      "concept-relevance-20261016-independent-v7.json",
+      "concept-relevance-20261016-repair-v2.json",
+      "concept-relevance-20261016-repair-v3.json",
+      "concept-relevance-20261016-repair.json",
+      "concept-relevance-20261016-v6-final-regression.json",
+      "concept-relevance-20261016.json",
+      "concept-relevance.json"
+    ],
+    "freeze_contract": "All ids, intents, queries, kinds, splits, top limits, source declarations and sparse judgments are frozen before the first v8 retrieval. No result-guided case selection or tuning.",
+    "intent_sha256": "8ba3dbc8562c5e5e308fd76bf80e3a01c996a5e82d6bf102295901fd948ac89e",
+    "query_anchor_sha256": "586ae44b25cddb4fef361bea37fd4957a7b509360d770eaf7144621c19293741",
+    "digest_format": "SHA-256 over UTF-8 canonical JSON with sorted keys, compact separators, non-ASCII preserved and non-finite numbers disallowed. Query-anchor payload is the case-order array of id/split/kind/query/top plus relevant and distractor path/symbol/declaration_line triples. Intent payload is the case-order array of id/kind/query/family/reason.",
+    "source_evidence_file": "concept-relevance-20261016-independent-v8-source-evidence.json"
+  },
+  "selection": {
+    "method": "Direct inspection of twelve previously unused runtime owner files. Requests describe user tasks and operations without requiring symbol names, signatures or paths.",
+    "novelty": "Every selected owner file is absent from all prior concept-relevance fixture source_files_sha256 maps, including v6 and v7.",
+    "owner_languages": [
+      "rust"
+    ],
+    "limitations": [
+      "Purposive single-repository requests are not a representative user-query population.",
+      "All twelve positive owners are Rust runtime declarations; this does not establish performance for other languages.",
+      "One exact positive declaration is labeled per request. Unlisted relevant siblings and other returned rows remain unjudged.",
+      "Negative judgments concern capabilities absent from the inspected nearby contracts. Lexical candidates do not establish those capabilities.",
+      "Historical algorithmic background was incidentally exposed by the mandatory memory check and is disclosed in provenance."
+    ]
+  },
+  "denominators": {
+    "independent_positive_queries": 12,
+    "independent_negative_queries": 6,
+    "positive_anchors": 12,
+    "total_cases": 18
+  },
+  "judgment_contract": {
+    "identity": [
+      "path",
+      "symbol"
+    ],
+    "positive": "The exact runtime declaration is identified by source path, simple symbol, unique declaration line and a pinned source excerpt. Qualified names are retained when useful.",
+    "distractor": "A source-inspected nearby operation does not implement the requested unsupported capability. Every other row remains unjudged.",
+    "negative": "The requested operation is absent from the inspected adjacent contract and has no relevant anchor. No empty-page expectation is imposed.",
+    "evidence": "One-based inclusive excerpt bounds refer to the pinned source bytes; source evidence supplements delegated operations and explicit capability boundaries."
+  },
+  "cases": [
+    {
+      "id": "independent-v8-replace-reviewed-habit",
+      "split": "independent",
+      "kind": "positive",
+      "query": "Retire an old behavior description and publish the replacement I explicitly reviewed.",
+      "top": 5,
+      "family": "reviewed behavior replacement",
+      "owner_language": "rust",
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/habit.rs",
+          "symbol": "supersede",
+          "declaration_line": 323,
+          "qualified_symbol": "supersede",
+          "line_start": 323,
+          "line_end": 373,
+          "source_excerpt": "pub fn supersede(\n    old: i64,\n    new: i64,\n    old_revision: &str,\n    new_revision: &str,\n) -> Result<(), Box<dyn std::error::Error>> {\n    if !std::io::stdin().is_terminal() {\n        return Err(\"habit supersede requires the author's interactive terminal\".into());\n    }\n    if old <= 0 || new <= 0 || old == new {\n        return Err(\"replacement requires two different positive habit IDs\".into());\n    }\n    if !super::collection::valid_id(old_revision) || !super::collection::valid_id(new_revision) {\n        return Err(\"both review revisions must be full 64-character keys\".into());\n    }\n    let path = store::ProfileStore::db_path().ok_or(\"could not resolve home directory\")?;\n    store::ProfileStore::open_read_only(&path)?;\n    let (receipt, _) = publish_profile(\n        &path,\n        &profile_path()?,\n        false,\n        |db| {\n            if let Some(receipt) =\n                db.habit_supersession_retry(old, new, old_revision, new_revision)?\n            {\n                return Ok(receipt);\n            }\n            let old_habit = db.habit(old)?.ok_or(\"old habit missing\")?;\n            let new_habit = db.habit(new)?.ok_or(\"new habit missing\")?;\n            if old_habit.review_revision() != old_revision\n                || new_habit.review_revision() != new_revision\n            {\n                return Err(\"review revision changed; inspect both habits again\".into());\n            }\n            super::profile::habit_sources_current(\n                db,\n                &new_habit,\n                &mut feedback::QuoteSourceVerifier::new(),\n            )?;\n            Ok(db.supersede_habit(old, new, old_revision, new_revision)?)\n        },\n        |_| None,\n    )?;\n    println!(\n        \"{}\",\n        serde_json::to_string_pretty(&serde_json::json!({\n            \"relation\":\"supersedes\",\"receipt\":receipt,\n            \"note\":\"Stored statuses shown. Publication revalidates current sources. A committed retry does not observe the successor again.\"\n        }))?\n    );\n    Ok(())",
+          "reason": "Requires two distinct positive habit identifiers, both exact review revisions, current successor evidence and an interactive author terminal before recording the replacement."
+        }
+      ],
+      "distractors": [],
+      "reason": "Requires two distinct positive habit identifiers, both exact review revisions, current successor evidence and an interactive author terminal before recording the replacement."
+    },
+    {
+      "id": "independent-v8-audit-completed-scope",
+      "split": "independent",
+      "kind": "positive",
+      "query": "Compare completed edits with the files and symbol snapshot approved by the task.",
+      "top": 5,
+      "family": "post-execution mechanical audit",
+      "owner_language": "rust",
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/audit_spec.rs",
+          "symbol": "run_internal",
+          "declaration_line": 461,
+          "qualified_symbol": "run_internal",
+          "line_start": 461,
+          "line_end": 501,
+          "source_excerpt": "fn run_internal(\n    spec: &ParsedSpec,\n    store: &Store,\n    repo_root: &Path,\n    git_ref: &str,\n    verify_postflight: bool,\n    executor_report: Option<&ExecutorReport>,\n) -> Result<(Report, Option<crate::verify_spec::Report>), DiffError> {\n    // Worktree-scoped, not `<ref>..HEAD` — post-flight audits work that has not\n    // been committed yet. See the module header.\n    let deadline = Instant::now() + diff::git_timeout();\n    let index_version = store\n        .data_version()\n        .map_err(|_| DiffError::GitFailed(\"index_version_unavailable\".into()))?;\n    let has_claims = executor_report.is_some_and(|report| !report.claims.is_empty());\n    let has_canonical_report = executor_report.is_some_and(|report| report.canonical.is_some());\n    if (has_claims\n        || spec\n            .frontmatter\n            .as_ref()\n            .is_some_and(|frontmatter| !frontmatter.breaking_changes.removed_symbols.is_empty()))\n        && !store\n            .extractor_contract_current()\n            .map_err(|_| DiffError::GitFailed(\"index_stale\".into()))?\n    {\n        return Err(DiffError::GitFailed(\"index_stale\".into()));\n    }\n    let (worktree, declarations) = diff::symbols_changed_in_worktree_with_declarations(\n        store,\n        repo_root,\n        git_ref,\n        Some(deadline),\n        None,\n        executor_report.is_some_and(|report| {\n            report\n                .claims\n                .iter()\n                .any(|claim| matches!(claim, Claim::FunctionAdded { .. }))\n        }),\n    )\n    .map_err(|error| diff::worktree_scope_error(git_ref, error))?;",
+          "reason": "Builds a baseline-to-working-tree declaration diff used by the same audit to compare changed files with the spec and check snapshot drift."
+        }
+      ],
+      "distractors": [],
+      "reason": "Builds a baseline-to-working-tree declaration diff used by the same audit to compare changed files with the spec and check snapshot drift."
+    },
+    {
+      "id": "independent-v8-added-library-observations",
+      "split": "independent",
+      "kind": "positive",
+      "query": "Identify the external libraries introduced on the added lines of a committed source file.",
+      "top": 5,
+      "family": "added import observations",
+      "owner_language": "rust",
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/range/imports.rs",
+          "symbol": "from_source",
+          "declaration_line": 8,
+          "qualified_symbol": "from_source",
+          "line_start": 8,
+          "line_end": 36,
+          "source_excerpt": "pub(super) fn from_source(\n    path: &str,\n    source: &str,\n    added_rows: &BTreeSet<usize>,\n) -> Option<BTreeSet<String>> {\n    if source.len() as u64 > crate::indexer::MAX_INDEXABLE_FILE_SIZE {\n        return None;\n    }\n    let language_name = language(path)?;\n    let extractor = crate::indexer::extractor_for_path(Path::new(path))?;\n    let mut parser = Parser::new();\n    parser.set_language(&extractor.language()).ok()?;\n    let tree = parser.parse(source, None)?;\n    if tree.root_node().has_error() {\n        return None;\n    }\n    let mut libraries = BTreeSet::new();\n    let mut nodes = vec![tree.root_node()];\n    while let Some(node) = nodes.pop() {\n        // A recovered parse cannot turn quoted or malformed input into an import.\n        if node.is_error() || node.is_missing() {\n            continue;\n        }\n        let intersects = added_rows\n            .range(node.start_position().row..=node.end_position().row)\n            .next()\n            .is_some();\n        if intersects && !node.has_error() {\n            match (language_name, node.kind()) {",
+          "reason": "Parses the complete supported source, rejects malformed syntax, and admits import syntax only when its source range intersects an added row."
+        }
+      ],
+      "distractors": [],
+      "reason": "Parses the complete supported source, rejects malformed syntax, and admits import syntax only when its source range intersects an added row."
+    },
+    {
+      "id": "independent-v8-import-producer-facts",
+      "split": "independent",
+      "kind": "positive",
+      "query": "Load a producer's annotations and relationships after checking the manifest and its source evidence.",
+      "top": 5,
+      "family": "revision-bound fact ingestion",
+      "owner_language": "rust",
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/facts.rs",
+          "symbol": "import_with_trust",
+          "declaration_line": 1163,
+          "qualified_symbol": "import_with_trust",
+          "line_start": 1163,
+          "line_end": 1205,
+          "source_excerpt": "pub fn import_with_trust(\n    store: &Store,\n    manifest_path: &Path,\n    policy: &crate::fact_signature::FactTrustPolicy,\n) -> Result<FactImportSummary, FactError> {\n    let bytes = read_regular(manifest_path, MAX_MANIFEST_BYTES, \"fact manifest\")?;\n    let trust = crate::fact_signature::verify_bytes(&bytes, policy)\n        .map_err(|error| FactError::Signature(error.to_string()))?;\n    let (mut batch, contract) = build_batch_from_bytes(store, &bytes)?;\n    batch.source.signature_status = trust.signature_status.into();\n    batch.source.signing_key_id = trust.signing_key_id;\n    batch.source.signature_sha256 = trust.signature_sha256;\n    batch.source.signature_bytes = trust.signature_bytes;\n    batch.source.signing_public_key = trust.signing_public_key;\n    batch.source.signature_value = trust.signature_value;\n    batch.source.signed_manifest_digest =\n        (trust.signature_status == \"verified\").then_some(trust.manifest_digest);\n    let replaced_previous_dataset = store\n        .fact_source_exists(&batch.source.producer_name, &batch.source.dataset)\n        .map_err(|error| FactError::Store(error.to_string()))?;\n    revalidate_batch_snapshot(store, &batch, &contract)?;\n    store\n        .replace_fact_dataset(&batch)\n        .map_err(|error| FactError::Store(error.to_string()))?;\n    let source = source_view(\n        &batch.source,\n        \"loaded\",\n        batch\n            .source\n            .annotation_count\n            .saturating_add(batch.source.relationship_count),\n        batch.source.file_count,\n    );\n    Ok(FactImportSummary {\n        schema_version: 1,\n        replaced_previous_dataset,\n        contract,\n        source,\n    })\n}\n\nfn source_view(\n    source: &FactSourceRecord,",
+          "reason": "Verifies manifest trust, builds the validated producer dataset, revalidates its source snapshot and replaces that dataset in the store."
+        }
+      ],
+      "distractors": [],
+      "reason": "Verifies manifest trust, builds the validated producer dataset, revalidates its source snapshot and replaces that dataset in the store."
+    },
+    {
+      "id": "independent-v8-prepare-held-task-review",
+      "split": "independent",
+      "kind": "positive",
+      "query": "Create a blank review packet tied to the exact held task, its checks and current evidence.",
+      "top": 5,
+      "family": "semantic review preparation",
+      "owner_language": "rust",
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/task_review.rs",
+          "symbol": "prepare",
+          "declaration_line": 853,
+          "qualified_symbol": "prepare",
+          "line_start": 853,
+          "line_end": 904,
+          "source_excerpt": "pub fn prepare(spec: &Path, repository: &Path) -> Result<Request, String> {\n    let root = RootCapability::open(repository).map_err(|_| \"semantic_review_root_unavailable\")?;\n    let state = state(&root, spec)?;\n    if state.status != \"history_review_required\" {\n        return Err(\"semantic_review_requires_pending_held_audit\".into());\n    }\n    let target = collect_target(&root, spec, &state)?;\n    let target_revision = revision(&target)?;\n    let (previous, _) = prior_record(&root, spec)?;\n    let expected_review_revision = previous.as_deref().map(sha);\n    let unknown = Assessment {\n        status: Judgment::Unknown,\n        reason: String::new(),\n        evidence: Vec::new(),\n    };\n    let draft = Submission {\n        schema_version: 1,\n        target_revision: target_revision.clone(),\n        expected_review_revision: expected_review_revision.clone(),\n        reviewer: Reviewer {\n            kind: None,\n            name: String::new(),\n        },\n        criteria: target\n            .criteria\n            .iter()\n            .map(|criterion| CriterionAssessment {\n                id: criterion.id.clone(),\n                status: Judgment::Unknown,\n                reason: String::new(),\n                evidence: criterion\n                    .checks\n                    .iter()\n                    .map(|id| format!(\"check:{id}\"))\n                    .collect(),\n            })\n            .collect(),\n        verification_quality: unknown.clone(),\n        scope_control: unknown.clone(),\n        proportionality: unknown,\n        history: Some(Decisions::unknown()),\n    };\n    Ok(Request {\n        schema_version: 1,\n        instructions: INSTRUCTIONS,\n        repository_content_untrusted: true,\n        target_revision,\n        expected_review_revision,\n        target,\n        draft,\n    })\n}",
+          "reason": "Requires the pending held-audit lifecycle state, collects the bound target revision and emits unknown judgments with criterion check references."
+        }
+      ],
+      "distractors": [],
+      "reason": "Requires the pending held-audit lifecycle state, collects the bound target revision and emits unknown judgments with criterion check references."
+    },
+    {
+      "id": "independent-v8-strict-task-contract",
+      "split": "independent",
+      "kind": "positive",
+      "query": "Check a task contract names its edit scope, touched symbols and at least one verification command.",
+      "top": 5,
+      "family": "strict specification completeness",
+      "owner_language": "rust",
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/verify_spec.rs",
+          "symbol": "strict_check",
+          "declaration_line": 329,
+          "qualified_symbol": "strict_check",
+          "line_start": 329,
+          "line_end": 364,
+          "source_excerpt": "pub fn strict_check(spec: &ParsedSpec) -> Vec<Finding> {\n    let mut out = Vec::new();\n    match &spec.frontmatter {\n        None => out.push(Finding::StrictViolation {\n            reason: \"no YAML frontmatter — a strict spec needs a `---` block with touches / verify / breaking_changes\".into(),\n        }),\n        Some(fm) => {\n            if !fm.has_file_scope() {\n                out.push(Finding::StrictViolation {\n                    reason: \"frontmatter declares no `touches`, `creates` or `expected_docs` — scope what the spec changes\".into(),\n                });\n            }\n            for t in &fm.touches {\n                if t.file.trim().is_empty() {\n                    out.push(Finding::StrictViolation {\n                        reason: \"a `touches` entry has an empty `file`\".into(),\n                    });\n                } else if t.symbols.is_empty() {\n                    out.push(Finding::StrictViolation {\n                        reason: format!(\n                            \"touch `{}` names no `symbols` — list the symbols it changes\",\n                            t.file\n                        ),\n                    });\n                }\n            }\n            if spec.declared_verify_commands().is_empty() {\n                out.push(Finding::StrictViolation {\n                    reason: \"no verify command — declare at least one `verify[].cmd` the executor must run\".into(),\n                });\n            }\n        }\n    }\n    out\n}\n",
+          "reason": "Produces strict violations for missing frontmatter, empty file scope, missing touched symbols and absent verification commands."
+        }
+      ],
+      "distractors": [],
+      "reason": "Produces strict violations for missing frontmatter, empty file scope, missing touched symbols and absent verification commands."
+    },
+    {
+      "id": "independent-v8-inspect-workflow-wiring",
+      "split": "independent",
+      "kind": "positive",
+      "query": "Inspect the installed agents and skills for broken workflow wiring and unavailable configuration.",
+      "top": 5,
+      "family": "workflow configuration audit",
+      "owner_language": "rust",
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/workflow_status.rs",
+          "symbol": "audit_workflow",
+          "declaration_line": 674,
+          "qualified_symbol": "audit_workflow",
+          "line_start": 674,
+          "line_end": 742,
+          "source_excerpt": "pub fn audit_workflow(root: &Path) -> WorkflowAuditReport {\n    let mut builder = WorkflowAuditBuilder::new(root);\n    if builder.canonical_root.is_none() {\n        builder.incomplete(\n            \"layout_ambiguous\",\n            format!(\"workflow root is unavailable: {}\", root.display()),\n            None,\n            None,\n        );\n        return builder.finish();\n    }\n    if fs::symlink_metadata(root).is_ok_and(|metadata| metadata.file_type().is_symlink()) {\n        builder.incomplete(\n            \"file_type_invalid\",\n            \"workflow root must not be a symbolic link\",\n            None,\n            None,\n        );\n        return builder.finish();\n    }\n\n    let source_agent_root = root.join(\"agents\");\n    let source_agents = source_agent_root.join(\"subagents\");\n    let source_skills = root.join(\"skills\");\n    let manifest_path = root.join(\".mastermind-workflow.json\");\n    for (path, label) in [\n        (&source_agent_root, \"agents\"),\n        (&source_agents, \"agents/subagents\"),\n        (&source_skills, \"skills\"),\n    ] {\n        if fs::symlink_metadata(path).is_ok_and(|metadata| {\n            metadata.file_type().is_symlink() || !metadata.file_type().is_dir()\n        }) {\n            builder.incomplete(\n                \"file_type_invalid\",\n                format!(\"source workflow inventory path is not a regular directory: {label}\"),\n                None,\n                Some(label),\n            );\n            return builder.finish();\n        }\n    }\n    let source_layout = is_plain_directory(&source_agents) && is_plain_directory(&source_skills);\n    let manifest_layout = fs::symlink_metadata(&manifest_path).is_ok();\n\n    if source_layout == manifest_layout {\n        builder.incomplete(\n            \"layout_ambiguous\",\n            if source_layout {\n                \"both source workflow directories and an installed ownership manifest are present\"\n                    .to_string()\n            } else {\n                \"expected source agents/subagents plus skills, or an installed .mastermind-workflow.json\"\n                    .to_string()\n            },\n            None,\n            None,\n        );\n        return builder.finish();\n    }\n\n    let (agent_paths, skill_paths, installed, mut installed_text) = if source_layout {\n        builder.report.layout = \"source\".into();\n        let agents = collect_source_agents(&mut builder, &source_agents);\n        let skills = collect_source_skills(&mut builder, &source_skills);\n        (agents, skills, None, BTreeMap::new())\n    } else {\n        builder.report.layout = \"installed\".into();\n        let Some(manifest) = load_installed_manifest(&mut builder, &manifest_path) else {",
+          "reason": "Determines a single source or installed layout, validates inventory parents and the installed ownership manifest, loads components and analyzes their wiring."
+        }
+      ],
+      "distractors": [],
+      "reason": "Determines a single source or installed layout, validates inventory parents and the installed ownership manifest, loads components and analyzes their wiring."
+    },
+    {
+      "id": "independent-v8-execute-native-review",
+      "split": "independent",
+      "kind": "positive",
+      "query": "Run a native reviewer over the held task and retain a receipt of the review attempt.",
+      "top": 5,
+      "family": "native semantic review lifecycle",
+      "owner_language": "rust",
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/review_invocation.rs",
+          "symbol": "run_locked",
+          "declaration_line": 258,
+          "qualified_symbol": "run_locked",
+          "line_start": 258,
+          "line_end": 313,
+          "source_excerpt": "pub(crate) fn run_locked(\n    spec: &Path,\n    repository: &Path,\n    options: &Options,\n) -> Result<Report, String> {\n    options.validate()?;\n    let root =\n        RootCapability::open(repository).map_err(|_| \"review_invocation_root_unavailable\")?;\n    let mut state = task_review::state(&root, spec)?;\n    if state.status != \"history_review_required\" {\n        return Err(\"semantic_review_requires_pending_held_audit\".into());\n    }\n    // Invalidate old approval before ANY fallible preparation or native probe.\n    state.semantic_review_required = true;\n    state.semantic_review_sha256 = None;\n    state.last_artifact = Some(\"review-invocation.json\".into());\n    crate::run_task::save_state_in_repository(\n        repository,\n        &crate::run_task::state_file_path(repository, spec),\n        &state,\n    )\n    .map_err(|_| \"review_invocation_state_write_failed\")?;\n    let mut random = [0u8; 16];\n    getrandom::fill(&mut random).map_err(|_| \"review_invocation_random_unavailable\")?;\n    let mut receipt = Receipt {\n        schema_version: 1,\n        attempt_id: crate::hex::encode(&random),\n        status: Status::Pending,\n        reason: None,\n        target_revision: None,\n        expected_review_revision: None,\n        response_sha256: None,\n        submission_sha256: None,\n        invocation: None,\n    };\n    let path = receipt_path(repository, spec);\n    root.ensure_directory(path.parent().ok_or(\"review_invocation_path_invalid\")?)\n        .map_err(|_| \"review_invocation_directory_unavailable\")?;\n    let mut journal = Journal {\n        root: &root,\n        path,\n        last: None,\n    };\n    journal.publish(&receipt)?;\n    let result = execute(spec, repository, &root, options, &mut receipt, &mut journal);\n    match result {\n        Ok(report) => Ok(report),\n        Err(reason) => {\n            receipt.status = Status::Failed;\n            receipt.reason = Some(reason.clone());\n            journal.publish(&receipt)?;\n            Ok(Report::new(task_review::Status::Failed, Some(reason), None))\n        }\n    }\n}\n",
+          "reason": "Validates the pending task state, invalidates earlier approval, publishes a pending attempt receipt, executes the bounded native review and journals failure."
+        }
+      ],
+      "distractors": [],
+      "reason": "Validates the pending task state, invalidates earlier approval, publishes a pending attempt receipt, executes the bounded native review and journals failure."
+    },
+    {
+      "id": "independent-v8-distinct-task-state",
+      "split": "independent",
+      "kind": "positive",
+      "query": "Locate separate controller state for two task specifications with the same filename in different folders.",
+      "top": 5,
+      "family": "task state artifact identity",
+      "owner_language": "rust",
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/run_task.rs",
+          "symbol": "state_file_path",
+          "declaration_line": 456,
+          "qualified_symbol": "state_file_path",
+          "line_start": 453,
+          "line_end": 469,
+          "source_excerpt": "/// Canonical specs own `<task>/state.json`. Legacy top-level task specs retain\n/// their basename-keyed location. Every other repository-contained spec uses a\n/// full exact-path digest so equal basenames cannot share controller state.\npub fn state_file_path(repo_root: &Path, spec_path: &Path) -> PathBuf {\n    match spec_artifact_layout(repo_root, spec_path) {\n        SpecArtifactLayout::Canonical(task) => repo_root\n            .join(\".mastermind/tasks\")\n            .join(task)\n            .join(\"state.json\"),\n        SpecArtifactLayout::LegacyFlat(stem) => repo_root\n            .join(\".mastermind/run-state\")\n            .join(format!(\"{stem}.json\")),\n        SpecArtifactLayout::Noncanonical(key) => repo_root\n            .join(\".mastermind/run-state/.noncanonical\")\n            .join(format!(\"{key}.json\")),\n    }\n}",
+          "reason": "Canonical and legacy layouts retain their defined locations; other exact task paths receive distinct digest-keyed state files."
+        }
+      ],
+      "distractors": [],
+      "reason": "Canonical and legacy layouts retain their defined locations; other exact task paths receive distinct digest-keyed state files."
+    },
+    {
+      "id": "independent-v8-validate-architecture-rules",
+      "split": "independent",
+      "kind": "positive",
+      "query": "Validate an architecture rules file before using it, catching duplicate rule names and incompatible actions.",
+      "top": 5,
+      "family": "architecture policy parsing",
+      "owner_language": "rust",
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/policy.rs",
+          "symbol": "parse_config",
+          "declaration_line": 307,
+          "qualified_symbol": "parse_config",
+          "line_start": 307,
+          "line_end": 351,
+          "source_excerpt": "pub fn parse_config(source: &[u8]) -> Result<PolicyConfig, PolicyError> {\n    if source.is_empty() || source.len() as u64 > CONFIG_BYTE_LIMIT {\n        return Err(PolicyError::new(\n            \"invalid_policy_config\",\n            \"policy config must be non-empty and no larger than 1 MiB\",\n        ));\n    }\n    let raw: RawConfig = serde_norway::from_slice(source).map_err(|error| {\n        PolicyError::new(\n            \"invalid_policy_config\",\n            format!(\"YAML does not match the v1 policy schema: {error}\"),\n        )\n    })?;\n    if raw.version != 1 {\n        return Err(PolicyError::new(\n            \"unsupported_policy_version\",\n            format!(\"expected version 1, found {}\", raw.version),\n        ));\n    }\n    if raw.rules.is_empty() || raw.rules.len() > RULE_LIMIT {\n        return Err(PolicyError::new(\n            \"invalid_policy_config\",\n            format!(\"`rules` must contain between 1 and {RULE_LIMIT} entries\"),\n        ));\n    }\n\n    let mut ids = BTreeSet::new();\n    let mut rules = Vec::with_capacity(raw.rules.len());\n    for rule in raw.rules {\n        validate_rule_id(&rule.id)?;\n        if !ids.insert(rule.id.clone()) {\n            return Err(config_error(&rule.id, \"rule id is duplicated\"));\n        }\n        if rule.action_count() != 1 {\n            return Err(config_error(\n                &rule.id,\n                \"exactly one policy action must be configured\",\n            ));\n        }\n        let kind = compile_rule(&rule)?;\n        rules.push(PolicyRule { id: rule.id, kind });\n    }\n    rules.sort_by(|left, right| left.id.cmp(&right.id));\n    Ok(PolicyConfig { version: 1, rules })\n}",
+          "reason": "Parses the bounded version-one YAML schema, validates rule ids, rejects duplicates and requires exactly one configured action before compiling rules."
+        }
+      ],
+      "distractors": [],
+      "reason": "Parses the bounded version-one YAML schema, validates rule ids, rejects duplicates and requires exactly one configured action before compiling rules."
+    },
+    {
+      "id": "independent-v8-detect-snapshot-tooling",
+      "split": "independent",
+      "kind": "positive",
+      "query": "Find which formatter and linter settings governed a repository at a particular commit.",
+      "top": 5,
+      "family": "repository tooling detection",
+      "owner_language": "rust",
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/tooling.rs",
+          "symbol": "detect",
+          "declaration_line": 155,
+          "qualified_symbol": "detect",
+          "line_start": 153,
+          "line_end": 194,
+          "source_excerpt": "/// Formatter and linter scopes at `history_ref`. Without a listing only the\n/// gofmt convention remains; missing configuration never fails a mine.\npub(super) fn detect(\n    root: &Path,\n    history_ref: &str,\n    listing: Option<&str>,\n) -> Result<Vec<ToolScope>, Box<dyn std::error::Error>> {\n    let mut scopes = vec![scope(\"\", GOFMT, GO, FORMATTED)];\n    let Some(listing) = listing else {\n        return Ok(scopes);\n    };\n    let mut content_paths = Vec::new();\n    for path in listing.split('\\0').filter(|path| !path.is_empty()) {\n        let (dir, name) = match path.rsplit_once('/') {\n            Some((dir, name)) => (&path[..dir.len() + 1], name),\n            None => (\"\", path),\n        };\n        match name {\n            \"rustfmt.toml\" | \".rustfmt.toml\" => scopes.push(scope(dir, RUSTFMT, RUST, FORMATTED)),\n            \"biome.json\" | \"biome.jsonc\" => scopes.push(scope(dir, BIOME, SCRIPT, FORMATTED)),\n            \"dprint.json\" | \".dprint.json\" => scopes.push(scope(dir, DPRINT, SCRIPT, FORMATTED)),\n            \".clang-format\" => scopes.push(scope(dir, CLANG_FORMAT, C_FAMILY, FORMATTED)),\n            \".editorconfig\" => scopes.push(scope(dir, EDITORCONFIG, ANY, INDENT)),\n            \"ruff.toml\" | \".ruff.toml\" => scopes.push(scope(dir, RUFF, PYTHON, FORMATTED)),\n            name if name.starts_with(\".prettierrc\") || name.starts_with(\"prettier.config.\") => {\n                scopes.push(scope(dir, PRETTIER, SCRIPT, FORMATTED));\n            }\n            name if name.starts_with(\".eslintrc\") || name.starts_with(\"eslint.config.\") => {\n                scopes.push(scope(dir, ESLINT, SCRIPT, DECLARATION));\n            }\n            _ if wants_contents(path, name) && !path.contains('\\n') => content_paths.push(path),\n            _ => {}\n        }\n    }\n    content_paths.truncate(MAX_CONTENT_READS);\n    for (path, text) in read_snapshot_files(root, history_ref, &content_paths)? {\n        scopes_from_contents(&path, &text, &mut scopes);\n    }\n    scopes.sort();\n    scopes.dedup();\n    Ok(scopes)\n}",
+          "reason": "Detects formatter and linter scope from the supplied historical listing and configuration contents read at that same revision."
+        }
+      ],
+      "distractors": [],
+      "reason": "Detects formatter and linter scope from the supplied historical listing and configuration contents read at that same revision."
+    },
+    {
+      "id": "independent-v8-propose-collected-preference",
+      "split": "independent",
+      "kind": "positive",
+      "query": "Turn a collected observation into a scoped preference proposal while keeping its original evidence attached.",
+      "top": 5,
+      "family": "observation-backed preference curation",
+      "owner_language": "rust",
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/curation.rs",
+          "symbol": "propose_preference",
+          "declaration_line": 15,
+          "qualified_symbol": "propose_preference",
+          "line_start": 15,
+          "line_end": 95,
+          "source_excerpt": "pub fn propose_preference(\n    id: &str,\n    revision: &str,\n    draft: PreferenceDraft,\n) -> Result<(), Box<dyn std::error::Error>> {\n    use super::feedback;\n    if !collection::valid_id(id) || !collection::valid_id(revision) {\n        return Err(\"candidate id and revision must be full 64-character keys\".into());\n    }\n    let statement = feedback::single_line(&draft.statement, \"statement\", 8, 200)?;\n    if !feedback::CATEGORIES.contains(&draft.category.as_str()) {\n        return Err(format!(\n            \"category must be one of {}\",\n            feedback::CATEGORIES.join(\", \")\n        )\n        .into());\n    }\n    if feedback::looks_secret(&statement) || crate::indexer::secret_like_documentation(&statement) {\n        return Err(\"refusing to record text that looks like a credential\".into());\n    }\n    if let Some(scope) = &draft.scope {\n        feedback::validate_scope(scope)?;\n    }\n    let path = store::ProfileStore::db_path().ok_or(\"could not resolve profile store\")?;\n    let existing = store::ProfileStore::open_read_only(&path)?;\n    if existing.collected_candidate(id)?.is_none() {\n        return Err(\"candidate not found\".into());\n    }\n    drop(existing);\n    let (receipt, _) = profile::publish_profile(\n        &path,\n        &profile::profile_path()?,\n        false,\n        |db| {\n            let (candidate, repository) = current_candidate(db, id, revision)?;\n            let scope = draft\n                .scope\n                .clone()\n                .unwrap_or_else(|| format!(\"project:{}\", candidate.project));\n            let key = store::feedback_key(&statement, &draft.category, &scope);\n            let mut prospective = db.feedback_candidate_bindings(&key)?;\n            // New support must fit the complete verification budget now. An\n            // existing citation can be repaired independently when several\n            // sources moved at once; the full set is rechecked on acceptance.\n            if !prospective.iter().any(|old| old.id == candidate.id) {\n                prospective.push(candidate.clone());\n                let mut verifier = feedback::QuoteSourceVerifier::new();\n                if !prospective\n                    .iter()\n                    .all(|item| verifier.current_observation(item))\n                {\n                    return Err(\"prospective preference sources are unavailable or exceed the verification budget; inspect or dismiss a source first\".into());\n                }\n            }\n            let request = serde_json::to_vec(&serde_json::json!([\n                \"candidate-preference-v1\",\n                statement,\n                draft.category,\n                scope,\n                candidate.project,\n                candidate.project_root,\n                repository\n            ]))?;\n            let request_digest = crate::hex::encode(&Sha256::digest(request));\n            Ok(db.propose_candidate_feedback(\n                &candidate,\n                &statement,\n                &draft.category,\n                &scope,\n                &repository,\n                &request_digest,\n            )?)\n        },\n        |_| None,\n    )?;\n    println!(\n        \"{}\",\n        serde_json::to_string_pretty(&serde_json::json!({\"proposal\":receipt,\n        \"note\":\"Unreviewed preference with exact provenance. Inspect feedback show and accept its review revision before publication.\"}))?\n    );\n    Ok(())",
+          "reason": "Validates a current inbox observation, derives its project scope, verifies combined evidence and stores an explicitly unreviewed preference proposal."
+        }
+      ],
+      "distractors": [],
+      "reason": "Validates a current inbox observation, derives its project scope, verifies combined evidence and stores an explicitly unreviewed preference proposal."
+    },
+    {
+      "id": "independent-v8-renew-with-old-evidence",
+      "split": "independent",
+      "kind": "negative",
+      "query": "Renew a retired behavior description using its previous evidence and immediately make it active again.",
+      "top": 5,
+      "family": "habit renewal carries evidence and active status",
+      "owner_language": "rust",
+      "relevant": [],
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/habit.rs",
+          "symbol": "renew",
+          "declaration_line": 297,
+          "qualified_symbol": "renew",
+          "line_start": 297,
+          "line_end": 319,
+          "source_excerpt": "pub fn renew(id: i64, revision: &str) -> Result<(), Box<dyn std::error::Error>> {\n    if !std::io::stdin().is_terminal() {\n        return Err(\"habit renew requires the author's interactive terminal\".into());\n    }\n    if id <= 0 || !super::collection::valid_id(revision) {\n        return Err(\"renewal requires a positive habit ID and full review revision\".into());\n    }\n    let path = store::ProfileStore::db_path().ok_or(\"could not resolve home directory\")?;\n    store::ProfileStore::open_read_only(&path)?;\n    let (receipt, _) = publish_profile(\n        &path,\n        &profile_path()?,\n        false,\n        |db| Ok(db.renew_habit(id, revision)?),\n        |_| None,\n    )?;\n    println!(\n        \"{}\",\n        serde_json::to_string_pretty(&serde_json::json!({\"renewal\":receipt,\n            \"note\":\"A new generation copies only the description. Cite evidence and review it separately. Renewal does not establish a return of the behavior or replace another active habit. Exact retries return the existing child's current stored status.\"\n        }))?\n    );\n    Ok(())",
+          "reason": "Renewal explicitly copies only the description. The new generation requires separate evidence and review and does not establish the return of the behavior."
+        }
+      ],
+      "reason": "The adjacent renewal command creates only a new description generation; it does not transfer the earlier evidence or automatically observe the replacement."
+    },
+    {
+      "id": "independent-v8-resolve-computed-imports",
+      "split": "independent",
+      "kind": "negative",
+      "query": "Discover runtime-loaded dependencies from module names computed by the application.",
+      "top": 5,
+      "family": "dynamic dependency discovery",
+      "owner_language": "rust",
+      "relevant": [],
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/range/imports.rs",
+          "symbol": "from_source",
+          "declaration_line": 8,
+          "qualified_symbol": "from_source",
+          "line_start": 62,
+          "line_end": 103,
+          "source_excerpt": "                (\"Rust\", \"use_declaration\") => {\n                    if let Some(argument) = node.child_by_field_name(\"argument\") {\n                        rust_roots(argument, source, &mut libraries);\n                    }\n                }\n                (\"TypeScript\" | \"JavaScript\", \"import_statement\" | \"export_statement\") => {\n                    if let Some(specifier) = node.child_by_field_name(\"source\") {\n                        script_specifier(specifier, source, language_name, &mut libraries);\n                    }\n                }\n                (\"TypeScript\" | \"JavaScript\", \"call_expression\") => {\n                    if node\n                        .child_by_field_name(\"function\")\n                        .is_some_and(|function| {\n                            function.kind() == \"identifier\"\n                                && function.utf8_text(source.as_bytes()) == Ok(\"require\")\n                        })\n                    {\n                        if let Some(specifier) = node\n                            .child_by_field_name(\"arguments\")\n                            .and_then(|arguments| arguments.named_child(0))\n                        {\n                            script_specifier(specifier, source, language_name, &mut libraries);\n                        }\n                    }\n                }\n                (\"Go\", \"import_spec\") => {\n                    if let Some(specifier) = node\n                        .child_by_field_name(\"path\")\n                        .and_then(|path| path.utf8_text(source.as_bytes()).ok())\n                    {\n                        let specifier = specifier.trim_matches(['\"', '`']);\n                        insert(&mut libraries, \"Go\", &format!(\"\\\"{specifier}\\\"\"));\n                    }\n                }\n                _ => {}\n            }\n        }\n        let mut cursor = node.walk();\n        nodes.extend(node.named_children(&mut cursor));\n    }\n    Some(libraries)",
+          "reason": "The static walker handles explicit import syntax and require calls; script_specifier admits only a literal string."
+        }
+      ],
+      "reason": "The inspected importer statically parses committed source and literal specifiers. It does not execute the application or resolve computed module names."
+    },
+    {
+      "id": "independent-v8-manifest-adds-server-commands",
+      "split": "independent",
+      "kind": "negative",
+      "query": "Load an extension manifest and register the new server command handlers it supplies.",
+      "top": 5,
+      "family": "executable extension registration",
+      "owner_language": "rust",
+      "relevant": [],
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/facts.rs",
+          "symbol": "import_with_trust",
+          "declaration_line": 1163,
+          "qualified_symbol": "import_with_trust",
+          "line_start": 1163,
+          "line_end": 1205,
+          "source_excerpt": "pub fn import_with_trust(\n    store: &Store,\n    manifest_path: &Path,\n    policy: &crate::fact_signature::FactTrustPolicy,\n) -> Result<FactImportSummary, FactError> {\n    let bytes = read_regular(manifest_path, MAX_MANIFEST_BYTES, \"fact manifest\")?;\n    let trust = crate::fact_signature::verify_bytes(&bytes, policy)\n        .map_err(|error| FactError::Signature(error.to_string()))?;\n    let (mut batch, contract) = build_batch_from_bytes(store, &bytes)?;\n    batch.source.signature_status = trust.signature_status.into();\n    batch.source.signing_key_id = trust.signing_key_id;\n    batch.source.signature_sha256 = trust.signature_sha256;\n    batch.source.signature_bytes = trust.signature_bytes;\n    batch.source.signing_public_key = trust.signing_public_key;\n    batch.source.signature_value = trust.signature_value;\n    batch.source.signed_manifest_digest =\n        (trust.signature_status == \"verified\").then_some(trust.manifest_digest);\n    let replaced_previous_dataset = store\n        .fact_source_exists(&batch.source.producer_name, &batch.source.dataset)\n        .map_err(|error| FactError::Store(error.to_string()))?;\n    revalidate_batch_snapshot(store, &batch, &contract)?;\n    store\n        .replace_fact_dataset(&batch)\n        .map_err(|error| FactError::Store(error.to_string()))?;\n    let source = source_view(\n        &batch.source,\n        \"loaded\",\n        batch\n            .source\n            .annotation_count\n            .saturating_add(batch.source.relationship_count),\n        batch.source.file_count,\n    );\n    Ok(FactImportSummary {\n        schema_version: 1,\n        replaced_previous_dataset,\n        contract,\n        source,\n    })\n}\n\nfn source_view(\n    source: &FactSourceRecord,",
+          "reason": "The manifest import validates and replaces annotation and relationship data; it does not install command handlers."
+        }
+      ],
+      "reason": "The fact manifest contract admits declarative annotations and relationships. Its owning module explicitly excludes registering server handlers."
+    },
+    {
+      "id": "independent-v8-approve-from-passing-checks",
+      "split": "independent",
+      "kind": "negative",
+      "query": "Automatically mark every acceptance criterion satisfied when all recorded checks pass.",
+      "top": 5,
+      "family": "mechanical checks synthesize semantic approval",
+      "owner_language": "rust",
+      "relevant": [],
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/task_review.rs",
+          "symbol": "prepare",
+          "declaration_line": 853,
+          "qualified_symbol": "prepare",
+          "line_start": 868,
+          "line_end": 894,
+          "source_excerpt": "    let draft = Submission {\n        schema_version: 1,\n        target_revision: target_revision.clone(),\n        expected_review_revision: expected_review_revision.clone(),\n        reviewer: Reviewer {\n            kind: None,\n            name: String::new(),\n        },\n        criteria: target\n            .criteria\n            .iter()\n            .map(|criterion| CriterionAssessment {\n                id: criterion.id.clone(),\n                status: Judgment::Unknown,\n                reason: String::new(),\n                evidence: criterion\n                    .checks\n                    .iter()\n                    .map(|id| format!(\"check:{id}\"))\n                    .collect(),\n            })\n            .collect(),\n        verification_quality: unknown.clone(),\n        scope_control: unknown.clone(),\n        proportionality: unknown,\n        history: Some(Decisions::unknown()),\n    };",
+          "reason": "The draft sets every criterion and each review dimension to Unknown, independently of the check references it supplies."
+        }
+      ],
+      "reason": "Recorded checks are review evidence. The packet requires explicit criterion judgments and never infers semantic satisfaction from passing checks."
+    },
+    {
+      "id": "independent-v8-measure-running-agent-tokens",
+      "split": "independent",
+      "kind": "negative",
+      "query": "Measure actual token usage by running each installed agent together with its skills.",
+      "top": 5,
+      "family": "runtime workflow token measurement",
+      "owner_language": "rust",
+      "relevant": [],
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/workflow_status.rs",
+          "symbol": "add_context_estimates",
+          "declaration_line": 3246,
+          "qualified_symbol": "add_context_estimates",
+          "line_start": 3246,
+          "line_end": 3260,
+          "source_excerpt": "fn add_context_estimates(\n    builder: &mut WorkflowAuditBuilder,\n    component: &LoadedWorkflowComponent,\n    component_by_id: &BTreeMap<&str, &LoadedWorkflowComponent>,\n    schema_bytes: &BTreeMap<String, usize>,\n    known_grants: &BTreeSet<String>,\n) {\n    builder.add_context_estimate(WorkflowContextEstimate {\n        component_id: component.node_id.clone(),\n        scenario: \"agent_body\".into(),\n        bytes: Some(component.text_bytes),\n        estimated_tokens: Some(estimated_tokens(component.text_bytes)),\n        components: vec![component.path.clone()],\n        unavailable: Vec::new(),\n    });",
+          "reason": "Produces an estimate from known text byte counts rather than executing agents or observing a provider token meter."
+        }
+      ],
+      "reason": "The workflow audit calculates static context estimates and preserves unavailable inputs. It does not run the agents to measure actual token usage."
+    },
+    {
+      "id": "independent-v8-load-rego-rules",
+      "split": "independent",
+      "kind": "negative",
+      "query": "Run architecture rules written as Rego expressions alongside the built-in checks.",
+      "top": 5,
+      "family": "external policy runtime",
+      "owner_language": "rust",
+      "relevant": [],
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/policy.rs",
+          "symbol": "parse_config",
+          "declaration_line": 307,
+          "qualified_symbol": "parse_config",
+          "line_start": 307,
+          "line_end": 351,
+          "source_excerpt": "pub fn parse_config(source: &[u8]) -> Result<PolicyConfig, PolicyError> {\n    if source.is_empty() || source.len() as u64 > CONFIG_BYTE_LIMIT {\n        return Err(PolicyError::new(\n            \"invalid_policy_config\",\n            \"policy config must be non-empty and no larger than 1 MiB\",\n        ));\n    }\n    let raw: RawConfig = serde_norway::from_slice(source).map_err(|error| {\n        PolicyError::new(\n            \"invalid_policy_config\",\n            format!(\"YAML does not match the v1 policy schema: {error}\"),\n        )\n    })?;\n    if raw.version != 1 {\n        return Err(PolicyError::new(\n            \"unsupported_policy_version\",\n            format!(\"expected version 1, found {}\", raw.version),\n        ));\n    }\n    if raw.rules.is_empty() || raw.rules.len() > RULE_LIMIT {\n        return Err(PolicyError::new(\n            \"invalid_policy_config\",\n            format!(\"`rules` must contain between 1 and {RULE_LIMIT} entries\"),\n        ));\n    }\n\n    let mut ids = BTreeSet::new();\n    let mut rules = Vec::with_capacity(raw.rules.len());\n    for rule in raw.rules {\n        validate_rule_id(&rule.id)?;\n        if !ids.insert(rule.id.clone()) {\n            return Err(config_error(&rule.id, \"rule id is duplicated\"));\n        }\n        if rule.action_count() != 1 {\n            return Err(config_error(\n                &rule.id,\n                \"exactly one policy action must be configured\",\n            ));\n        }\n        let kind = compile_rule(&rule)?;\n        rules.push(PolicyRule { id: rule.id, kind });\n    }\n    rules.sort_by(|left, right| left.id.cmp(&right.id));\n    Ok(PolicyConfig { version: 1, rules })\n}",
+          "reason": "Accepts the repository-owned bounded version-one YAML rule schema and compiles exactly one recognized action per rule."
+        }
+      ],
+      "reason": "The architecture policy contract is a closed local YAML DSL. The module explicitly states that it does not embed Rego or another policy runtime."
+    }
+  ]
+}

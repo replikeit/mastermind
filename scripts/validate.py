@@ -479,8 +479,8 @@ MMCG_TEMPLATE_MIRRORS: list[tuple[str, str]] = [
 MMCG_MCP_SRC = "mcp/servers/mmcg/src/mcp.rs"
 MMCG_EXPECTED_LAST_TOOL = "mmcg_mining_submit"
 MMCG_EXPECTED_BEHAVIOR_COUNTS = {
-    "refreshable_tool": 21,
-    "read_only_tool": 14,
+    "refreshable_tool": 22,
+    "read_only_tool": 15,
     "additive_tool": 2,
 }
 

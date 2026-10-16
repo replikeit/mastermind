@@ -12,6 +12,10 @@ pub(super) struct ParsedJunit {
     pub deadline_reached: bool,
 }
 
+/// A JUnit testcase with its passed, failed, error, or skipped outcome.
+///
+/// Duration is stored in milliseconds. File and class are optional, and parsed
+/// names and diagnostic messages are truncated before the record is returned.
 pub(super) struct JunitCase {
     pub file: Option<String>,
     pub name: String,
@@ -84,6 +88,12 @@ impl CaseBuilder {
     }
 }
 
+/// Parse JUnit XML testcases, including outcome details and elapsed times.
+///
+/// XML reader failures and input with no suite or testcase element return
+/// `InvalidFormat`. After a suite or testcase is recognized, limits and incomplete
+/// records are reported through partial, invalid-record, work-limit, and deadline
+/// flags; a deadline reached before that recognition also returns `InvalidFormat`.
 pub(super) fn parse(bytes: &[u8], deadline: Option<Instant>) -> Result<ParsedJunit, SourceFailure> {
     let mut reader = Reader::from_reader(bytes);
     reader.config_mut().trim_text(true);

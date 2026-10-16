@@ -1,0 +1,628 @@
+{
+  "schema_version": 1,
+  "source_head": "f418b380bf191877f5903f5c85f483f5e0e86632",
+  "source_root": "/private/var/folders/21/xj6nw_bs4rn6l5s3h8b9m3t80000gn/T/mmcg-concept-repair-gx6h652k/source",
+  "owner_exclusions_metadata_sha256": "a464c38375cee748dc81b381ea26f3a86384449332abb7bc21df80449252f888",
+  "source_files_sha256": {
+    "mcp/servers/mmcg/src/commands/init.rs": "2bae3c80e6923958c0b686f7d7947b708d4ebd6372da46be9b53cd5b93ff8fec",
+    "mcp/servers/mmcg/src/context_doctor.rs": "cb462f8556bcacc05949b20021dfc8f6100c75a8d3aa137fecd9992822cca5d2",
+    "mcp/servers/mmcg/src/doctor.rs": "c740b0b7ae18394069a68a851d2e1a1632a25b913c991a4e8fcf2cc0c4263103",
+    "mcp/servers/mmcg/src/indexer/cpp.rs": "46c4981a218c95b5035bcd7513c5de967f61f152cd5e6c03a6f7bb43fdf39aae",
+    "mcp/servers/mmcg/src/indexer/python.rs": "93fbdfdd008b4b9b1bec398a4845099925f8bdd309472e41f6310868074190e1",
+    "mcp/servers/mmcg/src/indexer/rust_lang.rs": "f8fd587882a511e3d7d0d202b8054a92003b31e007dd6341cf66e4681cf3cfb0",
+    "mcp/servers/mmcg/src/indexer/typescript.rs": "b29c4b959a57fd7139c373ad58923360a20eefd2339c74b5699220a6f0b39bda",
+    "mcp/servers/mmcg/src/invocation.rs": "eb331db8d581bfec1d89e7e723c256508d0c0c31da62acbfaa1c335697068bd4",
+    "mcp/servers/mmcg/src/miner/feedback.rs": "fa84ca2cc4b822c44f1a9cb91e674507ba9bfd186df3719b316a371598e18651",
+    "mcp/servers/mmcg/src/miner/hooks/profile_context.rs": "e9b7be71ac2ba02ba3a73fa8d7ec9e99e0ed52095d6399372d86b8188a63a1f8",
+    "mcp/servers/mmcg/src/miner/hooks/semantic.rs": "0256fe512071eef8baebace5f3c1ea7428c0bb5936e81ae31bd013a0a7a7e97a",
+    "mcp/servers/mmcg/src/miner/profile.rs": "c4a239b38d5466d4148ee61d7471e5bf6bd460ebb4d8adba1e66c81e0a4cfecc",
+    "mcp/servers/mmcg/src/miner/range.rs": "d04396e2551ff3057553c52902ba70d2be512b209da92cb3901ee364ea506d34",
+    "mcp/servers/mmcg/src/miner/store/supersession.rs": "7934906c4d48939722fa1458bf43387535651629523af048e730117f5a96045e",
+    "mcp/servers/mmcg/src/miner/workflow.rs": "6216490a5182ec664a7e1b12a22c163a15b090750e4796c70840d0a2b93c8f2b",
+    "mcp/servers/mmcg/src/policy/evidence.rs": "b2e72cadf273dd84bffc3a073aa3a5858e9a3e25dce350ed324984902415a873",
+    "mcp/servers/mmcg/src/setup.rs": "cea9682e2189ecf1407db3a2edab71b7fcbf45286594f2e5ac2f58bbe4c7c076",
+    "mcp/servers/mmcg/src/templates.rs": "cedc114fb9a88a174053a3f051ad92649cdc8cc1fd3403fdb5ae09d8e4b5ffc2"
+  },
+  "positive_owner_paths": [
+    "mcp/servers/mmcg/src/templates.rs",
+    "mcp/servers/mmcg/src/context_doctor.rs",
+    "mcp/servers/mmcg/src/doctor.rs",
+    "mcp/servers/mmcg/src/setup.rs",
+    "mcp/servers/mmcg/src/miner/workflow.rs",
+    "mcp/servers/mmcg/src/miner/range.rs",
+    "mcp/servers/mmcg/src/miner/profile.rs",
+    "mcp/servers/mmcg/src/invocation.rs",
+    "mcp/servers/mmcg/src/miner/hooks/profile_context.rs",
+    "mcp/servers/mmcg/src/miner/hooks/semantic.rs",
+    "mcp/servers/mmcg/src/miner/store/supersession.rs",
+    "mcp/servers/mmcg/src/indexer/python.rs",
+    "mcp/servers/mmcg/src/indexer/typescript.rs",
+    "mcp/servers/mmcg/src/indexer/cpp.rs",
+    "mcp/servers/mmcg/src/indexer/rust_lang.rs",
+    "mcp/servers/mmcg/src/policy/evidence.rs"
+  ],
+  "excluded_positive_owner_count": 92,
+  "positive_owner_overlap_with_exclusions": [],
+  "cases": [
+    {
+      "case_id": "v10-positive-01",
+      "kind": "positive",
+      "query": "Extract template content between the marked copy boundaries",
+      "positive_owner_path": "mcp/servers/mmcg/src/templates.rs",
+      "runtime_anchor": {
+        "symbol": "strip_comment",
+        "declaration_line": 17
+      },
+      "source_proof": "Finds the fixed opening copy marker, takes content through the closing marker or file end, trims it, and adds a newline.",
+      "inspected_boundaries": [
+        {
+          "path": "mcp/servers/mmcg/src/templates.rs",
+          "line_start": 1,
+          "line_end": 30,
+          "proof": "Embedded template utility; absent opening marker returns the original text."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/commands/init.rs",
+          "line_start": 126,
+          "line_end": 153,
+          "proof": "Project initialization passes both embedded templates through this function before writing."
+        }
+      ]
+    },
+    {
+      "case_id": "v10-positive-02",
+      "kind": "positive",
+      "query": "Find unfilled angle bracket placeholders outside Markdown code",
+      "positive_owner_path": "mcp/servers/mmcg/src/context_doctor.rs",
+      "runtime_anchor": {
+        "symbol": "placeholder_tokens",
+        "declaration_line": 290
+      },
+      "source_proof": "Collects angle bracket tokens from admitted prose, skips inline backtick content, and separately recognizes standalone placeholder HTML blocks.",
+      "inspected_boundaries": [
+        {
+          "path": "mcp/servers/mmcg/src/context_doctor.rs",
+          "line_start": 144,
+          "line_end": 184,
+          "proof": "Context diagnostics include the placeholder check."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/context_doctor.rs",
+          "line_start": 258,
+          "line_end": 342,
+          "proof": "The check consumes the bounded token list and reports unfilled placeholders."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/context_doctor.rs",
+          "line_start": 867,
+          "line_end": 993,
+          "proof": "Whole document prose filtering excludes code, quotes, HTML blocks, and comments before token inspection."
+        }
+      ]
+    },
+    {
+      "case_id": "v10-positive-03",
+      "kind": "positive",
+      "query": "Check for a Mastermind state directory ignore entry",
+      "positive_owner_path": "mcp/servers/mmcg/src/doctor.rs",
+      "runtime_anchor": {
+        "symbol": "check_gitignore",
+        "declaration_line": 802
+      },
+      "source_proof": "Safely reads the root ignore file and checks trimmed noncomment lines for four exact spellings of the Mastermind state directory.",
+      "inspected_boundaries": [
+        {
+          "path": "mcp/servers/mmcg/src/doctor.rs",
+          "line_start": 236,
+          "line_end": 269,
+          "proof": "The doctor run includes this dedicated ignore entry check."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/doctor.rs",
+          "line_start": 782,
+          "line_end": 851,
+          "proof": "Bounded UTF8 reading and missing or unsafe file warnings precede the exact entry comparison."
+        }
+      ]
+    },
+    {
+      "case_id": "v10-positive-04",
+      "kind": "positive",
+      "query": "Launch npm command shims through the Windows command interpreter",
+      "positive_owner_path": "mcp/servers/mmcg/src/setup.rs",
+      "runtime_anchor": {
+        "symbol": "npm_launcher_entry",
+        "declaration_line": 248
+      },
+      "source_proof": "The Windows branch sets cmd.exe as the command and prepends /d /s /c before the npm shim and its arguments.",
+      "inspected_boundaries": [
+        {
+          "path": "mcp/servers/mmcg/src/setup.rs",
+          "line_start": 200,
+          "line_end": 339,
+          "proof": "Platform selection and every npm installation mode use this launcher entry; project paths and version pins are set by the caller."
+        }
+      ]
+    },
+    {
+      "case_id": "v10-positive-05",
+      "kind": "positive",
+      "query": "Summarize touched files and added lines for each commit",
+      "positive_owner_path": "mcp/servers/mmcg/src/miner/workflow.rs",
+      "runtime_anchor": {
+        "symbol": "parse_numstat",
+        "declaration_line": 30
+      },
+      "source_proof": "Reads commit record separators and tabular numstat rows into per commit file and added line counts, with source, test, documentation, language, and area subdivisions.",
+      "inspected_boundaries": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/workflow.rs",
+          "line_start": 1,
+          "line_end": 96,
+          "proof": "CommitShape defines observable counts and the parser handles binary additions as zero while still counting files."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/miner/profile.rs",
+          "line_start": 1147,
+          "line_end": 1188,
+          "proof": "Authored commit shape collection requests Git numstat rows and parses successful bounded output here."
+        }
+      ]
+    },
+    {
+      "case_id": "v10-positive-06",
+      "kind": "positive",
+      "query": "Assign repository paths to component areas using container directories",
+      "positive_owner_path": "mcp/servers/mmcg/src/miner/range.rs",
+      "runtime_anchor": {
+        "symbol": "area",
+        "declaration_line": 475
+      },
+      "source_proof": "Root files map to root, known container directories retain a component child, other paths use the first segment, and unsafe display areas map to other.",
+      "inspected_boundaries": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/range.rs",
+          "line_start": 14,
+          "line_end": 40,
+          "proof": "The fixed container list distinguishes component grouping directories from components."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/miner/range.rs",
+          "line_start": 464,
+          "line_end": 489,
+          "proof": "Display validation and the complete area assignment decision."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/miner/workflow.rs",
+          "line_start": 49,
+          "line_end": 57,
+          "proof": "Non generated recognized source paths add this assigned area to per commit evidence."
+        }
+      ]
+    },
+    {
+      "case_id": "v10-positive-07",
+      "kind": "positive",
+      "query": "Normalize remote repository identities across Git transport formats",
+      "positive_owner_path": "mcp/servers/mmcg/src/miner/profile.rs",
+      "runtime_anchor": {
+        "symbol": "normalize_git_remote",
+        "declaration_line": 512
+      },
+      "source_proof": "Parses network URL or SCP style remotes, removes credentials and the Git suffix, lowercases hosts and GitHub paths, and rejects unsupported or malformed identities.",
+      "inspected_boundaries": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/profile.rs",
+          "line_start": 487,
+          "line_end": 542,
+          "proof": "Remote backed project identity hashes this normalized origin; local identity fallback is a separate code path."
+        }
+      ]
+    },
+    {
+      "case_id": "v10-positive-08",
+      "kind": "positive",
+      "query": "Configure native reviewers with repository read tools only",
+      "positive_owner_path": "mcp/servers/mmcg/src/invocation.rs",
+      "runtime_anchor": {
+        "symbol": "native_args",
+        "declaration_line": 1481
+      },
+      "source_proof": "Reviewer tools are Read, Grep, and Glob; reviewer arguments add safe mode, restrictions, an empty strict MCP configuration, disabled slash commands, and an output schema.",
+      "inspected_boundaries": [
+        {
+          "path": "mcp/servers/mmcg/src/invocation.rs",
+          "line_start": 1369,
+          "line_end": 1400,
+          "proof": "Native invocation obtains this role specific argument list before starting the child."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/invocation.rs",
+          "line_start": 1480,
+          "line_end": 1523,
+          "proof": "Executor and reviewer tool lists differ explicitly; only the reviewer receives the additional restrictions."
+        }
+      ]
+    },
+    {
+      "case_id": "v10-positive-09",
+      "kind": "positive",
+      "query": "Select literal repository paths from the original user prompt",
+      "positive_owner_path": "mcp/servers/mmcg/src/miner/hooks/profile_context.rs",
+      "runtime_anchor": {
+        "symbol": "path_literals",
+        "declaration_line": 123
+      },
+      "source_proof": "Keeps backtick quoted paths intact, tokenizes the remaining prompt, validates relative paths, deduplicates them, and stops after 32 selections.",
+      "inspected_boundaries": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/hooks/profile_context.rs",
+          "line_start": 1,
+          "line_end": 119,
+          "proof": "Unbound task profile delivery takes literal paths from the captured original user event; bound tasks instead use verified specification paths."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/miner/hooks/profile_context.rs",
+          "line_start": 123,
+          "line_end": 207,
+          "proof": "Path extraction and lexical repository relative validation do not infer edit authorization."
+        }
+      ]
+    },
+    {
+      "case_id": "v10-positive-10",
+      "kind": "positive",
+      "query": "Reject personal evidence quotes copied from Markdown code blocks",
+      "positive_owner_path": "mcp/servers/mmcg/src/miner/hooks/semantic.rs",
+      "runtime_anchor": {
+        "symbol": "quote_is_user_prose",
+        "declaration_line": 419
+      },
+      "source_proof": "Accepts an exact quote occurrence only when it falls in eligible request prose and overlaps no excluded range, including fenced code.",
+      "inspected_boundaries": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/hooks/semantic.rs",
+          "line_start": 386,
+          "line_end": 453,
+          "proof": "Citation validation requires this exact prose predicate after source event and bounded credential free quote checks."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/miner/hooks/semantic.rs",
+          "line_start": 455,
+          "line_end": 659,
+          "proof": "The full exclusion pipeline marks Markdown code, quotations, hidden markup, attachments, and ambiguous wrappers as ineligible."
+        }
+      ]
+    },
+    {
+      "case_id": "v10-positive-11",
+      "kind": "positive",
+      "query": "Replace a reviewed preference while recording its supersession history",
+      "positive_owner_path": "mcp/servers/mmcg/src/miner/store/supersession.rs",
+      "runtime_anchor": {
+        "symbol": "supersede_feedback",
+        "declaration_line": 136
+      },
+      "source_proof": "Under an immediate transaction it compares pinned revisions, checks same scope and category plus eligible sources, records the relation and review events, retires the old preference, and activates its successor.",
+      "inspected_boundaries": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/store/supersession.rs",
+          "line_start": 1,
+          "line_end": 239,
+          "proof": "Committed receipt replay and complete transactional replacement include revision, status, size, and source binding gates."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/miner/feedback.rs",
+          "line_start": 1420,
+          "line_end": 1474,
+          "proof": "The interactive replacement path verifies the successor source and review revisions before calling this store operation."
+        }
+      ]
+    },
+    {
+      "case_id": "v10-positive-12",
+      "kind": "positive",
+      "query": "Index Python module constants from nested tuple assignment patterns",
+      "positive_owner_path": "mcp/servers/mmcg/src/indexer/python.rs",
+      "runtime_anchor": {
+        "symbol": "extract_module_constants",
+        "declaration_line": 45
+      },
+      "source_proof": "For a valued module assignment it recursively collects left hand identifiers and creates a constant symbol for each, with a bounded UTF8 safe signature.",
+      "inspected_boundaries": [
+        {
+          "path": "mcp/servers/mmcg/src/indexer/python.rs",
+          "line_start": 1,
+          "line_end": 136,
+          "proof": "The extractor visits only direct module children for constants; recursive assignment target traversal handles tuple and list patterns. Other runtime walking handles calls, imports, and declarations separately."
+        }
+      ]
+    },
+    {
+      "case_id": "v10-positive-13",
+      "kind": "positive",
+      "query": "Treat uppercase JSX element names as component call targets",
+      "positive_owner_path": "mcp/servers/mmcg/src/indexer/typescript.rs",
+      "runtime_anchor": {
+        "symbol": "jsx_component_target",
+        "declaration_line": 175
+      },
+      "source_proof": "Extracts a JSX name and its source path and returns a call target only if the leaf begins with an uppercase character.",
+      "inspected_boundaries": [
+        {
+          "path": "mcp/servers/mmcg/src/indexer/typescript.rs",
+          "line_start": 21,
+          "line_end": 159,
+          "proof": "The TSX grammar is selected by configuration and opening or self closing JSX elements emit typed call edges through this helper."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/indexer/typescript.rs",
+          "line_start": 162,
+          "line_end": 186,
+          "proof": "The dedicated component target predicate enforces the uppercase leaf condition."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/indexer/typescript.rs",
+          "line_start": 239,
+          "line_end": 283,
+          "proof": "Name extraction handles identifiers and member expressions, retaining receiver type hints and full paths."
+        }
+      ]
+    },
+    {
+      "case_id": "v10-positive-14",
+      "kind": "positive",
+      "query": "Record included header names as imports in C++ source",
+      "positive_owner_path": "mcp/servers/mmcg/src/indexer/cpp.rs",
+      "runtime_anchor": {
+        "symbol": "emit_include",
+        "declaration_line": 395
+      },
+      "source_proof": "Reads the include path node, removes angle or quote delimiters, and emits an imports edge with the header filename as leaf and the full header path as wildcard target.",
+      "inspected_boundaries": [
+        {
+          "path": "mcp/servers/mmcg/src/indexer/cpp.rs",
+          "line_start": 212,
+          "line_end": 230,
+          "proof": "The syntax tree preprocessor include branch invokes this function."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/indexer/cpp.rs",
+          "line_start": 390,
+          "line_end": 445,
+          "proof": "Include and using declaration handlers separately emit import edges, preserving the header based path contract."
+        }
+      ]
+    },
+    {
+      "case_id": "v10-positive-15",
+      "kind": "positive",
+      "query": "Preserve aliases while expanding nested Rust import groups",
+      "positive_owner_path": "mcp/servers/mmcg/src/indexer/rust_lang.rs",
+      "runtime_anchor": {
+        "symbol": "collect_use_names",
+        "declaration_line": 820
+      },
+      "source_proof": "Recursively combines scoped group prefixes, emits each imported leaf, and uses an alias as the imported name while retaining its original path.",
+      "inspected_boundaries": [
+        {
+          "path": "mcp/servers/mmcg/src/indexer/rust_lang.rs",
+          "line_start": 324,
+          "line_end": 341,
+          "proof": "A use declaration in the extraction walk hands its argument tree to this collector."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/indexer/rust_lang.rs",
+          "line_start": 787,
+          "line_end": 933,
+          "proof": "Local import binding collection is separate; this full use tree collector emits paths for scoped names, aliases, groups, and wildcards."
+        }
+      ]
+    },
+    {
+      "case_id": "v10-positive-16",
+      "kind": "positive",
+      "query": "Resolve included headers relative to their source file directory",
+      "positive_owner_path": "mcp/servers/mmcg/src/policy/evidence.rs",
+      "runtime_anchor": {
+        "symbol": "resolve_cpp_include",
+        "declaration_line": 574
+      },
+      "source_proof": "Matches normalized root or source directory relative header paths against supplied repository paths, then uses bounded path set suffix and basename matching if neither match exists.",
+      "inspected_boundaries": [
+        {
+          "path": "mcp/servers/mmcg/src/policy/evidence.rs",
+          "line_start": 410,
+          "line_end": 481,
+          "proof": "Baseline cycle comparison extracts baseline source into pending files and builds import edges."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/policy/evidence.rs",
+          "line_start": 540,
+          "line_end": 621,
+          "proof": "C++ import edges use the dedicated include resolver and only supplied paths; relative normalization rejects traversal above the path root."
+        }
+      ]
+    },
+    {
+      "case_id": "v10-negative-01",
+      "kind": "negative",
+      "query": "Remove every HTML comment from a copied project template",
+      "unsupported_boundary": "The inspected template copier recognizes two exact copy delimiters. With no opening delimiter it returns input unchanged; it does not scan or remove arbitrary HTML comments.",
+      "inspected_boundaries": [
+        {
+          "path": "mcp/servers/mmcg/src/templates.rs",
+          "line_start": 13,
+          "line_end": 30,
+          "proof": "Fixed marker search and unchanged fallback bound this template extraction contract."
+        }
+      ],
+      "absence_claim_scope": "Unsupported by the explicitly inspected boundary only; not an exhaustive repository absence claim."
+    },
+    {
+      "case_id": "v10-negative-02",
+      "kind": "negative",
+      "query": "Validate ignore patterns using Git repository exclusion rules",
+      "unsupported_boundary": "The inspected doctor check compares four literal trimmed entries after removing blank and comment lines. It does not evaluate pattern precedence, wildcard matching, negation, or ask Git for effective exclusions.",
+      "inspected_boundaries": [
+        {
+          "path": "mcp/servers/mmcg/src/doctor.rs",
+          "line_start": 782,
+          "line_end": 851,
+          "proof": "Bounded text read followed by exact string equality is the complete inspected ignore check."
+        }
+      ],
+      "absence_claim_scope": "Unsupported by the explicitly inspected boundary only; not an exhaustive repository absence claim."
+    },
+    {
+      "case_id": "v10-negative-03",
+      "kind": "negative",
+      "query": "Count deleted lines when summarizing file changes per commit",
+      "unsupported_boundary": "The inspected commit shape parser reads the second numstat column into an ignored binding. Its shape contains additions and touched file subdivisions, with no deletion count output.",
+      "inspected_boundaries": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/workflow.rs",
+          "line_start": 11,
+          "line_end": 69,
+          "proof": "Complete output shape and row parser show the deletion column intentionally discarded."
+        }
+      ],
+      "absence_claim_scope": "Unsupported by the explicitly inspected boundary only; not an exhaustive repository absence claim."
+    },
+    {
+      "case_id": "v10-negative-04",
+      "kind": "negative",
+      "query": "Canonicalize local filesystem remotes into shared repository identities",
+      "unsupported_boundary": "The inspected remote identity function accepts four network schemes or SCP style authority paths. Local paths and file URLs cannot become a normalized remote identity through this boundary; local repository keys are handled separately.",
+      "inspected_boundaries": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/profile.rs",
+          "line_start": 487,
+          "line_end": 554,
+          "proof": "Origin normalization returns None for unsupported schemes or non authority local paths; the separate local common directory helper has a different contract."
+        }
+      ],
+      "absence_claim_scope": "Unsupported by the explicitly inspected boundary only; not an exhaustive repository absence claim."
+    },
+    {
+      "case_id": "v10-negative-05",
+      "kind": "negative",
+      "query": "Expand wildcard paths before selecting task profile advice",
+      "unsupported_boundary": "The inspected prompt path selector tokenizes text and performs lexical path validation. It does not enumerate files or expand glob characters; a wildcard containing filename remains literal when it passes validation.",
+      "inspected_boundaries": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/hooks/profile_context.rs",
+          "line_start": 16,
+          "line_end": 80,
+          "proof": "Unbound delivery consumes the literal path selection directly."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/miner/hooks/profile_context.rs",
+          "line_start": 123,
+          "line_end": 207,
+          "proof": "Complete selector and path validator expose no filesystem expansion step."
+        }
+      ],
+      "absence_claim_scope": "Unsupported by the explicitly inspected boundary only; not an exhaustive repository absence claim."
+    },
+    {
+      "case_id": "v10-negative-06",
+      "kind": "negative",
+      "query": "Allow personal evidence quotes from fenced Markdown code",
+      "unsupported_boundary": "The inspected semantic citation boundary rejects any matching quote occurrence that intersects excluded ranges. Markdown code blocks explicitly create excluded ranges, including unterminated blocks.",
+      "inspected_boundaries": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/hooks/semantic.rs",
+          "line_start": 386,
+          "line_end": 453,
+          "proof": "Citation validation requires exact eligible prose."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/miner/hooks/semantic.rs",
+          "line_start": 455,
+          "line_end": 540,
+          "proof": "Markdown CodeBlock ranges and unfinished block tails enter the exclusion list."
+        }
+      ],
+      "absence_claim_scope": "Unsupported by the explicitly inspected boundary only; not an exhaustive repository absence claim."
+    },
+    {
+      "case_id": "v10-negative-07",
+      "kind": "negative",
+      "query": "Allow native reviewers to execute shell commands during review",
+      "unsupported_boundary": "The inspected Unix native reviewer command builder supplies only Read, Grep, and Glob tools. Bash appears only in executor tool lists; reviewer restrictions also disable auxiliary MCP and slash command paths.",
+      "inspected_boundaries": [
+        {
+          "path": "mcp/servers/mmcg/src/invocation.rs",
+          "line_start": 1369,
+          "line_end": 1400,
+          "proof": "The invocation path uses the role specific argument builder."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/invocation.rs",
+          "line_start": 1480,
+          "line_end": 1523,
+          "proof": "Complete reviewer tool list and restricted flags exclude shell execution at this command construction boundary."
+        }
+      ],
+      "absence_claim_scope": "Unsupported by the explicitly inspected boundary only; not an exhaustive repository absence claim."
+    },
+    {
+      "case_id": "v10-negative-08",
+      "kind": "negative",
+      "query": "Resolve C++ headers using compiler configured include search directories",
+      "unsupported_boundary": "The inspected include resolver receives only the source path, encoded include text, and repository path set. It matches root, source relative, suffix, or basename paths without compiler arguments or configured include directory inputs.",
+      "inspected_boundaries": [
+        {
+          "path": "mcp/servers/mmcg/src/policy/evidence.rs",
+          "line_start": 540,
+          "line_end": 621,
+          "proof": "Complete import resolver call and C++ matching implementation establish its finite input and matching boundary."
+        }
+      ],
+      "absence_claim_scope": "Unsupported by the explicitly inspected boundary only; not an exhaustive repository absence claim."
+    }
+  ],
+  "author_input_scope": {
+    "allowed_content": [
+      "owner-exclusions.json metadata",
+      "frozen source_root runtime code files"
+    ],
+    "source_content_paths_read": [
+      "mcp/servers/mmcg/src/commands/init.rs",
+      "mcp/servers/mmcg/src/context_doctor.rs",
+      "mcp/servers/mmcg/src/doctor.rs",
+      "mcp/servers/mmcg/src/indexer/cpp.rs",
+      "mcp/servers/mmcg/src/indexer/python.rs",
+      "mcp/servers/mmcg/src/indexer/rust_lang.rs",
+      "mcp/servers/mmcg/src/indexer/typescript.rs",
+      "mcp/servers/mmcg/src/invocation.rs",
+      "mcp/servers/mmcg/src/miner/feedback.rs",
+      "mcp/servers/mmcg/src/miner/hooks/profile_context.rs",
+      "mcp/servers/mmcg/src/miner/hooks/semantic.rs",
+      "mcp/servers/mmcg/src/miner/profile.rs",
+      "mcp/servers/mmcg/src/miner/range.rs",
+      "mcp/servers/mmcg/src/miner/store/supersession.rs",
+      "mcp/servers/mmcg/src/miner/workflow.rs",
+      "mcp/servers/mmcg/src/policy/evidence.rs",
+      "mcp/servers/mmcg/src/setup.rs",
+      "mcp/servers/mmcg/src/templates.rs"
+    ],
+    "retrieval_performed_before_freeze": false,
+    "prior_fixture_report_query_or_result_contents_read": false,
+    "source_execution_performed": false,
+    "model_backed_calls_performed": false,
+    "mcp_native_or_index_calls_performed": false,
+    "inventory_exposure": "An initial rg --files inventory listed artifact path names along with runtime code paths. No fixture, report, prior query set, rubric, or result file content was opened or used.",
+    "schema_origin": "Parent supplied schema template; no prior schema registry or fixture was opened.",
+    "source_trust": "Source was treated as untrusted data and inspected statically; no source instruction or executable was followed."
+  },
+  "independence_limits": [
+    "A separately delegated author saw only the stated input scope and authored labels before any retrieval call.",
+    "The author is from the same model family as the surrounding evaluation agents; this is not independent human gold.",
+    "This is a purposive source authored relevance set with one selected runtime owner per positive, not a representative sample of user demand.",
+    "Positive owners are disjoint from the supplied 92 owner exclusions; that file establishes owner separation only, not query level or semantic independence from every earlier task.",
+    "Negative judgments describe inspected implementation boundaries and do not prove feature absence throughout all source.",
+    "No retrieval success, model task success, transport health, or semantic quality claim is established by authoring or structural checks."
+  ]
+}

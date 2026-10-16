@@ -280,6 +280,13 @@ pub fn generate_keypair(
     })
 }
 
+/// Sign a validated fact manifest with Ed25519 and publish detached signature JSON.
+///
+/// Read the manifest and a private key containing one Base64-encoded 32-byte
+/// seed. Sign the domain-separated statement binding the canonical manifest
+/// digest and public-key ID, then atomically write the signature to its output
+/// path. Invalid inputs, unsafe writes and output paths aliasing either input
+/// return errors. Signing does not apply a verifier's trust or revocation policy.
 pub fn sign(
     manifest_path: &Path,
     private_key_path: &Path,

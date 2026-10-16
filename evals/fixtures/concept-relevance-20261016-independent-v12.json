@@ -1,0 +1,321 @@
+{
+  "schema_version": 1,
+  "source_head": "f418b380bf191877f5903f5c85f483f5e0e86632",
+  "source_files_sha256": {
+    "evals/benchmark/adapters/codex.py": "5b0ba40d9d01635576f42e3e114cb4c3942ec973733c70586ff3535f7aeacdf3",
+    "evals/benchmark/adapters/codex_metrics.py": "8415afc664e780ad3bab04767fa73bceb29fb39c972588fe0ccd42ac6d849e56",
+    "evals/benchmark/analysis.py": "24bf443e5055b85c8826ca0b9e0cc023481f145971aba58cf50787f0430bd3de",
+    "evals/benchmark/assessment.py": "06511965a483a83aa34b04d2284a2fb39970abf14a8bcd33b793b6d606416264",
+    "evals/benchmark/campaign.py": "8bfcebe40d6eec9cb75f0e399d21edbbfbc0488913f1077cfb9925cfe122cafd",
+    "evals/benchmark/conditions.py": "0c66a6f472808a6dfcebea4dbe03609094a15270e2da9c0280436f9f0dc1f018",
+    "evals/benchmark/corpus.py": "fa5ae7bf7f8ecb4d7ff476720d1c8b01c6909c728fbf510df94de758e5801e77",
+    "evals/benchmark/efficiency.py": "21c672dde4a1e1f68d859e143264a9decb360261ef3f8b724b8bf6595178b64d",
+    "evals/benchmark/intent.py": "ffca47307790cd7c672e6cfaac6be2c09aa5eb1b9aca74d0b252483936971041",
+    "evals/benchmark/protocol.py": "113ecebe42b9f2fa636084c55f8828d6b918b363a177ab15c12c430dfa0344e9",
+    "evals/benchmark/review.py": "33d712f14d842d211bbbcb5bb5b0696d9e0b363f038dc491eebe5010791e6a67",
+    "evals/benchmark/review_contracts.py": "5d50edec2f25a485864704459b218c70b6990ce8f62202473c0224f44815d7ca",
+    "evals/benchmark/review_io.py": "7014411a97cbfb9bdc768596b27c917e075c82ba513642e17598671099a6c567",
+    "evals/benchmark/trials.py": "58c12a62616e1ca1c1c60dd8f47373a7ef8ca2e50e405fab58883aea8bd03636",
+    "evals/intake/harness.py": "9fdefe586ad36fa49da5e4b4ef969ce5d6729244020d9ff2d68b63380f496f33",
+    "evals/persona/delivery.py": "aa45b9f4697033fe149c40980508dc1f57f4d74b1f70c0fb48344f670254c0c6",
+    "mcp/servers/mmcg/src/commands/audit.rs": "cf49d4351e25f93d425f25cd88509ddf76b0f62d0ee81437fd904197e698e9eb",
+    "mcp/servers/mmcg/src/commands/ci.rs": "c10a512e426f4ab20f8a7b29951e1f48aa019f2cfb6241a56e690f0ae832197b",
+    "mcp/servers/mmcg/src/commands/init.rs": "2bae3c80e6923958c0b686f7d7947b708d4ebd6372da46be9b53cd5b93ff8fec",
+    "mcp/servers/mmcg/src/diff.rs": "83fc82e35209fdfd5109c3b4e7a749766442915a7cacc0db440c7330ded07aad",
+    "mcp/servers/mmcg/src/evidence.rs": "77ee49301a14eb23ca824306c7537ef32d61d9be5c29d532c6b54b0adffa6a9b",
+    "mcp/servers/mmcg/src/main.rs": "f6ea634957a86ffa5daae25b74e5b8687eadded227625847eca0aca09aac703b",
+    "mcp/servers/mmcg/src/miner/collection.rs": "73aa301acdee1214f98570d1764ce8c09f1a8a18b66fe8d4d51aefb325701f4c",
+    "mcp/servers/mmcg/src/miner/collection/sources.rs": "9afafb6b5b10a6c73ad61f7ff0f0ac272212e37f655eb98a6fb20ff52e84adee",
+    "mcp/servers/mmcg/src/miner/store/collection.rs": "dd7397c50b136e2b8f48e4de563b32ee77477675fa8f24f99f9b5f61635fee20"
+  },
+  "cases": [
+    {
+      "id": "ind-v12-pos-01",
+      "split": "independent-v12",
+      "kind": "positive",
+      "query": "Verify portable instruction bytes against recorded file hashes",
+      "top": 5,
+      "relevant": [
+        {
+          "path": "evals/benchmark/conditions.py",
+          "symbol": "verify_instruction",
+          "declaration_line": 122
+        }
+      ]
+    },
+    {
+      "id": "ind-v12-pos-02",
+      "split": "independent-v12",
+      "kind": "positive",
+      "query": "Reject abbreviated audit signing key identifiers before verification",
+      "top": 5,
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/commands/audit.rs",
+          "symbol": "validate_key_ids",
+          "declaration_line": 93
+        }
+      ]
+    },
+    {
+      "id": "ind-v12-pos-03",
+      "split": "independent-v12",
+      "kind": "positive",
+      "query": "Bind acceptance criteria to excerpts from original requests",
+      "top": 5,
+      "relevant": [
+        {
+          "path": "evals/benchmark/intent.py",
+          "symbol": "validate_criteria",
+          "declaration_line": 8
+        }
+      ]
+    },
+    {
+      "id": "ind-v12-pos-04",
+      "split": "independent-v12",
+      "kind": "positive",
+      "query": "Count unknown resource measurements separately for each condition",
+      "top": 5,
+      "relevant": [
+        {
+          "path": "evals/benchmark/analysis.py",
+          "symbol": "resource_summary",
+          "declaration_line": 52
+        }
+      ]
+    },
+    {
+      "id": "ind-v12-pos-05",
+      "split": "independent-v12",
+      "kind": "positive",
+      "query": "Calculate observed attempt percentiles with linear interpolation",
+      "top": 5,
+      "relevant": [
+        {
+          "path": "evals/benchmark/efficiency.py",
+          "symbol": "distribution",
+          "declaration_line": 19
+        }
+      ]
+    },
+    {
+      "id": "ind-v12-pos-06",
+      "split": "independent-v12",
+      "kind": "positive",
+      "query": "Deduplicate identical persona candidates within each collection snapshot",
+      "top": 5,
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/collection.rs",
+          "symbol": "extract",
+          "declaration_line": 283
+        }
+      ]
+    },
+    {
+      "id": "ind-v12-pos-07",
+      "split": "independent-v12",
+      "kind": "positive",
+      "query": "Validate reviewer outcomes against frozen acceptance evidence",
+      "top": 5,
+      "relevant": [
+        {
+          "path": "evals/benchmark/assessment.py",
+          "symbol": "check_assessment",
+          "declaration_line": 15
+        }
+      ]
+    },
+    {
+      "id": "ind-v12-pos-08",
+      "split": "independent-v12",
+      "kind": "positive",
+      "query": "Compare retained profile rules against exact expected text",
+      "top": 5,
+      "relevant": [
+        {
+          "path": "evals/persona/delivery.py",
+          "symbol": "compare",
+          "declaration_line": 9
+        }
+      ]
+    },
+    {
+      "id": "ind-v12-pos-09",
+      "split": "independent-v12",
+      "kind": "positive",
+      "query": "Parse ordered adapter events into terminal result records",
+      "top": 5,
+      "relevant": [
+        {
+          "path": "evals/benchmark/protocol.py",
+          "symbol": "parse_stream",
+          "declaration_line": 144
+        }
+      ]
+    },
+    {
+      "id": "ind-v12-pos-10",
+      "split": "independent-v12",
+      "kind": "positive",
+      "query": "Publish review artifacts exclusively without replacing existing files",
+      "top": 5,
+      "relevant": [
+        {
+          "path": "evals/benchmark/review_io.py",
+          "symbol": "Root.write_new",
+          "declaration_line": 201
+        }
+      ]
+    },
+    {
+      "id": "ind-v12-pos-11",
+      "split": "independent-v12",
+      "kind": "positive",
+      "query": "Read bounded intake files while detecting concurrent replacement",
+      "top": 5,
+      "relevant": [
+        {
+          "path": "evals/intake/harness.py",
+          "symbol": "read_regular",
+          "declaration_line": 74
+        }
+      ]
+    },
+    {
+      "id": "ind-v12-pos-12",
+      "split": "independent-v12",
+      "kind": "positive",
+      "query": "Extract Python dependencies across project and development groups",
+      "top": 5,
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/commands/init.rs",
+          "symbol": "pyproject_dependencies",
+          "declaration_line": 472
+        }
+      ]
+    },
+    {
+      "id": "ind-v12-pos-13",
+      "split": "independent-v12",
+      "kind": "positive",
+      "query": "Select changed task folders for continuous integration verification",
+      "top": 5,
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/commands/ci.rs",
+          "symbol": "changed_task_folders",
+          "declaration_line": 14
+        }
+      ]
+    },
+    {
+      "id": "ind-v12-pos-14",
+      "split": "independent-v12",
+      "kind": "positive",
+      "query": "Merge duplicate LCOV line hits using maximum counts",
+      "top": 5,
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/evidence.rs",
+          "symbol": "parse_lcov",
+          "declaration_line": 2705
+        }
+      ]
+    },
+    {
+      "id": "ind-v12-pos-15",
+      "split": "independent-v12",
+      "kind": "positive",
+      "query": "Disable future transcript synchronization while retaining collection evidence",
+      "top": 5,
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/store/collection.rs",
+          "symbol": "ProfileStore::set_source_sync_enabled",
+          "declaration_line": 234
+        }
+      ]
+    },
+    {
+      "id": "ind-v12-pos-16",
+      "split": "independent-v12",
+      "kind": "positive",
+      "query": "Separate reported reasoning tokens from other output tokens",
+      "top": 5,
+      "relevant": [
+        {
+          "path": "evals/benchmark/adapters/codex_metrics.py",
+          "symbol": "output_breakdown",
+          "declaration_line": 6
+        }
+      ]
+    },
+    {
+      "id": "ind-v12-neg-01",
+      "split": "independent-v12",
+      "kind": "negative",
+      "query": "Calibrate effort changes while also changing role instructions",
+      "top": 5,
+      "relevant": []
+    },
+    {
+      "id": "ind-v12-neg-02",
+      "split": "independent-v12",
+      "kind": "negative",
+      "query": "Mark acceptance criteria met without retained answer evidence",
+      "top": 5,
+      "relevant": []
+    },
+    {
+      "id": "ind-v12-neg-03",
+      "split": "independent-v12",
+      "kind": "negative",
+      "query": "Read review artifacts through symbolic parent directories",
+      "top": 5,
+      "relevant": []
+    },
+    {
+      "id": "ind-v12-neg-04",
+      "split": "independent-v12",
+      "kind": "negative",
+      "query": "Treat negative runtime token counts as complete telemetry",
+      "top": 5,
+      "relevant": []
+    },
+    {
+      "id": "ind-v12-neg-05",
+      "split": "independent-v12",
+      "kind": "negative",
+      "query": "Move registered collection sources between different project roots",
+      "top": 5,
+      "relevant": []
+    },
+    {
+      "id": "ind-v12-neg-06",
+      "split": "independent-v12",
+      "kind": "negative",
+      "query": "Parse intake JSON containing duplicate object keys",
+      "top": 5,
+      "relevant": []
+    },
+    {
+      "id": "ind-v12-neg-07",
+      "split": "independent-v12",
+      "kind": "negative",
+      "query": "Measure native reasoning time from observed tool intervals",
+      "top": 5,
+      "relevant": []
+    },
+    {
+      "id": "ind-v12-neg-08",
+      "split": "independent-v12",
+      "kind": "negative",
+      "query": "Compare active profile rules from unsuccessful delivery packets",
+      "top": 5,
+      "relevant": []
+    }
+  ]
+}

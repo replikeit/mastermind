@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from copy import deepcopy
 import os
 import selectors
 import subprocess
@@ -33,8 +34,12 @@ class McpClient:
     """
 
     def __init__(self, command: list[str], *, cwd: Path, env: dict[str, str],
-                 timeout: float = 10, output_limit: int = 128 * 1024):
+                 timeout: float = 10, output_limit: int = 128 * 1024,
+                 request_limit: int = 16 * 1024):
+        if type(request_limit) is not int or not 1 <= request_limit <= 4 * 1024 * 1024:
+            raise BenchmarkError("invalid_limits", "MCP request_limit must be an integer from 1 to 4194304 bytes")
         self.timeout, self.output_limit = timeout, output_limit
+        self._request_limit = request_limit
         self.next_id = 0
         self.pending = bytearray()
         self.selector = selectors.DefaultSelector()
@@ -52,6 +57,7 @@ class McpClient:
             })
             if response.get("protocolVersion") not in {"2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05"}:
                 raise BenchmarkError("mcp_protocol", "unsupported MCP protocol version")
+            self._initialize_result = deepcopy(response)
             self._write({"jsonrpc": "2.0", "method": "notifications/initialized"},
                         time.monotonic() + timeout)
         except (OSError, ValueError) as error:
@@ -61,9 +67,14 @@ class McpClient:
             self.close()
             raise
 
+    @property
+    def initialize_result(self) -> dict:
+        """Return the accepted negotiation reply without exposing mutable state."""
+        return deepcopy(self._initialize_result)
+
     def _write(self, value: dict, deadline: float) -> None:
         body = canonical(value) + b"\n"
-        if len(body) > 16 * 1024:
+        if len(body) > self._request_limit:
             raise BenchmarkError("mcp_request_limit", "MCP request exceeds its byte cap")
         sent = 0
         while sent < len(body):

@@ -1,0 +1,412 @@
+{
+  "schema_version": 1,
+  "kind": "concept_search_relevance",
+  "purpose": "Second frozen holdout of previously unused retrieval intents after the first new suite was spent.",
+  "frozen_date": "2026-10-16",
+  "source_head": "f418b380bf191877f5903f5c85f483f5e0e86632",
+  "source_files_sha256": {
+    "mcp/servers/mmcg/src/commands/uninstall.rs": "6ac57c97b1c320577ebaa7ee361ed8e881c20ad4497b2f7b105f0c9d4b35edd8",
+    "mcp/servers/mmcg/src/executor_report.rs": "523d4331cd05ed12cc8ced111f4d9a1ee5080dcd7ee03c9090856ca3643bbe5d",
+    "mcp/servers/mmcg/src/indexer/vue.rs": "b9ed6f06a535b7732ac8cb3cde79ed85ab70be5297d862fb89dfe7ea300b7513",
+    "mcp/servers/mmcg/src/source_read.rs": "3f53da928ccc6db613ef99df42dc3209873d6ac075d37b0bc3fec27eb03b9ec2",
+    "mcp/servers/mmcg/src/terminal.rs": "9a31ff078802c805b56042cf3e4121061670915087a14e687df19f58dbb8f930",
+    "npm/mastermind/bin/resolve.js": "ebc4bdda0968a9badcb34e7542065d5ce2dd31dd69c427f01f26aaa2f0075144",
+    "scripts/publish-crate-artifact.py": "d2456d4b4224ab6beb37b401e7671e3638278a058495f5e67bf109bb839c7a88",
+    "scripts/validate.py": "3bd6f849a54344d9538f61796b90dcb8d031ae00a096f7110469904a6d7c1ed2"
+  },
+  "provenance": {
+    "prepared_by": "same separate relevance-case agent",
+    "new_ranking_implementation_seen": false,
+    "new_retrieval_outputs_seen": false,
+    "previous_suite_outputs_seen": false,
+    "aggregate_status_disclosure": "Root disclosed that a previous candidate had a recall regression; no affected queries, per-case results, ranking details or filter details were supplied to this author.",
+    "source_snapshot": "/var/folders/21/xj6nw_bs4rn6l5s3h8b9m3t80000gn/T/mmcg-concept-noise-nugw2gbz/source",
+    "source_basis": "The same immutable tracked-working-tree source snapshot used by both retrieval algorithms. This includes owned rustdoc from before new ranking work. SHA256 bindings identify every source file used for judgments; HEAD alone does not identify the dirty snapshot."
+  },
+  "selection": {
+    "method": "Selected eight new positive task operations from previously unused positive owners and source families, then three new unsupported-domain negatives. Read owning source contracts in the immutable snapshot, without opening current ranking/query implementation, retrieval reports, or new outputs.",
+    "scope_independence": "Same fixture author and same repository. Blind to the corrected policy and all new per-query outputs. The earlier source files may have been mentioned incidentally as distractors, but none of these positive operations was a prior positive task family. This is a second local holdout, not an independent repository, author or population sample.",
+    "why_eight": "Restricted to eight positive operations to avoid filling the sample with adjacent verification, knowledge-history, signature, or benchmark-grading families already used.",
+    "limitations": "Purposive local diagnostics only. No random sampling, user-query-frequency estimate, human-ground-truth claim, population inference, or semantic answer-quality conclusion. This set becomes spent for later tuning after its outputs are inspected."
+  },
+  "denominators": {
+    "independent_positive": 8,
+    "independent_negative": 3,
+    "planned_total": 11
+  },
+  "judgment_contract": {
+    "anchor_match": "Match exact repository-relative path and indexed symbol name. Predeclared <module> anchors count only where the module contract directly owns the request; file co-location is not relevance.",
+    "hit_at_k": "Every planned positive query is in the denominator. At least one frozen relevant anchor among first k emitted rows is a useful entry-point hit. Failed queries remain unknown and cannot be silently treated as successful empty results.",
+    "anchor_recall_at_k": "Retrieved unique relevant anchors divided by listed relevant anchors, explicitly sparse anchor recall rather than complete repository recall.",
+    "judged_precision_at_k": "Listed relevant returned rows divided by listed relevant plus listed explicit distractors. Retain all returned, judged and unjudged counts. Unlisted candidates remain unjudged, not automatically irrelevant. Undefined when no row is judged.",
+    "additional_judgments": "Any source review after seeing previously unjudged candidates belongs in a separate exploratory output bound to this fixture and retrieval-result hashes. Frozen qrels and original metrics stay unchanged.",
+    "negative_queries": "expect_empty diagnoses the unsupported complete requested operation. Lexical candidates do not prove the capability exists; failures remain failures rather than empty results.",
+    "reporting": "Retain full outputs and emitted rank order, report all denominators, and distinguish module anchors from function/method anchors."
+  },
+  "cases": [
+    {
+      "id": "h2-terminal-json-controls",
+      "split": "independent",
+      "kind": "positive",
+      "query": "make bidi and control characters visible in serialized JSON without changing meaning",
+      "top": 5,
+      "expect_empty": false,
+      "source_family": "terminal_json_visibility",
+      "phenomena": [
+        "new_owner",
+        "json_contract",
+        "natural_phrase"
+      ],
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/terminal.rs",
+          "symbol": "escape_json_line",
+          "reason": "Makes raw DEL/C1/bidi controls visible in an already serialized JSON line while preserving JSON meaning."
+        }
+      ],
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/terminal.rs",
+          "symbol": "escape",
+          "reason": "Escapes human-readable terminal text with Rust Unicode escape syntax rather than preserving serialized JSON syntax."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/terminal.rs",
+          "symbol": "unsafe_character",
+          "reason": "Only classifies unsafe characters; it does not transform a serialized JSON line."
+        }
+      ]
+    },
+    {
+      "id": "h2-receipt-source-coverage",
+      "split": "independent",
+      "kind": "positive",
+      "query": "deliver only unread source line ranges using a receipt from the same task",
+      "top": 5,
+      "expect_empty": false,
+      "source_family": "source_delivery_receipt_coverage",
+      "phenomena": [
+        "new_operation",
+        "binding_boundary",
+        "natural_phrase"
+      ],
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/source_read.rs",
+          "symbol": "deliver",
+          "reason": "Uses task/path/digest-bound receipt ranges to omit already delivered source lines and emits uncovered segments."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/source_read.rs",
+          "symbol": "<module>",
+          "reason": "Owns source delivery with process-local receipts for previous source ranges."
+        }
+      ],
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/source_read.rs",
+          "symbol": "load",
+          "reason": "Loads a source snapshot but does not apply a receipt or select uncovered lines."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/source_read.rs",
+          "symbol": "merge",
+          "reason": "Coalesces numeric ranges without checking task/source binding or delivering source text."
+        }
+      ]
+    },
+    {
+      "id": "h2-canonical-report-markers",
+      "split": "independent",
+      "kind": "positive",
+      "query": "parse canonical executor report YAML inside explicit report marker comments",
+      "top": 5,
+      "expect_empty": false,
+      "source_family": "canonical_executor_report_parsing",
+      "phenomena": [
+        "new_owner",
+        "format_disambiguation",
+        "natural_phrase"
+      ],
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/executor_report.rs",
+          "symbol": "parse_canonical_str",
+          "reason": "Requires canonical schema after parsing the provided report text, including explicit report-marker blocks."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/executor_report.rs",
+          "symbol": "parse_str",
+          "reason": "Detects canonical report markers, extracts their YAML and parses the canonical value."
+        }
+      ],
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/executor_report.rs",
+          "symbol": "parse_legacy",
+          "reason": "Parses legacy claim/verification YAML and cannot establish the canonical schema requirement."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/executor_report.rs",
+          "symbol": "completion_rejection",
+          "reason": "Assesses an already parsed completion status and does not parse a marker-delimited YAML report."
+        }
+      ]
+    },
+    {
+      "id": "h2-vue-script-symbols",
+      "split": "independent",
+      "kind": "positive",
+      "query": "extract TypeScript script symbols from Vue single file components",
+      "top": 5,
+      "expect_empty": false,
+      "source_family": "vue_single_file_component_extraction",
+      "phenomena": [
+        "new_owner",
+        "language_boundary",
+        "natural_phrase"
+      ],
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/indexer/vue.rs",
+          "symbol": "extract_script",
+          "reason": "Isolates the SFC script, parses its TS/JS tree, and sends it through the TypeScript symbol walker."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/indexer/vue.rs",
+          "symbol": "extract",
+          "reason": "Vue language extractor dispatches script and template extraction for the SFC."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/indexer/vue.rs",
+          "symbol": "<module>",
+          "reason": "Owns the Vue SFC contract: one component file whose script reparses as TS/JS."
+        }
+      ],
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/indexer/vue.rs",
+          "symbol": "extract_template",
+          "reason": "Extracts template component calls rather than script declarations."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/indexer/vue.rs",
+          "symbol": "pascal_case",
+          "reason": "Formats a component name without extracting script symbols."
+        }
+      ]
+    },
+    {
+      "id": "h2-npm-platform-binary",
+      "split": "independent",
+      "kind": "positive",
+      "query": "select the native npm binary matching operating system architecture and Linux libc",
+      "top": 5,
+      "expect_empty": false,
+      "source_family": "npm_native_platform_resolution",
+      "phenomena": [
+        "new_package",
+        "platform_mapping",
+        "natural_phrase"
+      ],
+      "relevant": [
+        {
+          "path": "npm/mastermind/bin/resolve.js",
+          "symbol": "packageName",
+          "reason": "Maps OS, CPU architecture and Linux libc to the matching native package name."
+        },
+        {
+          "path": "npm/mastermind/bin/resolve.js",
+          "symbol": "resolveBinary",
+          "reason": "Resolves the selected platform package's native executable, including the Windows suffix."
+        }
+      ],
+      "distractors": [
+        {
+          "path": "npm/mastermind/bin/resolve.js",
+          "symbol": "runBinary",
+          "reason": "Launches an already selected executable and propagates exit/signal behavior without choosing the platform package."
+        }
+      ]
+    },
+    {
+      "id": "h2-local-markdown-links",
+      "split": "independent",
+      "kind": "positive",
+      "query": "find broken local Markdown links while ignoring fenced examples and external URLs",
+      "top": 5,
+      "expect_empty": false,
+      "source_family": "static_documentation_link_validation",
+      "phenomena": [
+        "new_owner",
+        "syntax_disambiguation",
+        "natural_phrase"
+      ],
+      "relevant": [
+        {
+          "path": "scripts/validate.py",
+          "symbol": "collect_relative_links",
+          "reason": "Collects local Markdown file links after excluding code examples, external URLs and anchor-only links."
+        },
+        {
+          "path": "scripts/validate.py",
+          "symbol": "validate_relative_links",
+          "reason": "Resolves collected local link paths and reports missing targets."
+        }
+      ],
+      "distractors": [
+        {
+          "path": "scripts/validate.py",
+          "symbol": "validate_wikilinks",
+          "reason": "Checks wiki-link references, a different link syntax and target contract."
+        },
+        {
+          "path": "scripts/validate.py",
+          "symbol": "_strip_code",
+          "reason": "Only removes code examples; it does not collect local links or check target existence."
+        }
+      ]
+    },
+    {
+      "id": "h2-crate-metadata-identity",
+      "split": "independent",
+      "kind": "positive",
+      "query": "reject crate publish metadata whose package identity differs from the packaged archive",
+      "top": 5,
+      "expect_empty": false,
+      "source_family": "release_crate_metadata_identity",
+      "phenomena": [
+        "new_owner",
+        "artifact_binding",
+        "natural_phrase"
+      ],
+      "relevant": [
+        {
+          "path": "scripts/publish-crate-artifact.py",
+          "symbol": "validate_crate_binding",
+          "reason": "Compares publish metadata name/version with the package identity read from the exact .crate archive."
+        },
+        {
+          "path": "scripts/publish-crate-artifact.py",
+          "symbol": "prepare_metadata",
+          "reason": "Builds metadata from the packaged crate and validates identity before returning it."
+        }
+      ],
+      "distractors": [
+        {
+          "path": "scripts/publish-crate-artifact.py",
+          "symbol": "build_publish_body",
+          "reason": "Encodes the Cargo publish wire body without checking metadata against archive identity."
+        },
+        {
+          "path": "scripts/publish-crate-artifact.py",
+          "symbol": "_json_without_duplicates",
+          "reason": "Rejects duplicate JSON keys but does not compare a metadata object with a crate archive."
+        }
+      ]
+    },
+    {
+      "id": "h2-uninstall-preview",
+      "split": "independent",
+      "kind": "positive",
+      "query": "preview project uninstall removals while preserving context and guidance files",
+      "top": 5,
+      "expect_empty": false,
+      "source_family": "uninstall_dry_run_contract",
+      "phenomena": [
+        "new_owner",
+        "operation_boundary",
+        "natural_phrase"
+      ],
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/commands/uninstall.rs",
+          "symbol": "do_uninstall",
+          "reason": "Prints project/global removal plans unless forced and leaves CONTEXT.md and CLAUDE.md untouched."
+        }
+      ],
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/commands/uninstall.rs",
+          "symbol": "scope_label",
+          "reason": "Produces a display label for the selected scope without computing or executing the uninstall plan."
+        }
+      ]
+    },
+    {
+      "id": "h2-negative-browser-execution",
+      "split": "independent",
+      "kind": "negative",
+      "query": "execute Vue template scripts remotely inside live browser sessions",
+      "top": 5,
+      "expect_empty": true,
+      "source_family": "unsupported_remote_browser_execution",
+      "phenomena": [
+        "unsupported_semantics",
+        "lexical_distractor",
+        "new_domain"
+      ],
+      "relevant": [],
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/indexer/vue.rs",
+          "symbol": "extract_script",
+          "reason": "Performs local static symbol extraction; it does not execute scripts or control a browser."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/indexer/vue.rs",
+          "symbol": "extract_template",
+          "reason": "Scans local template component calls without starting a browser session."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/indexer/vue.rs",
+          "symbol": "<module>",
+          "reason": "Describes a static SFC extractor, not a remote browser execution capability."
+        }
+      ]
+    },
+    {
+      "id": "h2-negative-s3-crate-upload",
+      "split": "independent",
+      "kind": "negative",
+      "query": "upload crate archives to an Amazon S3 storage bucket",
+      "top": 5,
+      "expect_empty": true,
+      "source_family": "unsupported_object_storage_upload",
+      "phenomena": [
+        "unsupported_semantics",
+        "lexical_distractor",
+        "new_domain"
+      ],
+      "relevant": [],
+      "distractors": [
+        {
+          "path": "scripts/publish-crate-artifact.py",
+          "symbol": "publish",
+          "reason": "Uploads exact verified crate bytes to crates.io's fixed registry endpoint, not an S3 bucket."
+        },
+        {
+          "path": "scripts/publish-crate-artifact.py",
+          "symbol": "_extract_crate",
+          "reason": "Extracts a bounded local crate archive and has no remote object-storage operation."
+        }
+      ]
+    },
+    {
+      "id": "h2-negative-nautical",
+      "split": "independent",
+      "kind": "negative",
+      "query": "bathymetric nautical tides harmonic prediction",
+      "top": 5,
+      "expect_empty": true,
+      "source_family": "unsupported_nautical_forecasting",
+      "phenomena": [
+        "unsupported_semantics",
+        "out_of_vocabulary",
+        "new_domain"
+      ],
+      "relevant": [],
+      "distractors": []
+    }
+  ]
+}

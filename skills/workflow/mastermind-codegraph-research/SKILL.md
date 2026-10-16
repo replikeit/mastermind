@@ -41,13 +41,55 @@ apply.
   of behavior; a scope-incomplete signal means it classified only returned
   changed files.
 - **Concept discovery** (the intent is known but the exact symbol is not) →
-  `mmcg_concept`, then an exact structural query on the selected candidate.
-  The query joins normalized terms with `AND`; it is not sentence-level semantic
-  retrieval. Start with one to three distinctive terms from the question. If
-  empty, split a compound concept or remove a term for one scoped retry before
-  reporting a bounded negative. Query only returned symbol names.
+  Before retrieval, freeze a query-only `request_contract`: the requested
+  `operation` and exact quoted `constraints` with unique `id`, original-query
+  `text` and `kind` (`input`, `state`, `scope`, `result`). Pass it to
+  `mmcg_concept_prepare`, inspect the bound source, then `mmcg_concept_finish`.
+  The original query stays authoritative if that ledger is incomplete or
+  mistaken. Omitting it supplies the whole query as the operation with an empty
+  parsed ledger; it does not remove any original constraint.
+  Supply alternative implementation vocabulary in optional `hints` when the
+  request uses different words; preserve the original query as the criterion.
+  Assess the requested action, object and constraints for every candidate.
+  Topic mentions, unrelated dispatch and neighboring operations are insufficient.
+  Follow `operation-roles-v3`: relevant entries declare `implementation`,
+  `entrypoint`, `contract`, `essential_helper` or `supporting_context`.
+  First identify the candidate's own observable behavior, then its relationship
+  to the operation. A concrete branch inside a broad handler or file module may
+  own or expose the operation through a mandatory inspected path; delegation
+  alone does not reduce it to context. A helper need not implement the whole
+  workflow, but being mandatory or running earlier is insufficient: its own
+  behavior must perform a defining domain step or enforce a requested constraint.
+  Useful generic readiness, configuration or lifecycle prerequisites remain
+  context. Bind non-implementation
+  roles to inspected caller/consumer/implementation source ranges through
+  `supporting_evidence`; entrypoints/contracts/helpers require evidence outside
+  their own declaration. Generic call-graph membership is insufficient.
+  Admit context only for specific inspected navigation to an existing requested
+  operation satisfying every explicit constraint. Opposite or missing behavior,
+  a narrower scope, or a place to add the feature is irrelevant. An uninspected
+  constraint stays unknown. Prefer semantic roles for necessary steps and
+  specific result entrypoints, including cached-result paths.
+  Relevant entries require a typed `witness` with own `behavior`, `relation` and
+  `constraint_checks`. Cover every declared constraint exactly once by
+  `constraint_id`, `status=matched` and inspected source-bound `evidence`.
+  Contradicted checks require irrelevant; uninspected checks require unknown,
+  including for context. Preserve input options separately from runtime state
+  and result conditions: an omitted selector does not establish absent binding,
+  and rendering instructions does not execute the requested action.
+  Record unresolved intent in `query_ambiguities`; useful results for an
+  ambiguous query may only be supporting context under a plausible original
+  interpretation that retains every explicit constraint. The full `candidates` page
+  preserves navigation. Use its `semantic_candidates` partition for operation
+  claims and retain `supporting_context` separately.
+  Read beyond incomplete excerpts when needed; otherwise keep the candidate
+  unknown. The calling agent supplies judgments; the server checks source
+  bindings, completeness and declared consistency, not semantic truth. Reprepare
+  after a role-contract change. Retrieval limits and unknowns prevent an absence claim.
+  Use `mmcg_concept` for a fast lexical shortlist, then read source; its score
+  does not establish operation relevance. Query only returned symbol names.
 - **Structural discovery** (symbols, indexed callers/callees, imports, bounded blast radius) → mmcg first. It understands syntax better than literal text search, but remains name-based and bounded.
-- **Literal** (string contents, log messages, comments, config values) → `Grep` / `Read`. mmcg doesn't index strings.
+- **Literal** (string contents, log messages, comments, config values) → `Grep` / `Read`. The persistent symbol index omits strings; operation review may read bounded source bodies.
 - **Runtime contract** (dynamic dispatch, reflection, generated code, re-exports, cross-language edges, exact branch behavior) → read source and run focused tests.
 
 ## Query decision table
@@ -55,7 +97,8 @@ apply.
 | Question | Tool |
 |---|---|
 | What bounded context does this planner/executor/auditor need? | `mmcg_brief` |
-| Which local symbols match this natural-language concept? | `mmcg_concept` |
+| Which declarations implement this operation? | `mmcg_concept_prepare`, source reads, `mmcg_concept_finish` |
+| Which declarations have these lexical terms? | `mmcg_concept` |
 | Does symbol `X` exist? (get `file:line` + signature) | `mmcg_search` |
 | Where are several already-known symbols defined? | `mmcg_search` with `names` when the advertised schema supports it |
 | What calls `X`? | `mmcg_callers` |

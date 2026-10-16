@@ -2070,8 +2070,12 @@ pub struct ConceptResponse {
     pub schema_version: u32,
     pub repository_content_untrusted: bool,
     pub query_terms: Vec<String>,
-    /// Exact FTS matches in the checked derived corpus before output-safety
-    /// validation of the bounded ranked page.
+    pub ranking_terms: Vec<String>,
+    pub match_mode: ConceptMatchMode,
+    pub minimum_matched_terms: u32,
+    pub minimum_ranking_terms: u32,
+    pub include_tests: bool,
+    /// Exact qualifying FTS matches before output-safety validation and LIMIT.
     pub indexed_total: u32,
     pub count: u32,
     pub result_truncated: bool,
@@ -2083,6 +2087,14 @@ pub struct ConceptResponse {
     pub limits: ConceptLimits,
     pub precision_notes: Vec<String>,
     pub candidates: Vec<ConceptCandidate>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ConceptMatchMode {
+    AllTerms,
+    PartialTerms,
+    AllAndPartialTerms,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
@@ -2110,6 +2122,7 @@ pub struct ConceptCandidate {
     pub line: u32,
     pub signature_shape: String,
     pub matched_fields: Vec<String>,
+    pub matched_terms: Vec<String>,
     pub citation: String,
     pub score: f64,
 }
@@ -2141,6 +2154,7 @@ fn concept_match_query(terms: &[String]) -> String {
         .join(" AND ")
 }
 
+#[cfg(test)]
 pub(crate) fn concept_verified(
     store: &Store,
     query: &str,
@@ -2148,12 +2162,71 @@ pub(crate) fn concept_verified(
     expected_data_version: u64,
     freshness: ConceptFreshness,
 ) -> Result<ConceptResponse, ConceptError> {
-    let query_terms = validate_concept_request(query, top)?;
+    concept_verified_with_tests(store, query, top, false, expected_data_version, freshness)
+}
+
+pub(crate) fn concept_verified_with_tests(
+    store: &Store,
+    query: &str,
+    top: u32,
+    include_tests: bool,
+    expected_data_version: u64,
+    freshness: ConceptFreshness,
+) -> Result<ConceptResponse, ConceptError> {
+    let query_terms =
+        crate::store::distinct_concept_query_terms(&validate_concept_request(query, top)?)
+            .map_err(|_| ConceptError::Internal)?;
+    let ranking_terms = crate::store::informative_concept_terms(query_terms.clone());
+    let ranking_term_mask = query_terms
+        .iter()
+        .enumerate()
+        .fold(0u32, |mask, (index, term)| {
+            mask | if ranking_terms.contains(term) {
+                1 << index
+            } else {
+                0
+            }
+        });
     let match_query = concept_match_query(&query_terms);
     store
         .begin_read_snapshot()
         .map_err(|_| ConceptError::SnapshotChanged)?;
-    let search = store.search_concepts_bounded(&match_query, top);
+    let search = store
+        .search_concepts_bounded(&match_query, top, include_tests)
+        .and_then(|(full_total, mut hits)| {
+            if query_terms.len() >= 3 {
+                let minimum = brief_u32(query_terms.len().div_ceil(2)).max(2);
+                let minimum_ranking = minimum.min(3).min(brief_u32(ranking_terms.len()));
+                let (total, partial_hits) = store.search_concepts_partial_bounded(
+                    &query_terms,
+                    ranking_term_mask,
+                    minimum,
+                    minimum_ranking,
+                    top,
+                    include_tests,
+                )?;
+                if total > full_total || full_total == 0 {
+                    // Full matches have maximal primary and total term counts,
+                    // so the shared ordering keeps them ahead of supplements.
+                    let mode = if full_total == 0 {
+                        ConceptMatchMode::PartialTerms
+                    } else {
+                        ConceptMatchMode::AllAndPartialTerms
+                    };
+                    return Ok((total, partial_hits, mode, minimum));
+                }
+            }
+            let mask = (1u32 << query_terms.len()) - 1;
+            for hit in &mut hits {
+                hit.matched_term_mask = mask;
+            }
+            Ok((
+                full_total,
+                hits,
+                ConceptMatchMode::AllTerms,
+                brief_u32(query_terms.len()),
+            ))
+        });
     let documentation_stats = store.concept_documentation_stats();
     let end = store.end_read_snapshot();
     let data_version_after = store.data_version().map_err(|_| {
@@ -2167,7 +2240,7 @@ pub(crate) fn concept_verified(
     if data_version_after != expected_data_version {
         return Err(ConceptError::SnapshotChanged);
     }
-    let (indexed_total, hits) = search.map_err(|_| {
+    let (indexed_total, hits, match_mode, minimum_matched_terms) = search.map_err(|_| {
         if store.interrupt_source().is_some() {
             ConceptError::WorkLimitExceeded
         } else {
@@ -2215,6 +2288,12 @@ pub(crate) fn concept_verified(
             line: hit.line,
             signature_shape: hit.signature_shape,
             matched_fields,
+            matched_terms: query_terms
+                .iter()
+                .enumerate()
+                .filter(|(index, _)| hit.matched_term_mask & (1u32 << index) != 0)
+                .map(|(_, term)| term.clone())
+                .collect(),
             citation: format!("{}:{}", hit.path, hit.line),
             score: hit.score,
         });
@@ -2222,6 +2301,15 @@ pub(crate) fn concept_verified(
     let mut precision_notes = vec![
         "bm25_score_is_query_local_lower_is_better_not_confidence".to_string(),
         "unicode_lowercase_without_canonical_equivalence".to_string(),
+        "porter_stemming_not_semantic_equivalence".to_string(),
+        "query_terms_deduplicated_by_fts_token_sequence_first_spelling_retained".to_string(),
+        "partial_rank_counts_ranking_terms_then_all_terms_then_bm25".to_string(),
+        "full_matches_precede_partial_supplements_in_the_same_bounded_page".to_string(),
+        "partial_requires_up_to_three_non_grammar_terms_within_original_floor".to_string(),
+        "rust_test_attributes_and_canonical_cfg_test_module_descendants_excluded_unless_include_tests".to_string(),
+        "compound_cfg_unmarked_tests_and_non_rust_test_scopes_are_not_classified".to_string(),
+        "english_function_words_zero_primary_partial_ranking_weight_unless_all_are_function_words"
+            .to_string(),
         format!(
             "documentation_search_supported_languages:{}",
             crate::store::CONCEPT_DOCUMENTATION_SUPPORTED_LANGUAGES
@@ -2250,9 +2338,20 @@ pub(crate) fn concept_verified(
         (false, false) => None,
     };
     Ok(ConceptResponse {
-        schema_version: 2,
+        schema_version: 5,
         repository_content_untrusted: true,
+        minimum_ranking_terms: if match_mode != ConceptMatchMode::AllTerms {
+            minimum_matched_terms
+                .min(3)
+                .min(brief_u32(ranking_terms.len()))
+        } else {
+            brief_u32(ranking_terms.len())
+        },
+        include_tests,
         query_terms,
+        ranking_terms,
+        match_mode,
+        minimum_matched_terms,
         indexed_total,
         count: brief_u32(candidates.len()),
         result_truncated,
@@ -6971,7 +7070,7 @@ mod tests {
             concept_match_query(&validate_concept_request("foo OR bar", 10).unwrap()),
             "\"foo\" AND \"or\" AND \"bar\""
         );
-        for invalid in ["", "---", "foo\0bar", "foo\nbar"] {
+        for invalid in ["", "---", "foo\0bar", "foo\nbar", "foo\tbar", "foo\rbar"] {
             assert_eq!(
                 validate_concept_request(invalid, 10),
                 Err(ConceptError::InvalidArguments)
@@ -6986,6 +7085,13 @@ mod tests {
             Err(ConceptError::InvalidArguments)
         );
         assert_eq!(
+            validate_concept_request(
+                "a an the this that these those to for of from in on at by with into",
+                10
+            ),
+            Err(ConceptError::InvalidArguments)
+        );
+        assert_eq!(
             validate_concept_request(&"a".repeat(65), 10),
             Err(ConceptError::InvalidArguments)
         );
@@ -6995,6 +7101,201 @@ mod tests {
                 Err(ConceptError::InvalidArguments)
             );
         }
+    }
+
+    fn concept_symbols(names: &[&str]) -> Store {
+        let store = Store::open_ephemeral().unwrap();
+        for (index, name) in names.iter().enumerate() {
+            store
+                .insert_symbol(
+                    name,
+                    "function",
+                    &format!("src/p{index}.rs"),
+                    1,
+                    2,
+                    None,
+                    None,
+                )
+                .unwrap();
+        }
+        store.finalize_index_contracts_current().unwrap();
+        store
+    }
+
+    #[test]
+    fn concept_partial_grammar_cannot_supply_the_minimum_domain_evidence() {
+        let store = concept_symbols(&["amber_birch_cedar_for", "amber_to_the_in_for"]);
+        let response = concept_verified(
+            &store,
+            "amber birch cedar to the in for quartz",
+            1,
+            store.data_version().unwrap(),
+            verified_concept_freshness(),
+        )
+        .unwrap();
+        assert_eq!(
+            response.query_terms,
+            ["amber", "birch", "cedar", "to", "the", "in", "for", "quartz"]
+        );
+        assert_eq!(
+            response.ranking_terms,
+            ["amber", "birch", "cedar", "quartz"]
+        );
+        assert_eq!(response.minimum_matched_terms, 4);
+        assert_eq!(response.minimum_ranking_terms, 3);
+        assert_eq!(response.indexed_total, 1);
+        assert_eq!(response.count, 1);
+        assert_eq!(response.candidates[0].name, "amber_birch_cedar_for");
+        assert_eq!(
+            response.candidates[0].matched_terms,
+            ["amber", "birch", "cedar", "for"]
+        );
+        assert_eq!(response.truncation_reason, None);
+        let all_grammar = concept_verified(
+            &store,
+            "to the",
+            5,
+            store.data_version().unwrap(),
+            verified_concept_freshness(),
+        )
+        .unwrap();
+        assert_eq!(all_grammar.ranking_terms, ["to", "the"]);
+        assert_eq!(all_grammar.candidates[0].name, "amber_to_the_in_for");
+    }
+
+    #[test]
+    fn concept_stemming_keeps_full_matches_ahead_of_partial_supplements() {
+        let store = concept_symbols(&["serve_concept_handler", "serve_handler", "other_concept"]);
+        let response = concept_verified(
+            &store,
+            "serving concepts",
+            10,
+            store.data_version().unwrap(),
+            verified_concept_freshness(),
+        )
+        .unwrap();
+        assert_eq!(response.match_mode, ConceptMatchMode::AllTerms);
+        assert_eq!(response.minimum_matched_terms, 2);
+        assert_eq!(response.indexed_total, 1);
+        assert_eq!(response.candidates[0].name, "serve_concept_handler");
+        assert_eq!(
+            response.candidates[0].matched_terms,
+            ["serving", "concepts"]
+        );
+
+        let strict = concept_verified(
+            &store,
+            "serving concepts handler",
+            10,
+            store.data_version().unwrap(),
+            verified_concept_freshness(),
+        )
+        .unwrap();
+        assert_eq!(strict.match_mode, ConceptMatchMode::AllAndPartialTerms);
+        assert_eq!(strict.indexed_total, 2);
+        assert_eq!(strict.candidates[0].matched_terms.len(), 3);
+        assert_eq!(strict.candidates[0].name, "serve_concept_handler");
+        assert_eq!(strict.candidates[1].name, "serve_handler");
+        let page = concept_verified(
+            &store,
+            "serving concepts handler",
+            1,
+            store.data_version().unwrap(),
+            verified_concept_freshness(),
+        )
+        .unwrap();
+        assert_eq!(page.indexed_total, 2);
+        assert_eq!(page.candidates, strict.candidates[..1]);
+        assert_eq!(page.truncation_reason, Some("top"));
+    }
+
+    #[test]
+    fn concept_partial_matches_apply_floor_and_count_before_the_ranked_limit() {
+        let store = concept_symbols(&["amber_birch_cedar", "amber_birch", "amber_cedar", "amber"]);
+        let response = concept_verified(
+            &store,
+            "amber birch cedar quartz",
+            2,
+            store.data_version().unwrap(),
+            verified_concept_freshness(),
+        )
+        .unwrap();
+        assert_eq!(response.match_mode, ConceptMatchMode::PartialTerms);
+        assert_eq!(response.minimum_matched_terms, 2);
+        assert_eq!(response.indexed_total, 3);
+        assert_eq!(response.count, 2);
+        assert_eq!(response.truncation_reason, Some("top"));
+        assert_eq!(response.candidates[0].name, "amber_birch_cedar");
+        assert_eq!(
+            response.candidates[0].matched_terms,
+            ["amber", "birch", "cedar"]
+        );
+        assert!(response
+            .candidates
+            .iter()
+            .all(|candidate| candidate.matched_terms.len() >= 2));
+
+        let stricter = concept_verified(
+            &store,
+            "amber birch cedar dogwood quartz",
+            10,
+            store.data_version().unwrap(),
+            verified_concept_freshness(),
+        )
+        .unwrap();
+        assert_eq!(stricter.minimum_matched_terms, 3);
+        assert_eq!(stricter.indexed_total, 1);
+        assert_eq!(stricter.candidates[0].name, "amber_birch_cedar");
+        assert!(!stricter.truncated);
+    }
+
+    #[test]
+    fn concept_same_stem_terms_cannot_inflate_the_fallback_floor() {
+        let store = concept_symbols(&["concept_handler"]);
+        let response = concept_verified(
+            &store,
+            "concept concepts missing",
+            10,
+            store.data_version().unwrap(),
+            verified_concept_freshness(),
+        )
+        .unwrap();
+        assert_eq!(response.query_terms, ["concept", "missing"]);
+        assert_eq!(response.minimum_matched_terms, 2);
+        assert_eq!(response.match_mode, ConceptMatchMode::AllTerms);
+        assert_eq!(response.indexed_total, 0);
+        assert!(response.candidates.is_empty());
+
+        let partial = concept_verified(
+            &store,
+            "concept concepts absent missing",
+            10,
+            store.data_version().unwrap(),
+            verified_concept_freshness(),
+        )
+        .unwrap();
+        assert_eq!(partial.query_terms, ["concept", "absent", "missing"]);
+        assert_eq!(partial.match_mode, ConceptMatchMode::PartialTerms);
+        assert_eq!(partial.minimum_matched_terms, 2);
+        assert_eq!(partial.indexed_total, 0);
+        assert!(partial.candidates.is_empty());
+    }
+
+    #[test]
+    fn concept_operator_words_remain_literal_in_fts_matches() {
+        let store = concept_symbols(&["amber_or_quartz", "amber", "quartz"]);
+        let response = concept_verified(
+            &store,
+            "amber OR quartz",
+            10,
+            store.data_version().unwrap(),
+            verified_concept_freshness(),
+        )
+        .unwrap();
+        assert_eq!(response.match_mode, ConceptMatchMode::AllTerms);
+        assert_eq!(response.query_terms, ["amber", "or", "quartz"]);
+        assert_eq!(response.indexed_total, 1);
+        assert_eq!(response.candidates[0].name, "amber_or_quartz");
     }
 
     #[test]
@@ -7024,7 +7325,7 @@ mod tests {
             verified_concept_freshness(),
         )
         .unwrap();
-        assert_eq!(response.schema_version, 2);
+        assert_eq!(response.schema_version, 5);
         assert_eq!(response.indexed_total, 100);
         assert_eq!(response.count, 10);
         assert!(response.result_truncated);
@@ -7153,21 +7454,23 @@ mod tests {
                 .unwrap();
         }
         store.finalize_index_contracts_current().unwrap();
-        assert!(!store.push_work_budget(crate::store::WorkBudget {
-            deadline: None,
-            op_ticks: Some(1),
-        }));
-        let result = concept_verified(
-            &store,
-            "common",
-            50,
-            store.data_version().unwrap(),
-            verified_concept_freshness(),
-        );
-        assert_eq!(result, Err(ConceptError::WorkLimitExceeded));
-        assert!(store.interrupt_source().is_some());
-        store.pop_work_budget();
-        let _ = store.take_interrupt_source();
+        for query in ["common", "common handler missing"] {
+            assert!(!store.push_work_budget(crate::store::WorkBudget {
+                deadline: None,
+                op_ticks: Some(1),
+            }));
+            let result = concept_verified(
+                &store,
+                query,
+                50,
+                store.data_version().unwrap(),
+                verified_concept_freshness(),
+            );
+            assert_eq!(result, Err(ConceptError::WorkLimitExceeded));
+            assert!(store.interrupt_source().is_some());
+            store.pop_work_budget();
+            let _ = store.take_interrupt_source();
+        }
         std::fs::remove_file(path).ok();
     }
 

@@ -22,7 +22,11 @@ pub fn set(root: &Path, client_id: &str, allowed: bool) -> Result<(), Box<dyn st
     Ok(())
 }
 
-/// Update the existing root/client grant without printing CLI output.
+/// Grant or revoke profile read access for one repository root and MCP client.
+///
+/// Validates the client identifier and canonicalizes a UTF-8 directory root
+/// before updating the global profile store. Revoking access is a no-op when
+/// no store exists. Filesystem and store failures propagate; nothing is printed.
 pub fn configure(
     root: &Path,
     client_id: &str,

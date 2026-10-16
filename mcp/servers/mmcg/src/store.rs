@@ -26,7 +26,7 @@ use std::time::{Duration, Instant};
 
 const SCHEMA_VERSION: &str = "9";
 pub const CONCEPT_NORMALIZATION_META_KEY: &str = "concept_normalization_version";
-pub const CONCEPT_NORMALIZATION_VERSION: &str = "mmcg-concepts-v3";
+pub const CONCEPT_NORMALIZATION_VERSION: &str = "mmcg-concepts-v5";
 pub const CONCEPT_DOCUMENTATION_SUPPORTED_LANGUAGES: &str = "javascript,python,rust,tsx,typescript";
 pub const CONCEPT_DOCUMENTATION_INDEXED_META_KEY: &str = "concept_documentation_indexed_count";
 pub const CONCEPT_DOCUMENTATION_SECRET_OMITTED_META_KEY: &str =
@@ -82,7 +82,7 @@ const CONCEPT_SCHEMA_DDL: &str = r#"
         documentation_search,
         content='symbol_concepts',
         content_rowid='symbol_id',
-        tokenize = "unicode61 remove_diacritics 0 tokenchars '_'"
+        tokenize = "porter unicode61 remove_diacritics 0 tokenchars '_'"
     );
     CREATE TRIGGER symbol_concepts_ai
     AFTER INSERT ON symbol_concepts BEGIN
@@ -366,6 +366,18 @@ pub struct Symbol {
     /// `",partial,sealed,"`); `None` if none. Used by `mmcg_unreferenced`
     /// filtering and `mmcg_search` partial-class collapse.
     pub decorators: Option<String>,
+}
+
+/// A bounded review inventory includes excluded children so their source cannot
+/// leak into an eligible parent's operation text.
+pub(crate) struct ConceptReviewSymbol {
+    pub symbol: Symbol,
+    pub language: String,
+    pub name_search: String,
+    pub path_search: String,
+    pub signature_search: String,
+    pub documentation_search: String,
+    pub eligible: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -798,6 +810,62 @@ pub(crate) struct ConceptStoreHit {
     pub signature_matched: bool,
     pub documentation_matched: bool,
     pub score: f64,
+    pub matched_term_mask: u32,
+}
+
+// Test scopes are syntactic evidence. Only the canonical single cfg(test)
+// module attribute is recognized; compound cfg expressions remain unclassified.
+// Follow parent IDs through their index: the language index would rescan all
+// Rust declarations for every node while expanding test scopes.
+fn concept_test_filter(include_tests: bool) -> &'static str {
+    if include_tests {
+        "1"
+    } else {
+        "s.id NOT IN (
+            WITH RECURSIVE test_scope(id) AS (
+                SELECT id FROM symbols
+                WHERE language = 'rust' AND (
+                    instr(COALESCE(decorators, ''), ',test,') > 0
+                    OR instr(COALESCE(decorators, ''), ',rstest,') > 0
+                    OR COALESCE(decorators, '') GLOB '*::test,*'
+                    OR (kind = 'mod' AND decorators = ',cfg,'
+                        AND length(CAST(signature AS BLOB)) <= 65536
+                        AND substr(replace(replace(replace(replace(signature,
+                            ' ', ''), char(9), ''), char(10), ''), char(13), ''),
+                            1, 12) = '#[cfg(test)]')
+                )
+                UNION
+                SELECT child.id FROM symbols child INDEXED BY idx_symbols_parent
+                JOIN test_scope parent ON child.parent_id = parent.id
+                WHERE child.language = 'rust'
+            ) SELECT id FROM test_scope
+        )"
+    }
+}
+
+const CONCEPT_HIT_COLUMNS: &str = "s.name, s.kind, s.language, s.file_path,
+    s.line_start, c.signature_search,
+    instr(highlight(symbol_concepts_fts, 0, char(30), char(31)), char(30)) > 0,
+    instr(highlight(symbol_concepts_fts, 1, char(30), char(31)), char(30)) > 0,
+    instr(highlight(symbol_concepts_fts, 2, char(30), char(31)), char(30)) > 0,
+    instr(highlight(symbol_concepts_fts, 3, char(30), char(31)), char(30)) > 0,
+    bm25(symbol_concepts_fts, 10.0, 4.0, 2.0, 1.0) AS score";
+
+fn concept_store_hit(row: &rusqlite::Row<'_>) -> SqlResult<ConceptStoreHit> {
+    Ok(ConceptStoreHit {
+        name: row.get(0)?,
+        kind: row.get(1)?,
+        language: row.get(2)?,
+        path: row.get(3)?,
+        line: row.get(4)?,
+        signature_shape: row.get(5)?,
+        name_matched: row.get(6)?,
+        path_matched: row.get(7)?,
+        signature_matched: row.get(8)?,
+        documentation_matched: row.get(9)?,
+        score: row.get(10)?,
+        matched_term_mask: row.get(11)?,
+    })
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -844,7 +912,12 @@ fn push_concept_term(term: String, seen: &mut HashSet<String>, terms: &mut Vec<S
     }
 }
 
-fn split_concept_identifier(value: &[char], seen: &mut HashSet<String>, terms: &mut Vec<String>) {
+fn split_concept_identifier(
+    value: &[char],
+    retain_components: bool,
+    seen: &mut HashSet<String>,
+    terms: &mut Vec<String>,
+) {
     if value.is_empty() {
         return;
     }
@@ -859,6 +932,15 @@ fn split_concept_identifier(value: &[char], seen: &mut HashSet<String>, terms: &
     for part in value.split(|character| matches!(character, '_' | '-')) {
         if part.is_empty() {
             continue;
+        }
+        // A compound component remains searchable as one query requirement,
+        // even when its camel/acronym spelling also has smaller parts.
+        if retain_components {
+            push_concept_term(
+                lowercase_concept(&part.iter().collect::<String>()),
+                seen,
+                terms,
+            );
         }
         let mut start = 0usize;
         for index in 1..part.len() {
@@ -888,38 +970,155 @@ fn split_concept_identifier(value: &[char], seen: &mut HashSet<String>, terms: &
     }
 }
 
-fn normalized_concept_terms(value: &str, formatting_whitespace: bool) -> Option<Vec<String>> {
+fn normalized_concept_terms(
+    value: &str,
+    formatting_whitespace: bool,
+    retain_components: bool,
+    deduplicate: bool,
+) -> Option<Vec<String>> {
     let mut seen = HashSet::new();
     let mut terms = Vec::new();
     let mut identifier = Vec::new();
     for character in value.chars() {
         if character.is_control() {
             if formatting_whitespace && matches!(character, '\r' | '\n' | '\t') {
-                split_concept_identifier(&identifier, &mut seen, &mut terms);
+                split_concept_identifier(&identifier, retain_components, &mut seen, &mut terms);
                 identifier.clear();
                 continue;
             }
             return None;
         }
         if character.is_alphanumeric() || matches!(character, '_' | '-') {
+            if identifier.is_empty() && !deduplicate {
+                seen.clear();
+            }
             identifier.push(character);
         } else {
-            split_concept_identifier(&identifier, &mut seen, &mut terms);
+            split_concept_identifier(&identifier, retain_components, &mut seen, &mut terms);
             identifier.clear();
         }
     }
-    split_concept_identifier(&identifier, &mut seen, &mut terms);
+    split_concept_identifier(&identifier, retain_components, &mut seen, &mut terms);
     Some(terms)
 }
 
-/// Query lexical normalization. Index fields use the same splitting and
-/// lowercase rules but additionally admit CR/LF/tab as declaration separators.
+/// Query normalization retains every requirement used for candidate admission.
 pub(crate) fn concept_terms(value: &str) -> Option<Vec<String>> {
-    normalized_concept_terms(value, false)
+    normalized_concept_terms(value, false, false, true)
+}
+
+/// Grammatical glue has no partial-ranking weight when other terms survive.
+/// Admission still requires the original terms and threshold.
+pub(crate) fn informative_concept_terms(terms: Vec<String>) -> Vec<String> {
+    let informative = terms
+        .iter()
+        .filter(|term| {
+            !matches!(
+                term.as_str(),
+                "a" | "an"
+                    | "the"
+                    | "this"
+                    | "that"
+                    | "these"
+                    | "those"
+                    | "to"
+                    | "for"
+                    | "of"
+                    | "from"
+                    | "in"
+                    | "on"
+                    | "at"
+                    | "by"
+                    | "with"
+                    | "into"
+                    | "onto"
+                    | "as"
+                    | "is"
+                    | "are"
+                    | "be"
+                    | "been"
+                    | "being"
+                    | "was"
+                    | "were"
+                    | "it"
+                    | "its"
+                    | "their"
+                    | "our"
+                    | "your"
+                    | "i"
+                    | "we"
+                    | "you"
+                    | "me"
+                    | "us"
+                    | "please"
+                    | "how"
+                    | "where"
+                    | "which"
+                    | "and"
+                    | "when"
+                    | "whether"
+                    | "than"
+                    | "rather"
+            )
+        })
+        .cloned()
+        .collect::<Vec<_>>();
+    if informative.is_empty() {
+        terms
+    } else {
+        informative
+    }
+}
+
+/// Use SQLite's index tokenizer to collapse equivalent query terms. A bounded
+/// scratch database keeps this available when the serving index is read-only.
+pub(crate) fn distinct_concept_query_terms(terms: &[String]) -> SqlResult<Vec<String>> {
+    let tokenizer = Connection::open_in_memory()?;
+    tokenizer.execute_batch(
+        "CREATE TABLE symbols(id INTEGER PRIMARY KEY);
+         CREATE TABLE meta(key TEXT PRIMARY KEY, value TEXT NOT NULL);",
+    )?;
+    tokenizer.execute_batch(CONCEPT_SCHEMA_DDL)?;
+    tokenizer.execute_batch(
+        "CREATE VIRTUAL TABLE query_tokens USING fts5vocab(symbol_concepts_fts, instance);",
+    )?;
+    for (index, term) in terms.iter().enumerate() {
+        tokenizer.execute("INSERT INTO symbols(id) VALUES (?1)", [(index + 1) as u32])?;
+        tokenizer.execute(
+            "INSERT INTO symbol_concepts(
+                 symbol_id, name_search, path_search, path_sort,
+                 signature_search, documentation_search
+             ) VALUES (?1, ?2, '', '', '', '')",
+            params![(index + 1) as u32, term],
+        )?;
+    }
+    let mut tokens = vec![Vec::<String>::new(); terms.len()];
+    let mut statement =
+        tokenizer.prepare("SELECT doc, term FROM query_tokens ORDER BY doc, offset")?;
+    let mut rows = statement.query([])?;
+    while let Some(row) = rows.next()? {
+        let document: u32 = row.get(0)?;
+        tokens[document as usize - 1].push(row.get(1)?);
+    }
+    let mut seen = HashSet::new();
+    Ok(terms
+        .iter()
+        .zip(tokens)
+        .filter_map(|(term, tokens)| {
+            // A term with no FTS tokens must remain an unmet query condition.
+            (tokens.is_empty() || seen.insert(tokens)).then(|| term.clone())
+        })
+        .collect())
 }
 
 fn concept_index_terms(value: &str) -> Option<Vec<String>> {
-    normalized_concept_terms(value, true)
+    normalized_concept_terms(value, true, true, true)
+}
+
+pub(crate) fn concept_operation_search(value: &str) -> Option<String> {
+    // Keep expansions unique within each identifier, but preserve repeated
+    // source occurrences so BM25 can distinguish an operation's main object.
+    normalized_concept_terms(value, true, true, false).map(|terms| terms.join(" "))
 }
 
 fn concept_path_sort(value: &str) -> String {
@@ -2778,9 +2977,7 @@ impl Store {
         let selected = std::path::absolute(db_path)
             .map_err(|error| sqlite_io_error("resolve managed index", error))?;
         if selected != expected && selected != requested_expected {
-            let mut store = Self::open_read_only(&selected)?;
-            store.serve_root = Some(root.canonical_root().to_path_buf());
-            return Ok(store);
+            return Self::open_read_only_for_root(&selected, root.canonical_root());
         }
         root.ensure_directory(Path::new(".mastermind"))
             .map_err(|error| sqlite_bounded_error("create managed index directory", error))?;
@@ -3051,6 +3248,18 @@ impl Store {
     /// changes during the query, as Lens does around each refresh.
     pub fn open_read_only(db_path: impl AsRef<Path>) -> SqlResult<Self> {
         Self::open_read_only_with_deadline(db_path, None)
+    }
+
+    /// Bind read-only source delivery to an approved root without granting
+    /// managed-index creation, schema migration or refresh authority.
+    pub fn open_read_only_for_root(db_path: impl AsRef<Path>, root: &Path) -> SqlResult<Self> {
+        let root = crate::bounded_fs::RootCapability::open(root)
+            .map_err(|error| sqlite_bounded_error("open read-only repository root", error))?;
+        let mut store = Self::open_read_only(db_path)?;
+        root.verify()
+            .map_err(|error| sqlite_bounded_error("verify read-only repository root", error))?;
+        store.serve_root = Some(root.canonical_root().to_path_buf());
+        Ok(store)
     }
 
     pub(crate) fn open_read_only_with_deadline(
@@ -3393,14 +3602,20 @@ impl Store {
     }
 
     fn install_progress_handler(&self) {
+        self.inherit_work_budget(&self.conn);
+    }
+
+    /// Scratch queries consume the same request deadline, cancellation marker
+    /// and operation counter as the serving connection.
+    pub(crate) fn inherit_work_budget(&self, connection: &Connection) {
         let top = self.guard_stack.borrow().last().copied();
         let Some(frame) = top else {
-            let _ = self.conn.progress_handler(0, None::<fn() -> bool>);
+            let _ = connection.progress_handler(0, None::<fn() -> bool>);
             return;
         };
         let ops_counter = self.ops_counter.clone();
         let interrupt_source = self.interrupt_source.clone();
-        let _ = self.conn.progress_handler(
+        let _ = connection.progress_handler(
             1_000,
             Some(move || {
                 ops_counter.fetch_add(1, Ordering::Relaxed);
@@ -7424,62 +7639,37 @@ impl Store {
         Ok((total, hits))
     }
 
+    #[cfg(test)]
     pub(crate) fn search_concepts(
         &self,
         match_query: &str,
         top: u32,
     ) -> SqlResult<Vec<ConceptStoreHit>> {
-        let mut statement = self.conn.prepare(
-            "SELECT s.name,
-                    s.kind,
-                    s.language,
-                    s.file_path,
-                    s.line_start,
-                    c.signature_search,
-                    instr(
-                        highlight(symbol_concepts_fts, 0, char(30), char(31)),
-                        char(30)
-                    ) > 0 AS name_matched,
-                    instr(
-                        highlight(symbol_concepts_fts, 1, char(30), char(31)),
-                        char(30)
-                    ) > 0 AS path_matched,
-                    instr(
-                        highlight(symbol_concepts_fts, 2, char(30), char(31)),
-                        char(30)
-                    ) > 0 AS signature_matched,
-                    instr(
-                        highlight(symbol_concepts_fts, 3, char(30), char(31)),
-                        char(30)
-                    ) > 0 AS documentation_matched,
-                    bm25(symbol_concepts_fts, 10.0, 4.0, 2.0, 1.0) AS score
+        self.search_concepts_with_tests(match_query, top, true)
+    }
+
+    fn search_concepts_with_tests(
+        &self,
+        match_query: &str,
+        top: u32,
+        include_tests: bool,
+    ) -> SqlResult<Vec<ConceptStoreHit>> {
+        let runtime_filter = concept_test_filter(include_tests);
+        let mut statement = self.conn.prepare(&format!(
+            "SELECT {CONCEPT_HIT_COLUMNS}, 0 AS matched_term_mask
              FROM symbol_concepts_fts
              JOIN symbol_concepts c ON c.symbol_id = symbol_concepts_fts.rowid
              JOIN symbols s ON s.id = c.symbol_id
-             WHERE symbol_concepts_fts MATCH ?1
+             WHERE symbol_concepts_fts MATCH ?1 AND {runtime_filter}
              ORDER BY score ASC,
                       c.path_sort COLLATE BINARY ASC,
                       s.line_start ASC,
                       s.kind COLLATE BINARY ASC,
                       s.name COLLATE BINARY ASC,
                       s.id ASC
-            LIMIT ?2",
-        )?;
-        let rows = statement.query_map(params![match_query, top], |row| {
-            Ok(ConceptStoreHit {
-                name: row.get(0)?,
-                kind: row.get(1)?,
-                language: row.get(2)?,
-                path: row.get(3)?,
-                line: row.get(4)?,
-                signature_shape: row.get(5)?,
-                name_matched: row.get(6)?,
-                path_matched: row.get(7)?,
-                signature_matched: row.get(8)?,
-                documentation_matched: row.get(9)?,
-                score: row.get(10)?,
-            })
-        })?;
+            LIMIT ?2"
+        ))?;
+        let rows = statement.query_map(params![match_query, top], concept_store_hit)?;
         rows.collect()
     }
 
@@ -7487,20 +7677,139 @@ impl Store {
         &self,
         match_query: &str,
         top: u32,
+        include_tests: bool,
     ) -> SqlResult<(u32, Vec<ConceptStoreHit>)> {
         // FTS5 does not allow bm25() in the same SELECT as a window aggregate.
         // The query layer holds one read snapshot across this exact count and
         // the ranked page, so both values still describe one corpus revision.
+        let runtime_filter = concept_test_filter(include_tests);
         let total = self.conn.query_row(
-            "SELECT COUNT(*)
+            &format!(
+                "SELECT COUNT(*)
              FROM symbol_concepts_fts
              JOIN symbol_concepts c ON c.symbol_id = symbol_concepts_fts.rowid
              JOIN symbols s ON s.id = c.symbol_id
-             WHERE symbol_concepts_fts MATCH ?1",
+             WHERE symbol_concepts_fts MATCH ?1 AND {runtime_filter}"
+            ),
             [match_query],
             |row| row.get(0),
         )?;
-        let hits = self.search_concepts(match_query, top)?;
+        let hits = self.search_concepts_with_tests(match_query, top, include_tests)?;
+        Ok((total, hits))
+    }
+
+    pub(crate) fn concept_review_symbols(
+        &self,
+        include_tests: bool,
+        limit: usize,
+    ) -> SqlResult<(u32, Vec<ConceptReviewSymbol>)> {
+        let total = self.symbol_count()?;
+        let runtime_filter = concept_test_filter(include_tests);
+        let mut statement = self.conn.prepare(&format!(
+            "SELECT {SYMBOL_COLS_S}, COALESCE(s.language, 'unknown'),
+                    COALESCE(c.name_search, ''), COALESCE(c.path_search, ''),
+                    COALESCE(c.signature_search, ''), COALESCE(c.documentation_search, ''),
+                    CASE WHEN {runtime_filter} THEN 1 ELSE 0 END
+             FROM symbols s LEFT JOIN symbol_concepts c ON c.symbol_id = s.id
+             ORDER BY s.file_path COLLATE BINARY, s.line_start, s.line_end,
+                      s.kind COLLATE BINARY, s.name COLLATE BINARY, s.id
+             LIMIT ?1"
+        ))?;
+        let rows = statement.query_map([limit.clamp(1, 20_000) as i64], |row| {
+            Ok(ConceptReviewSymbol {
+                symbol: Self::row_to_symbol(row)?,
+                language: row.get(9)?,
+                name_search: row.get(10)?,
+                path_search: row.get(11)?,
+                signature_search: row.get(12)?,
+                documentation_search: row.get(13)?,
+                eligible: row.get(14)?,
+            })
+        })?;
+        Ok((total, rows.collect::<SqlResult<Vec<_>>>()?))
+    }
+
+    pub(crate) fn search_concepts_partial_bounded(
+        &self,
+        terms: &[String],
+        ranking_term_mask: u32,
+        minimum_matched_terms: u32,
+        minimum_ranking_terms: u32,
+        top: u32,
+        include_tests: bool,
+    ) -> SqlResult<(u32, Vec<ConceptStoreHit>)> {
+        if !(3..=16).contains(&terms.len())
+            || minimum_matched_terms < 2
+            || minimum_matched_terms as usize > terms.len()
+            || minimum_ranking_terms > minimum_matched_terms
+            || ranking_term_mask.count_ones() < minimum_ranking_terms
+        {
+            return Err(rusqlite::Error::InvalidQuery);
+        }
+        let quoted = terms
+            .iter()
+            .map(|term| format!("\"{}\"", term.replace('"', "\"\"")))
+            .collect::<Vec<_>>();
+        let mut parameters = vec![
+            SqlValue::Text(quoted.join(" OR ")),
+            SqlValue::Integer(i64::from(minimum_matched_terms)),
+            SqlValue::Integer(i64::from(top)),
+            SqlValue::Integer(i64::from(ranking_term_mask)),
+            SqlValue::Integer(i64::from(minimum_ranking_terms)),
+        ];
+        parameters.extend(quoted.into_iter().map(SqlValue::Text));
+        let term_queries = (0..terms.len())
+            .map(|index| {
+                format!(
+                    "SELECT rowid, {index} AS term_index FROM symbol_concepts_fts
+                     WHERE symbol_concepts_fts MATCH ?{}",
+                    index + 6
+                )
+            })
+            .collect::<Vec<_>>()
+            .join(" UNION ALL ");
+        let qualified = format!(
+            "WITH term_matches AS ({term_queries}),
+             qualified AS (
+                 SELECT rowid, COUNT(*) AS matched_term_count,
+                        SUM(CASE WHEN (?4 & (1 << term_index)) != 0 THEN 1 ELSE 0 END)
+                            AS ranked_term_count,
+                        SUM(1 << term_index) AS matched_term_mask
+                 FROM term_matches GROUP BY rowid
+                 HAVING COUNT(*) >= ?2 AND ranked_term_count >= ?5
+             )"
+        );
+        let runtime_filter = concept_test_filter(include_tests);
+        // Count the same qualified corpus as the ranked page, before LIMIT.
+        // Every MATCH uses the serving connection's work budget and snapshot.
+        let total = self.conn.query_row(
+            &format!(
+                "{qualified} SELECT COUNT(*) FROM qualified q
+                 JOIN symbol_concepts c ON c.symbol_id = q.rowid
+                 JOIN symbols s ON s.id = c.symbol_id WHERE {runtime_filter}"
+            ),
+            rusqlite::params_from_iter(&parameters),
+            |row| row.get(0),
+        )?;
+        if total == 0 {
+            return Ok((0, Vec::new()));
+        }
+        let mut statement = self.conn.prepare(&format!(
+            "{qualified}
+             SELECT {CONCEPT_HIT_COLUMNS}, q.matched_term_mask
+             FROM symbol_concepts_fts
+             JOIN qualified q ON q.rowid = symbol_concepts_fts.rowid
+             JOIN symbol_concepts c ON c.symbol_id = q.rowid
+             JOIN symbols s ON s.id = c.symbol_id
+             WHERE symbol_concepts_fts MATCH ?1 AND {runtime_filter}
+             ORDER BY q.ranked_term_count DESC, q.matched_term_count DESC, score ASC,
+                      c.path_sort COLLATE BINARY ASC, s.line_start ASC,
+                      s.kind COLLATE BINARY ASC, s.name COLLATE BINARY ASC, s.id ASC
+             LIMIT ?3"
+        ))?;
+        let hits = statement
+            .query_map(rusqlite::params_from_iter(&parameters), concept_store_hit)?
+            .collect::<SqlResult<Vec<_>>>()?;
         Ok((total, hits))
     }
 
@@ -11600,7 +11909,7 @@ mod tests {
     #[test]
     fn concept_normalization_splits_digits_identifiers_and_unicode_lowercase() {
         let terms =
-            concept_terms("sha256Digest HTTP2Server OAuth2Client path/to_file-name").unwrap();
+            concept_index_terms("sha256Digest HTTP2Server OAuth2Client path/to_file-name").unwrap();
         for expected in [
             "sha256digest",
             "sha",
@@ -11624,10 +11933,21 @@ mod tests {
             );
         }
 
-        let expanded = concept_terms("İValue").unwrap();
+        let expanded = concept_index_terms("İValue").unwrap();
         assert!(expanded.iter().any(|term| term == "i\u{307}value"));
         assert!(expanded.iter().any(|term| term == "i\u{307}"));
         assert!(expanded.iter().any(|term| term == "value"));
+
+        assert_eq!(
+            concept_terms("parse_JUnit").unwrap(),
+            ["parsejunit", "parse", "j", "unit"]
+        );
+        assert!(concept_index_terms("parse_JUnit read_TraceSpan")
+            .unwrap()
+            .contains(&"junit".to_string()));
+        assert!(concept_index_terms("parse_JUnit read_TraceSpan")
+            .unwrap()
+            .contains(&"tracespan".to_string()));
     }
 
     #[test]
@@ -11934,6 +12254,122 @@ mod tests {
             .is_empty());
 
         std::fs::remove_file(path).ok();
+    }
+
+    #[test]
+    fn concept_partial_can_find_generic_names_through_owned_documentation() {
+        let store = Store::open_ephemeral().unwrap();
+        let id = store
+            .insert_symbol("audit", "function", "src/lib.rs", 1, 1, None, None)
+            .unwrap();
+        store.conn.execute(
+            "UPDATE symbol_concepts SET documentation_search = 'amber birch cedar' WHERE symbol_id = ?1",
+            [id],
+        ).unwrap();
+        store.finalize_index_contracts_current().unwrap();
+        let terms = ["amber", "birch", "cedar", "quartz"].map(str::to_string);
+        let (total, hits) = store
+            .search_concepts_partial_bounded(&terms, 0b1111, 2, 2, 1, false)
+            .unwrap();
+        assert_eq!(total, 1);
+        assert_eq!(hits.len(), 1);
+        assert_eq!(hits[0].name, "audit");
+        assert_eq!(hits[0].matched_term_mask, 0b0111);
+    }
+
+    #[test]
+    fn concept_test_scopes_stay_bounded_with_many_inline_modules() {
+        let store = Store::open_ephemeral().unwrap();
+        store.conn.execute_batch("BEGIN").unwrap();
+        for line in 1..=512 {
+            let module = store
+                .insert_symbol(
+                    "scope",
+                    "mod",
+                    "src/lib.rs",
+                    line,
+                    line,
+                    Some("#[cfg(test)] mod scope"),
+                    None,
+                )
+                .unwrap();
+            let helper = store
+                .insert_symbol(
+                    "needle",
+                    "function",
+                    "src/lib.rs",
+                    line,
+                    line,
+                    None,
+                    Some(module),
+                )
+                .unwrap();
+            let runtime = store
+                .insert_symbol("needle", "function", "src/lib.rs", line, line, None, None)
+                .unwrap();
+            store
+                .conn
+                .execute(
+                    "UPDATE symbols SET language = 'rust' WHERE id IN (?1, ?2, ?3)",
+                    params![module, helper, runtime],
+                )
+                .unwrap();
+            store
+                .conn
+                .execute(
+                    "UPDATE symbols SET decorators = ',cfg,' WHERE id = ?1",
+                    [module],
+                )
+                .unwrap();
+        }
+        store.conn.execute_batch("COMMIT").unwrap();
+        store.finalize_index_contracts_current().unwrap();
+        let (total, hits) = store
+            .with_work_budget(
+                WorkBudget {
+                    deadline: None,
+                    op_ticks: Some(500),
+                },
+                || store.search_concepts_bounded("\"needle\"", 1, false),
+            )
+            .expect("test scopes must not rescan a language for each parent");
+        assert_eq!(total, 512);
+        assert_eq!(hits.len(), 1);
+    }
+
+    #[test]
+    fn concept_empty_partial_result_completes_within_a_bounded_vm_allowance() {
+        let store = Store::open_ephemeral().unwrap();
+        for line in 1..=4096 {
+            store
+                .insert_symbol("common", "function", "src/lib.rs", line, line, None, None)
+                .unwrap();
+        }
+        store.finalize_index_contracts_current().unwrap();
+        // One frequent word is insufficient evidence. Re-ranking its broad
+        // posting list after finding no qualified rows exhausts this allowance.
+        assert!(!store.push_work_budget(WorkBudget {
+            deadline: None,
+            op_ticks: Some(200),
+        }));
+        let result = store.search_concepts_partial_bounded(
+            &[
+                "common".to_string(),
+                "absent".to_string(),
+                "missing".to_string(),
+            ],
+            0b111,
+            2,
+            2,
+            10,
+            false,
+        );
+        let interrupted = store.take_interrupt_source();
+        store.pop_work_budget();
+        let (total, hits) = result.expect("empty partial results must fit the VM allowance");
+        assert_eq!(total, 0);
+        assert!(hits.is_empty());
+        assert_eq!(interrupted, None);
     }
 
     #[test]

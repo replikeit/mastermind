@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "authored_date": "2026-10-16",
+  "source_head": "f418b380bf191877f5903f5c85f483f5e0e86632",
+  "freeze_policy": "Do not alter frozen judgments or queries after retrieval or results are observed. Changes require a new fixture version.",
+  "artifacts": {
+    "evals/fixtures/concept-relevance-20261016-independent-v11.json": {
+      "sha256": "74e196a24573d9843d8fd218b0c471fe23cd67d79e0dc5fabd027f3fb9be644d",
+      "mode": "0444"
+    },
+    "evals/fixtures/concept-relevance-20261016-independent-v11.source-evidence.json": {
+      "sha256": "3f66bf6eb4aeb25300996e7f6a845df44875eaa1e5a07d94ee6035bce7d8ef03",
+      "mode": "0444"
+    },
+    ".mastermind/research/concept-context-20261016/v11-author-notes.json": {
+      "sha256": "80d485a3a0bbec04df56c8ad71081c67df12438bd1591e3f683079a015945dd7"
+    }
+  },
+  "owner_exclusions": {
+    "path": ".mastermind/research/concept-context-20261016/owner-exclusions.json",
+    "sha256": "e134aec5ac751124cc769e9cbebaf564546819775db3cb4f9eac232edd4bf30c",
+    "count": 108
+  },
+  "new_positive_owner_files": [
+    "mcp/servers/mmcg/src/commands/new_spec.rs",
+    "mcp/servers/mmcg/src/hex.rs",
+    "mcp/servers/mmcg/src/miner/hooks/background.rs",
+    "mcp/servers/mmcg/src/miner/hooks/evaluate.rs",
+    "mcp/servers/mmcg/src/miner/hooks/influence.rs",
+    "mcp/servers/mmcg/src/miner/hooks/journal/intake.rs",
+    "mcp/servers/mmcg/src/miner/hooks/journal/local.rs",
+    "mcp/servers/mmcg/src/miner/hooks/journal/task.rs",
+    "mcp/servers/mmcg/src/miner/hooks/journal/task_mining.rs",
+    "mcp/servers/mmcg/src/miner/hooks/local.rs",
+    "mcp/servers/mmcg/src/miner/hooks/native.rs",
+    "mcp/servers/mmcg/src/miner/hooks/refiner.rs",
+    "mcp/servers/mmcg/src/miner/hooks/task_mining.rs",
+    "mcp/servers/mmcg/src/miner/hooks/worker.rs",
+    "mcp/servers/mmcg/src/miner/store/curation.rs",
+    "mcp/servers/mmcg/src/miner/store/habit_supersession.rs"
+  ],
+  "new_owner_count": 16,
+  "excluded_owner_overlap": [],
+  "query_only_preflight": {
+    "status": "passed",
+    "case_count": 24,
+    "positive_count": 16,
+    "negative_count": 8,
+    "top": 5,
+    "word_count_range": [
+      8,
+      8
+    ],
+    "maximum_utf8_bytes": 74,
+    "maximum_distinct_alphanumeric_terms": 8
+  },
+  "authorship_limits": [
+    "The fixture is source-authored and purposively sampled, not drawn from observed user searches or a probability sample.",
+    "New owner paths have zero overlap with the supplied 108 exclusions; source families are not disjoint, and most owners belong to native hook, journal and persona lifecycle code.",
+    "Natural-language queries and relevance judgments were authored by one independent agent from source inspection; no independent human adjudication was performed.",
+    "Source-derived wording may resemble declarations and comments, so this fixture does not establish general semantic search quality or transfer to unrelated repositories.",
+    "Negative labels concern explicit unsupported operations or constraints in the cited inspected code. They are bounded judgments, not exhaustive repository-wide absence proofs.",
+    "No retrieval implementation, index, prior query fixture, baseline, result report, role content, agent history, model call, MCP retrieval, network operation or executable test informed the judgments.",
+    "Only query shape, source anchoring, source hashes and owner exclusion overlap were checked before freezing; no retrieval or semantic success claim follows from those checks."
+  ]
+}

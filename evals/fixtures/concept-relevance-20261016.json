@@ -1,0 +1,760 @@
+{
+  "schema_version": 1,
+  "kind": "concept_search_relevance",
+  "purpose": "Frozen source-backed evaluation of a new concept retrieval policy, separating new operations from known-topic regression.",
+  "frozen_date": "2026-10-16",
+  "source_head": "f418b380bf191877f5903f5c85f483f5e0e86632",
+  "source_files_sha256": {
+    "evals/behavior/evidence.py": "1711c95d144b3a69f63b941097def318d4d85cc4582ace1f898beb47267b5219",
+    "evals/benchmark/evidence_binding.py": "ffe54c1c4903a8fde874de183083290413f582d9367f49a4ea66692396a89e4d",
+    "evals/benchmark/judge_calibration.py": "6ce1342cb507e787bcd6ebc34cd2a412ed1484c346812ed13e0d6c75a7e085ee",
+    "mcp/servers/mmcg/src/auto_repair.rs": "47a45b4a3900546c56c0034aec9436d38b6bc1bbacdad722f47207206c3c2c19",
+    "mcp/servers/mmcg/src/context_doctor.rs": "cb462f8556bcacc05949b20021dfc8f6100c75a8d3aa137fecd9992822cca5d2",
+    "mcp/servers/mmcg/src/declared_files.rs": "b66b5e8b5453e929eb04c2ba649954cc5530c496caf8c37dc45d3d7720a3757a",
+    "mcp/servers/mmcg/src/document_graph.rs": "690f12a1c3d23e4e27e6032bcbb75c07d7fb3df31f00a65b93f44fba34a4ef73",
+    "mcp/servers/mmcg/src/document_sections.rs": "8f8d18d885d11b11371d5f980f192a5c426f50c3247deaddfe699170298c2e37",
+    "mcp/servers/mmcg/src/evidence/junit.rs": "469544fb4a3e27ce2833d1c1530372ce286f1b560122b0fc9b9014bf067b03b2",
+    "mcp/servers/mmcg/src/evidence/otel.rs": "6b9db033e17be01a1157738ba6ac57dbd083d363a9059829692ebefd4d8afc1b",
+    "mcp/servers/mmcg/src/fact_signature.rs": "573cf37167427f60b4dce10a97dd8e20e5961608878d21b30dce8f18907a37ce",
+    "mcp/servers/mmcg/src/lessons.rs": "3dc2341d5e3e7f6e2f2b62de95949db78a1ea906522a5fb9d237672619d164cb",
+    "mcp/servers/mmcg/src/miner/access.rs": "aba42dd3a5434a2945a524239f441760182f9450b8eb954858db58ae5a5034ad",
+    "mcp/servers/mmcg/src/miner/feedback.rs": "fa84ca2cc4b822c44f1a9cb91e674507ba9bfd186df3719b316a371598e18651",
+    "mcp/servers/mmcg/src/miner/hooks/mod.rs": "665f27f73ae0ddf32a9611b0cf660aa4667507f51e78227c34a5583bf7d40f25",
+    "mcp/servers/mmcg/src/miner/store.rs": "20114ae5d41c5bb4bf51de77389c8a94b8bb1d25faef62bc0dfc8ef5dbcf89e3",
+    "mcp/servers/mmcg/src/onboarding.rs": "89d801ed0a039de7e6f910601e712e0fdfe5703a8251a92f961ddf82d4de13e7",
+    "mcp/servers/mmcg/src/project_claims.rs": "cd0be21e2aaf33713361e6a3c979c2b8e18eeff15af935528cb61846d33b4d77",
+    "mcp/servers/mmcg/src/sarif_export.rs": "ad5b527bd89de43a0ff0ef7cb956a3fe63000721e19a8035f2fa3681cebc29e9",
+    "mcp/servers/mmcg/src/setup.rs": "cea9682e2189ecf1407db3a2edab71b7fcbf45286594f2e5ac2f58bbe4c7c076",
+    "mcp/servers/mmcg/src/source_read.rs": "3f53da928ccc6db613ef99df42dc3209873d6ac075d37b0bc3fec27eb03b9ec2",
+    "mcp/servers/mmcg/src/task_scaffold.rs": "2f30e61e7ebe38c177691f024672ed93967a6cd6ae9a380d3f008cf00ce72bf3",
+    "mcp/servers/mmcg/src/team.rs": "7ee8ff16eb2f63ce7a215075a1ac7bbcb224eee151acc6e84b69be2e33c05d15",
+    "mcp/servers/mmcg/src/temporal.rs": "8a3e7d0704c8509c7028262b78bfbdb8014a931dacdf2a259cd5288ba4326e01",
+    "mcp/servers/mmcg/src/test_scan.rs": "0c3f77f99a45f6681f2e8246ecf4ec79a6d086802be9732c66412991273b803d",
+    "mcp/servers/mmcg/src/verification.rs": "4b44c5de6d37097811c19e96e85f23a37ef49952864a340e238aa65876c6bead"
+  },
+  "selection": {
+    "method": "The fixture author selected current owning source contracts and wrote queries without reading the new retrieval implementation or any new retrieval output. Query meanings and sparse judgments were fixed before ranking evaluation. Prior concept evaluation results are known and are not reused as independent cases.",
+    "independence": "Only the independent split contributes to the new-operation headline. Targeted regression cases concern known JUnit, OTLP, and grant/revoke weaknesses and are explicitly excluded from that headline. This is blindness to the new implementation and outputs, not a claim of an entirely novel author or repository.",
+    "limitations": "Purposive sample from one repository. No random sampling, user-query frequency estimate, population generalization, human ground truth, or proof of semantic answer quality. The older fixture is now development/regression evidence. After new outputs are viewed, this fixture is also spent for further independent tuning claims."
+  },
+  "judgment_contract": {
+    "anchor_match": "Match both repository-relative path and exact indexed symbol name. <module> is relevant only when predeclared here because its module contract directly owns the requested operation; file co-location alone does not imply relevance.",
+    "hit_at_k": "Positive-query denominator is every planned positive query in the split. A useful entry-point hit requires at least one frozen relevant anchor among the first k rows. Failed queries remain unknown, not empty and not successes.",
+    "anchor_recall_at_k": "Retrieved unique frozen relevant anchors divided by all frozen relevant anchors. This is sparse anchor recall and does not claim completeness over repository relevance.",
+    "judged_precision_at_k": "Listed relevant returned rows divided by rows listed relevant or as explicit distractors. Retain returned, judged and unjudged counts. Unlisted rows remain unjudged and are not automatically irrelevant; undefined if no row is judged.",
+    "additional_judgments": "Any source review of previously unjudged output rows must be saved separately, bound to the fixture/output hashes, and labeled exploratory after inspection. It does not rewrite the frozen qrels or independent headline.",
+    "negative_queries": "The stated domain action is unsupported by the inspected source contracts. expect_empty is an unsupported-capability diagnostic for the complete query. Record failures and lexical candidates honestly; candidates do not prove that the capability exists.",
+    "ranking": "Use emitted row order, retain full output and report each split separately. A module hit and a function hit are both frozen anchors but should also be reported by kind."
+  },
+  "provenance": {
+    "prepared_by": "separate relevance-case agent",
+    "new_ranking_implementation_seen": false,
+    "new_retrieval_outputs_seen": false,
+    "new_source_snapshot": "/var/folders/21/xj6nw_bs4rn6l5s3h8b9m3t80000gn/T/mmcg-concept-noise-nugw2gbz/source",
+    "query_selection_complete_before_final_source_binding": true,
+    "old_fixture_status": "development/regression; not new independent evidence",
+    "source_basis": "Immutable tracked-working-tree snapshot supplied by root after owned JUnit/OTLP/grant rustdoc and before the new ranking implementation. Both retrieval algorithms index this same snapshot. HEAD alone does not identify the dirty source; source file SHA256 bindings below identify every judgment input."
+  },
+  "cases": [
+    {
+      "id": "target-junit-report",
+      "split": "targeted_regression",
+      "kind": "positive",
+      "query": "read JUnit testcase failures and skipped results with execution durations",
+      "top": 5,
+      "expect_empty": false,
+      "source_family": "known_junit_parser",
+      "phenomena": [
+        "known_topic",
+        "plural",
+        "natural_phrase"
+      ],
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/evidence/junit.rs",
+          "symbol": "parse",
+          "reason": "Parses JUnit XML testcase events, including failures, skipped results and durations."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/evidence/junit.rs",
+          "symbol": "JunitCase",
+          "reason": "Carries parsed testcase status, detail and duration."
+        }
+      ],
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/evidence/otel.rs",
+          "symbol": "parse",
+          "reason": "Reads OTLP spans rather than JUnit testcases."
+        }
+      ]
+    },
+    {
+      "id": "target-otlp-parents",
+      "split": "targeted_regression",
+      "kind": "positive",
+      "query": "read OTLP trace span parent identifiers from resource spans JSON",
+      "top": 5,
+      "expect_empty": false,
+      "source_family": "known_otlp_parser",
+      "phenomena": [
+        "known_topic",
+        "natural_phrase",
+        "format_disambiguation"
+      ],
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/evidence/otel.rs",
+          "symbol": "parse",
+          "reason": "Reads nested resource and scope spans and extracts trace/span/parent identifiers."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/evidence/otel.rs",
+          "symbol": "OtelSpan",
+          "reason": "Represents a span with its optional parent identifier."
+        }
+      ],
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/evidence/junit.rs",
+          "symbol": "parse",
+          "reason": "Reads XML testcases rather than OTLP trace relationships."
+        }
+      ]
+    },
+    {
+      "id": "target-create-profile-grant",
+      "split": "targeted_regression",
+      "kind": "positive",
+      "query": "give a repository client permission to read the personal profile",
+      "top": 5,
+      "expect_empty": false,
+      "source_family": "known_profile_grant",
+      "phenomena": [
+        "known_topic",
+        "operation_disambiguation",
+        "natural_phrase"
+      ],
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/access.rs",
+          "symbol": "configure",
+          "reason": "Validates the repository/client and applies an explicit reader grant."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/miner/access.rs",
+          "symbol": "set",
+          "reason": "CLI entry point applying grant or revoke."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/miner/store.rs",
+          "symbol": "set_reader_grant",
+          "reason": "Mutates the root/client grant row."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/miner/access.rs",
+          "symbol": "<module>",
+          "reason": "Owns explicit local profile grants for one project and configured client."
+        }
+      ],
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/store.rs",
+          "symbol": "reader_allowed",
+          "reason": "Only checks whether a grant already exists."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/miner/hooks/mod.rs",
+          "symbol": "configured_profile_client",
+          "reason": "Reuses existing access and never grants new reader access."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/setup.rs",
+          "symbol": "run_with_profile_client",
+          "reason": "Registers an MCP audience without granting profile access."
+        }
+      ]
+    },
+    {
+      "id": "target-revoke-profile-grant",
+      "split": "targeted_regression",
+      "kind": "positive",
+      "query": "revoke an existing client profile reader grant for one repository",
+      "top": 5,
+      "expect_empty": false,
+      "source_family": "known_profile_grant",
+      "phenomena": [
+        "known_topic",
+        "inverse_operation",
+        "natural_phrase"
+      ],
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/access.rs",
+          "symbol": "configure",
+          "reason": "The allowed=false path removes the explicit client/root grant, preserving absent-store behavior."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/miner/access.rs",
+          "symbol": "set",
+          "reason": "CLI entry point reports and applies revocation."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/miner/store.rs",
+          "symbol": "set_reader_grant",
+          "reason": "Deletes the matching root/client grant when allowed=false."
+        }
+      ],
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/store.rs",
+          "symbol": "reader_grants",
+          "reason": "Lists grants rather than revoking one."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/onboarding.rs",
+          "symbol": "profile_access",
+          "reason": "Checks existing access rather than revoking a grant."
+        }
+      ]
+    },
+    {
+      "id": "new-repeat-audit-lesson",
+      "split": "independent",
+      "kind": "positive",
+      "query": "keep one lesson candidate when an audit failure happens again",
+      "top": 5,
+      "expect_empty": false,
+      "source_family": "audit_lesson_candidates",
+      "phenomena": [
+        "new_operation",
+        "repetition",
+        "natural_phrase"
+      ],
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/lessons.rs",
+          "symbol": "append_audit_candidate",
+          "reason": "Records deduplicated candidates for Drift/Broken audit findings."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/lessons.rs",
+          "symbol": "merge_candidate",
+          "reason": "Refreshes the existing candidate occurrence instead of appending a duplicate, preserving reviewed text."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/lessons.rs",
+          "symbol": "<module>",
+          "reason": "Owns durable audit-backed candidates and documents stable IDs and idempotence."
+        }
+      ],
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/lessons.rs",
+          "symbol": "append_iteration_budget_candidate",
+          "reason": "Records iteration exhaustion, a different trigger from an audit failure."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/lessons.rs",
+          "symbol": "today_ymd",
+          "reason": "Formats a date without deduplicating audit lesson candidates."
+        }
+      ]
+    },
+    {
+      "id": "new-project-decision-claims",
+      "split": "independent",
+      "kind": "positive",
+      "query": "turn explicit project decisions into claims preserving source declared status",
+      "top": 5,
+      "expect_empty": false,
+      "source_family": "project_decision_extraction",
+      "phenomena": [
+        "new_operation",
+        "plural",
+        "natural_phrase"
+      ],
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/project_claims.rs",
+          "symbol": "extract",
+          "reason": "Extracts one explicit Decision field with source status and source-bound claim records."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/project_claims.rs",
+          "symbol": "<module>",
+          "reason": "Owns deterministic candidates from explicit CONTEXT decision entries; source status is not review."
+        }
+      ],
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/project_claims.rs",
+          "symbol": "source_file_digest",
+          "reason": "Hashes source text but does not extract decisions."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/context_doctor.rs",
+          "symbol": "check_decision_schema",
+          "reason": "Checks decision record structure rather than extracting source-bound candidates."
+        }
+      ]
+    },
+    {
+      "id": "new-document-graph-freshness",
+      "split": "independent",
+      "kind": "positive",
+      "query": "verify document evidence snapshots still match endpoint and Markdown corpus bytes",
+      "top": 5,
+      "expect_empty": false,
+      "source_family": "document_graph_snapshot_validation",
+      "phenomena": [
+        "new_source_family",
+        "plural",
+        "natural_phrase"
+      ],
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/document_graph.rs",
+          "symbol": "check",
+          "reason": "Validates the selected graph packet and rechecks endpoint/corpus bytes."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/document_graph.rs",
+          "symbol": "check_for_store",
+          "reason": "Runs the same graph check for the index-bound repository."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/document_graph.rs",
+          "symbol": "<module>",
+          "reason": "Owns live validation of portable graph snapshots while preserving unverified relation semantics."
+        }
+      ],
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/document_graph.rs",
+          "symbol": "canonical_digest",
+          "reason": "Hashes a value without checking current endpoint or corpus content."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/document_sections.rs",
+          "symbol": "split",
+          "reason": "Constructs Markdown sections without validating an evidence graph snapshot."
+        }
+      ]
+    },
+    {
+      "id": "new-concurrent-spec-allocation",
+      "split": "independent",
+      "kind": "positive",
+      "query": "allocate task spec numbers safely when concurrent processes create new specs",
+      "top": 5,
+      "expect_empty": false,
+      "source_family": "task_scaffold_allocation",
+      "phenomena": [
+        "new_source_family",
+        "concurrency",
+        "plural",
+        "natural_phrase"
+      ],
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/task_scaffold.rs",
+          "symbol": "create_numbered_spec",
+          "reason": "Holds a scaffold lock to allocate a number and publishes a new spec without clobbering."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/task_scaffold.rs",
+          "symbol": "<module>",
+          "reason": "Owns race-safe allocation of canonical numbered task specifications."
+        }
+      ],
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/task_scaffold.rs",
+          "symbol": "next_task_number",
+          "reason": "Only computes a number from names; it does not hold the lock or publish the spec."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/task_scaffold.rs",
+          "symbol": "validate_slug",
+          "reason": "Checks slug syntax without allocating or writing a spec."
+        }
+      ]
+    },
+    {
+      "id": "new-sign-fact-manifest",
+      "split": "independent",
+      "kind": "positive",
+      "query": "sign a fact manifest with private Ed25519 keys without overwriting input",
+      "top": 5,
+      "expect_empty": false,
+      "source_family": "fact_manifest_signing",
+      "phenomena": [
+        "new_operation_in_previously_seen_family",
+        "operation_disambiguation",
+        "natural_phrase"
+      ],
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/fact_signature.rs",
+          "symbol": "sign",
+          "reason": "Reads a manifest and private key, builds a domain-separated signature, and rejects output aliasing inputs."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/fact_signature.rs",
+          "symbol": "<module>",
+          "reason": "Owns domain-separated Ed25519 trust for the canonical fact manifest."
+        }
+      ],
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/fact_signature.rs",
+          "symbol": "verify",
+          "reason": "Verifies an existing signature rather than creating one."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/fact_signature.rs",
+          "symbol": "generate_keypair",
+          "reason": "Generates keys rather than signing the requested manifest."
+        }
+      ]
+    },
+    {
+      "id": "new-temporal-architecture-diff",
+      "split": "independent",
+      "kind": "positive",
+      "query": "compare architectural boundaries against a Git baseline without checking out files",
+      "top": 5,
+      "expect_empty": false,
+      "source_family": "temporal_architecture_comparison",
+      "phenomena": [
+        "new_source_family",
+        "morphology",
+        "natural_phrase"
+      ],
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/temporal.rs",
+          "symbol": "analyze",
+          "reason": "Runs baseline-to-indexed-worktree architecture analysis for CLI and MCP."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/temporal.rs",
+          "symbol": "<module>",
+          "reason": "Owns bounded architecture deltas using a private database rewind without checkout or repository-index writes."
+        }
+      ],
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/temporal.rs",
+          "symbol": "boundary_key",
+          "reason": "Constructs boundary identity rather than comparing projections."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/sarif_export.rs",
+          "symbol": "architecture_policy",
+          "reason": "Exports policy violations rather than computing temporal deltas."
+        }
+      ]
+    },
+    {
+      "id": "new-declared-file-admission",
+      "split": "independent",
+      "kind": "positive",
+      "query": "check declared task file paths before work without reading file contents",
+      "top": 5,
+      "expect_empty": false,
+      "source_family": "declared_file_preflight",
+      "phenomena": [
+        "new_source_family",
+        "operation_disambiguation",
+        "natural_phrase"
+      ],
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/declared_files.rs",
+          "symbol": "preflight",
+          "reason": "Checks all declared file roles before work through shared bounded admission."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/declared_files.rs",
+          "symbol": "check",
+          "reason": "Owns bounded declared-target admission and its issue classification."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/declared_files.rs",
+          "symbol": "<module>",
+          "reason": "Owns declared-file admission explicitly without content reads."
+        }
+      ],
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/declared_files.rs",
+          "symbol": "paths",
+          "reason": "Only yields declared path strings without admitting their filesystem targets."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/source_read.rs",
+          "symbol": "load",
+          "reason": "Reads source content and is a different operation."
+        }
+      ]
+    },
+    {
+      "id": "new-read-onboarding-state",
+      "split": "independent",
+      "kind": "positive",
+      "query": "read project onboarding settings without creating missing state",
+      "top": 5,
+      "expect_empty": false,
+      "source_family": "onboarding_settings_read",
+      "phenomena": [
+        "new_operation",
+        "absence_boundary",
+        "natural_phrase"
+      ],
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/onboarding.rs",
+          "symbol": "load",
+          "reason": "Reads saved settings while leaving absent state and directories absent."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/onboarding.rs",
+          "symbol": "read_at",
+          "reason": "Reads bounded setup state through a retained root capability."
+        }
+      ],
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/onboarding.rs",
+          "symbol": "profile_access",
+          "reason": "Checks runtime profile grants, which are separate from saved onboarding intent."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/onboarding.rs",
+          "symbol": "profile_budget_tokens",
+          "reason": "Returns one fail-soft budget rather than the saved settings packet."
+        }
+      ]
+    },
+    {
+      "id": "new-zero-tests-pass",
+      "split": "independent",
+      "kind": "positive",
+      "query": "reject a reported pass when tests ran zero cases",
+      "top": 5,
+      "expect_empty": false,
+      "source_family": "reported_verification_contradiction",
+      "phenomena": [
+        "new_operation",
+        "failure_boundary",
+        "natural_phrase"
+      ],
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/verification.rs",
+          "symbol": "pass_contradiction",
+          "reason": "Detects nonzero exit or zero observed tests in recognized test commands as contradictions of a claimed pass."
+        }
+      ],
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/verification.rs",
+          "symbol": "test_runner",
+          "reason": "Classifies command intent and cannot itself decide whether observed results contradict a pass."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/test_scan.rs",
+          "symbol": "file_has_test_attr",
+          "reason": "Looks for conventional Rust test attributes rather than interpreting an observed test count."
+        }
+      ]
+    },
+    {
+      "id": "new-federation-lock",
+      "split": "independent",
+      "kind": "positive",
+      "query": "pin multiple repository indexes revisions and WAL bytes in a lock manifest",
+      "top": 5,
+      "expect_empty": false,
+      "source_family": "repository_federation_lock",
+      "phenomena": [
+        "new_source_family",
+        "plural",
+        "natural_phrase"
+      ],
+      "relevant": [
+        {
+          "path": "mcp/servers/mmcg/src/team.rs",
+          "symbol": "lock",
+          "reason": "Captures each repository root, revision and index/WAL digest into the output lock manifest."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/team.rs",
+          "symbol": "<module>",
+          "reason": "Owns read-only index federation with a manifest pinning identity, revision and SQLite/WAL bytes."
+        }
+      ],
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/team.rs",
+          "symbol": "map",
+          "reason": "Queries an existing federation lock rather than producing its pinning manifest."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/team.rs",
+          "symbol": "component_node_id",
+          "reason": "Creates node names without pinning repository inputs."
+        }
+      ]
+    },
+    {
+      "id": "new-literal-quote-binding",
+      "split": "independent",
+      "kind": "positive",
+      "query": "validate literal source quotes against pinned bytes without changing review grades",
+      "top": 5,
+      "expect_empty": false,
+      "source_family": "benchmark_literal_source_binding",
+      "phenomena": [
+        "new_operation_in_previously_seen_family",
+        "literal_binding",
+        "natural_phrase"
+      ],
+      "relevant": [
+        {
+          "path": "evals/benchmark/evidence_binding.py",
+          "symbol": "audit",
+          "reason": "Checks assessment quote anchors against pinned source snapshots and preserves their grades."
+        },
+        {
+          "path": "evals/benchmark/evidence_binding.py",
+          "symbol": "_anchor_result",
+          "reason": "Checks per-anchor source digest and literal quote bytes."
+        }
+      ],
+      "distractors": [
+        {
+          "path": "evals/benchmark/evidence_binding.py",
+          "symbol": "validate_source_quotes",
+          "reason": "Only validates declaration structure and does not compare source bytes."
+        },
+        {
+          "path": "evals/behavior/evidence.py",
+          "symbol": "check_citations",
+          "reason": "Checks citation ranges and anchor coverage without checking these literal quote bindings."
+        }
+      ]
+    },
+    {
+      "id": "new-judge-defect-location",
+      "split": "independent",
+      "kind": "positive",
+      "query": "measure whether judge identified the mutated defect rather than any failure",
+      "top": 5,
+      "expect_empty": false,
+      "source_family": "judge_calibration_defect_localization",
+      "phenomena": [
+        "new_source_family",
+        "semantic_contract",
+        "natural_phrase"
+      ],
+      "relevant": [
+        {
+          "path": "evals/benchmark/judge_calibration.py",
+          "symbol": "located",
+          "reason": "Checks that a judge flagged the targeted criterion, unknown, or material-error passage broken by the mutation."
+        }
+      ],
+      "distractors": [
+        {
+          "path": "evals/benchmark/judge_calibration.py",
+          "symbol": "proportion",
+          "reason": "Computes a rate and confidence bound without checking defect localization."
+        },
+        {
+          "path": "evals/benchmark/judge_calibration.py",
+          "symbol": "spans",
+          "reason": "Finds text occurrences without deciding whether the judge located the defect."
+        }
+      ]
+    },
+    {
+      "id": "new-negative-deployment",
+      "split": "independent",
+      "kind": "negative",
+      "query": "deploy Kubernetes pods when audit checks report broken contracts",
+      "top": 5,
+      "expect_empty": true,
+      "source_family": "unsupported_kubernetes_deployment",
+      "phenomena": [
+        "unsupported_semantics",
+        "lexical_distractor",
+        "new_domain"
+      ],
+      "relevant": [],
+      "distractors": [
+        {
+          "path": "mcp/servers/mmcg/src/lessons.rs",
+          "symbol": "append_audit_candidate",
+          "reason": "Records a local lesson candidate for broken audits; it does not deploy pods."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/auto_repair.rs",
+          "symbol": "assess_semantic",
+          "reason": "Assesses bounded solution repair eligibility rather than operating a Kubernetes cluster."
+        }
+      ]
+    },
+    {
+      "id": "new-negative-email-quotes",
+      "split": "independent",
+      "kind": "negative",
+      "query": "send notification emails after finding invalid source quotes",
+      "top": 5,
+      "expect_empty": true,
+      "source_family": "unsupported_email_notification",
+      "phenomena": [
+        "unsupported_semantics",
+        "lexical_distractor",
+        "new_domain"
+      ],
+      "relevant": [],
+      "distractors": [
+        {
+          "path": "evals/benchmark/evidence_binding.py",
+          "symbol": "audit",
+          "reason": "Returns a quote-binding audit record without an email or notification delivery mechanism."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/miner/feedback.rs",
+          "symbol": "verified_quote",
+          "reason": "Verifies local transcript quotes and does not send emails."
+        }
+      ]
+    },
+    {
+      "id": "new-negative-biogeochemistry",
+      "split": "independent",
+      "kind": "negative",
+      "query": "phenology mycorrhizal carbon sequestration projections",
+      "top": 5,
+      "expect_empty": true,
+      "source_family": "unsupported_biogeochemistry",
+      "phenomena": [
+        "unsupported_semantics",
+        "out_of_vocabulary",
+        "new_domain"
+      ],
+      "relevant": [],
+      "distractors": []
+    }
+  ],
+  "denominators": {
+    "independent_positive": 12,
+    "independent_negative": 3,
+    "targeted_regression_positive": 4,
+    "planned_total": 19
+  }
+}

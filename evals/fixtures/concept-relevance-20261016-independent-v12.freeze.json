@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "source_head": "f418b380bf191877f5903f5c85f483f5e0e86632",
+  "owner_exclusions_path": ".mastermind/research/concept-witness-20261016/owner-exclusions.json",
+  "owner_exclusions_sha256": "b9db10fe1e56f538ae5f91b9eaa43dbf64e4439a832fec3b891add6534a03aa1",
+  "author_source_inventory_path": ".mastermind/research/concept-witness-20261016/author-source-inventory.json",
+  "author_source_inventory_sha256": "2f1bc58e2e8293283d0ebd115b17852d4d6b11f81d4c5b9eb88b7418a45b5d00",
+  "files_sha256": {
+    "evals/fixtures/concept-relevance-20261016-independent-v12.json": "8afc609cec54e7bcf9a6b932ef0c6901cb201aa3ac6611235a4d59106a6d361f",
+    "evals/fixtures/concept-relevance-20261016-independent-v12.source-evidence.json": "89be268b436ec50e9ea4c63a4d3be32efc7564f34b9b28a7767d46ade425718f",
+    ".mastermind/research/concept-witness-20261016/v12-author-notes.json": "82efbe5eb0add46dfb37ede8481ce6afa2fc75ceb1eed3393447108d2e98ff01"
+  },
+  "case_counts": {
+    "positive": 16,
+    "negative": 8,
+    "total": 24
+  },
+  "new_positive_owner_files": [
+    "evals/benchmark/adapters/codex_metrics.py",
+    "evals/benchmark/analysis.py",
+    "evals/benchmark/assessment.py",
+    "evals/benchmark/conditions.py",
+    "evals/benchmark/efficiency.py",
+    "evals/benchmark/intent.py",
+    "evals/benchmark/protocol.py",
+    "evals/benchmark/review_io.py",
+    "evals/intake/harness.py",
+    "evals/persona/delivery.py",
+    "mcp/servers/mmcg/src/commands/audit.rs",
+    "mcp/servers/mmcg/src/commands/ci.rs",
+    "mcp/servers/mmcg/src/commands/init.rs",
+    "mcp/servers/mmcg/src/evidence.rs",
+    "mcp/servers/mmcg/src/miner/collection.rs",
+    "mcp/servers/mmcg/src/miner/store/collection.rs"
+  ],
+  "new_positive_owner_count": 16,
+  "prior_positive_owner_exclusion_count": 124,
+  "positive_owner_overlap": [],
+  "zero_overlap": true,
+  "source_excerpt_and_declaration_preflight": "passed",
+  "query_contract_preflight": "passed",
+  "readonly_mode": "0444"
+}

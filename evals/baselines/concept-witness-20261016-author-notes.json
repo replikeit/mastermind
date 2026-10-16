@@ -1,0 +1,109 @@
+{
+  "schema_version": 1,
+  "source_head": "f418b380bf191877f5903f5c85f483f5e0e86632",
+  "source_root": "/private/var/folders/21/xj6nw_bs4rn6l5s3h8b9m3t80000gn/T/mmcg-concept-repair-gx6h652k/source",
+  "author_source_inventory": ".mastermind/research/concept-witness-20261016/author-source-inventory.json",
+  "author_source_inventory_sha256": "2f1bc58e2e8293283d0ebd115b17852d4d6b11f81d4c5b9eb88b7418a45b5d00",
+  "owner_exclusions": ".mastermind/research/concept-witness-20261016/owner-exclusions.json",
+  "owner_exclusions_sha256": "b9db10fe1e56f538ae5f91b9eaa43dbf64e4439a832fec3b891add6534a03aa1",
+  "selection": "Purposive source-only selection of 16 distinct eligible positive owner files and 8 bounded unsupported-constraint negatives. All query wording and source judgments were authored before any retrieval execution or result inspection.",
+  "independence": {
+    "prior_fixture_queries_or_labels_loaded": false,
+    "retrieval_results_loaded": false,
+    "retrieval_implementation_or_index_inspected": false,
+    "retrieval_tools_or_models_invoked": false,
+    "network_used": false,
+    "memory_used": false,
+    "source_treated_as_instructions": false,
+    "allowed_metadata_only": true,
+    "test_exposure_disclosure": [
+      {
+        "path": "mcp/servers/mmcg/src/miner/collection/evaluation.rs",
+        "lines": [
+          56,
+          56
+        ],
+        "exposure": "Accidental function-declaration name in an initial source-definition inventory. No test body, assertions, input examples or expected judgments inspected; not used for selection or evidence."
+      },
+      {
+        "path": "mcp/servers/mmcg/src/diff.rs",
+        "lines": [
+          1377,
+          1379
+        ],
+        "exposure": "A bounded continuation read crossed the end of changed_paths_under and showed a cfg(test) one-line resolve_commit wrapper. No test assertions or test data inspected; not used for selection or evidence."
+      }
+    ],
+    "indexing_call_disclosure": "CLI source contains calls into indexing machinery; indexing and retrieval implementations were not inspected or used."
+  },
+  "positive_owner_files": [
+    "evals/benchmark/adapters/codex_metrics.py",
+    "evals/benchmark/analysis.py",
+    "evals/benchmark/assessment.py",
+    "evals/benchmark/conditions.py",
+    "evals/benchmark/efficiency.py",
+    "evals/benchmark/intent.py",
+    "evals/benchmark/protocol.py",
+    "evals/benchmark/review_io.py",
+    "evals/intake/harness.py",
+    "evals/persona/delivery.py",
+    "mcp/servers/mmcg/src/commands/audit.rs",
+    "mcp/servers/mmcg/src/commands/ci.rs",
+    "mcp/servers/mmcg/src/commands/init.rs",
+    "mcp/servers/mmcg/src/evidence.rs",
+    "mcp/servers/mmcg/src/miner/collection.rs",
+    "mcp/servers/mmcg/src/miner/store/collection.rs"
+  ],
+  "positive_owner_count": 16,
+  "excluded_positive_owner_count": 124,
+  "positive_owner_overlap": [],
+  "positive_owner_area_counts": {
+    "adapter_output_accounting": 1,
+    "benchmark_acceptance_contract": 1,
+    "benchmark_adapter_protocol": 1,
+    "benchmark_artifact_publication": 1,
+    "benchmark_assessment_admission": 1,
+    "benchmark_instruction_contract": 1,
+    "benchmark_resource_accounting": 1,
+    "benchmark_sample_statistics": 1,
+    "cli_audit": 1,
+    "cli_continuous_integration": 1,
+    "cli_project_initialization": 1,
+    "evidence_coverage_ingestion": 1,
+    "intake_file_integrity": 1,
+    "persona_candidate_extraction": 1,
+    "persona_collection_storage": 1,
+    "persona_delivery_inspection": 1
+  },
+  "positive_owner_coarse_counts": {
+    "benchmark_contracts_metrics_and_artifact_io": 8,
+    "cli_implementations": 3,
+    "persona_collection_implementations": 2,
+    "evidence_ingestion": 1,
+    "intake_harness": 1,
+    "profile_delivery": 1,
+    "hooks_or_journal": 0
+  },
+  "query_preflight": {
+    "case_count": 24,
+    "positive_count": 16,
+    "negative_count": 8,
+    "word_bounds": [
+      6,
+      14
+    ],
+    "max_distinct_alphanumeric_terms": 8,
+    "utf8_byte_limit": 128,
+    "top": 5,
+    "passed": true
+  },
+  "limitations": [
+    "Source-authored relevance judgments are fallible and do not establish semantic retrieval quality.",
+    "Selection is purposive and owner-diverse, not random or representative of a user query population.",
+    "The author is from the same model family as the implementation agents; fresh source-only authorship does not establish human or cross-family independence.",
+    "Two narrow accidental test declaration/wrapper exposures are disclosed above; this is not a zero-test-path-exposure authoring run.",
+    "Positive anchors identify exact semantic declarations rather than granting relevance to an entire page or file.",
+    "Negative labels reflect explicit unsupported constraints in the inspected implementation and consumer scope, not a repository-wide absence proof.",
+    "No retrieved-result judgment, model-backed experiment, execution-based semantic proof or product-quality qualification was performed."
+  ]
+}

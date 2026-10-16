@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "kind": "mastermind-concept-relevance-freeze",
+  "frozen_date": "2026-10-16",
+  "fixture": "concept-relevance-20261016-independent-v8.json",
+  "fixture_sha256": "f02bc1ed93fdf55eecec05868abdb3669ba7d437523b5c0ce6e9d2b5cf238b3c",
+  "source_evidence": "concept-relevance-20261016-independent-v8-source-evidence.json",
+  "source_evidence_sha256": "c9ce61a875f83e19b774dba4ae9bc10f17d75e812e202ecc29a60f04471b206c",
+  "intent_sha256": "8ba3dbc8562c5e5e308fd76bf80e3a01c996a5e82d6bf102295901fd948ac89e",
+  "query_anchor_sha256": "586ae44b25cddb4fef361bea37fd4957a7b509360d770eaf7144621c19293741",
+  "source_tree_sha256": "01946de15f9f7995b470961d7dfc72c7da648ddd050a3a75f595c992d68ca851",
+  "positive_cases": 12,
+  "negative_cases": 6,
+  "positive_declarations": 12,
+  "distinct_positive_owner_files": 12,
+  "retrieval_executions_before_freeze": 0
+}

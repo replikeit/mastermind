@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "kind": "mastermind-concept-relevance-input-repair",
+  "original_fixture": "concept-relevance-20261016-independent-v8.json",
+  "original_fixture_sha256": "f02bc1ed93fdf55eecec05868abdb3669ba7d437523b5c0ce6e9d2b5cf238b3c",
+  "repaired_fixture": "concept-relevance-20261016-independent-v8-validinput.json",
+  "repaired_fixture_sha256": "442536fb31aa760444557df235a11600d1eac775ebe55e5e458a17326d7976d3",
+  "original_freeze": "concept-relevance-20261016-independent-v8-freeze.json",
+  "original_freeze_sha256": "62f9bf5303eb3b1a2eca9a9ad9ef12186b60393bb1bfddddff5cf4ff0eec5717",
+  "source_evidence": "concept-relevance-20261016-independent-v8-source-evidence.json",
+  "source_evidence_sha256": "c9ce61a875f83e19b774dba4ae9bc10f17d75e812e202ecc29a60f04471b206c",
+  "source_evidence_unchanged": true,
+  "source_tree_sha256": "01946de15f9f7995b470961d7dfc72c7da648ddd050a3a75f595c992d68ca851",
+  "exact_edit": {
+    "case_id": "independent-v8-strict-task-contract",
+    "json_path": "cases[5].query",
+    "operation": "remove one grammatical word",
+    "removed_word": "that",
+    "old_fragment": "Check that a task contract",
+    "new_fragment": "Check a task contract"
+  },
+  "reason": "input contract repair before first successful retrieval of the case",
+  "successful_retrieval_status_basis": "The coordinating agent reports no successful retrieval or semantic output existed for this case before the repair.",
+  "selection": "No semantic quality selection. Intent, anchors, case ids, source bindings and all other seventeen queries are unchanged.",
+  "inherited_provenance": "Every original fixture field except the one query is unchanged. Embedded provenance hashes retain the original freeze identity; updated request hashes are bound by this repair record.",
+  "original_intent_sha256": "8ba3dbc8562c5e5e308fd76bf80e3a01c996a5e82d6bf102295901fd948ac89e",
+  "repaired_intent_sha256": "c59c3a8a61c6311520666327396c061c7c2a45c3f63385c64ed819c0e98bf316",
+  "original_query_anchor_sha256": "586ae44b25cddb4fef361bea37fd4957a7b509360d770eaf7144621c19293741",
+  "repaired_query_anchor_sha256": "ba4d7ae811d634f8fd13792e4f297e2b55611d73a4cc503241c989ff4420cd24",
+  "validation": {
+    "method": "Candidate CLI concept-review prepare with a guaranteed absent custom index. The public validate_request function was the only serving implementation function read; its private parser was not inspected.",
+    "binary_sha256": "8e98bb41dbbee1a9db0627a8317387bf66d67994373d85c0c8a15b79bd946919",
+    "index_path": "/private/tmp/mmcg-v8-validation-missing-59ed083d-27e2-4e73-9d8e-bb44ba80ef72.db",
+    "index_absent_before_and_after": true,
+    "result": "The original input rejects as invalid arguments. The repaired input passes argument validation and stops with an absent-index error before retrieval.",
+    "max_normalized_terms": 16,
+    "repaired_input_within_serving_limit": true,
+    "outputs": [
+      {
+        "input": "original",
+        "exit_code": 1,
+        "invalid_arguments": true,
+        "missing_index_error": false,
+        "output_sha256": "7fd228fa5a6dd68088070b4e3ba3638192757f568bc826fb588d7e402629aff2"
+      },
+      {
+        "input": "repaired",
+        "exit_code": 1,
+        "invalid_arguments": false,
+        "missing_index_error": true,
+        "output_sha256": "00d859c151c6be08813267423822d7653eeea9209535176f278f5070b2e46860"
+      }
+    ],
+    "retrieval_executions": 0,
+    "retrieval_results_inspected": false
+  },
+  "changed_json_paths": [
+    "cases[5].query"
+  ],
+  "unchanged_other_queries": 17
+}

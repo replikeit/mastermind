@@ -1,0 +1,804 @@
+{
+  "schema_version": 1,
+  "fixture": "concept-relevance-20261016-independent-v9.json",
+  "fixture_sha256": "9674550e8740842d29690986f6e93894625a01de5a8cd9188c7c04b95218eb64",
+  "source_head": "f418b380bf191877f5903f5c85f483f5e0e86632",
+  "source_root": "/var/folders/21/xj6nw_bs4rn6l5s3h8b9m3t80000gn/T/mmcg-concept-repair-gx6h652k/source",
+  "source_files_sha256": {
+    "mcp/servers/mmcg/src/auto_repair.rs": "47a45b4a3900546c56c0034aec9436d38b6bc1bbacdad722f47207206c3c2c19",
+    "mcp/servers/mmcg/src/commands/pr_comment.rs": "b705f05fd20331f231ff668c5e91320cc7f1134cf6fd18b716d1e2b2acb65a5a",
+    "mcp/servers/mmcg/src/commands/spec_gate.rs": "d7403c05fdcb718e6a84936260b4f561080f0ac23c882cde24eb164c3f17a56f",
+    "mcp/servers/mmcg/src/indexer/csharp.rs": "dae69b56c39bc77611a888808e110e30c1f13f30731ffb63951552f381dc3a94",
+    "mcp/servers/mmcg/src/indexer/java.rs": "82929ce78bcc928eec38fc24684d26c647f66ce67a256718c36ad726453ff648",
+    "mcp/servers/mmcg/src/indexer/php.rs": "aa2e3c1a2b714a7ba738b2574ce9127402e085fdb38c235423481b810f1f2150",
+    "mcp/servers/mmcg/src/main.rs": "f6ea634957a86ffa5daae25b74e5b8687eadded227625847eca0aca09aac703b",
+    "mcp/servers/mmcg/src/miner/collection/sources.rs": "9afafb6b5b10a6c73ad61f7ff0f0ac272212e37f655eb98a6fb20ff52e84adee",
+    "mcp/servers/mmcg/src/miner/hooks/fence.rs": "4c3eb6e32b4b718b84ff48628f1b8bbf94bcea30e3b885e4ca93ae7f822d57a3",
+    "mcp/servers/mmcg/src/miner/hooks/install.rs": "d9295d3d0e43b3a971748893b5694bf5395744767eee648825d6647c674b6a0a",
+    "mcp/servers/mmcg/src/miner/hooks/mod.rs": "665f27f73ae0ddf32a9611b0cf660aa4667507f51e78227c34a5583bf7d40f25",
+    "mcp/servers/mmcg/src/miner/hooks/quality.rs": "ab531a6029fdfe7730c117894940aa8605fe444c1e47fb71c92d6869d8944dfc",
+    "mcp/servers/mmcg/src/miner/hooks/readiness.rs": "25c9052b72aac94c6e20a4892f96f38746337cbc6e4136f4984bb1e0eb5f3b9c",
+    "mcp/servers/mmcg/src/miner/store/habit_generations.rs": "9214969d8342202c15050a4ef954d803760cb27a640f964ec46818798f1c4065",
+    "mcp/servers/mmcg/src/miner/store/habit_review.rs": "0f8aad803bd28c8f2ce6938da0dae3b80cdf3975628b641998163b877faa2328",
+    "mcp/servers/mmcg/src/miner/store/preferences.rs": "9df0be024ad0a3ca6cb9474675ebf23a6e37b7a310123f524320ced1892f1b38",
+    "mcp/servers/mmcg/src/repo_map.rs": "4d1405b145d3b5f84d5cd39ca2f4c56a51e4f30fc1bf051cdb889f8134322cfe",
+    "mcp/servers/mmcg/src/test_scan.rs": "0c3f77f99a45f6681f2e8246ecf4ec79a6d086802be9732c66412991273b803d"
+  },
+  "authoring": {
+    "author_role": "independent_source_case_author",
+    "model_family": "same_family_as_coordinator",
+    "authored_before_retrieval": true,
+    "queries_written_after_direct_source_inspection": true,
+    "exclusion_only_metadata_read": "/Users/alinaglumova/Documents/personal/mastermind/.mastermind/research/concept-review-roles-20261016/owner-exclusions.json",
+    "prior_queries_anchors_baselines_or_retrieval_outputs_read": false,
+    "current_checkout_implementation_read": false,
+    "memory_files_read": false,
+    "repository_code_native_retrieval_or_tests_executed": false,
+    "allowed_input_boundary": "Only frozen source corpus files, the exclusion-only list of prior positive owner paths, and the provided fixture schema were used.",
+    "tooling_scope": "Source inventory and range reads, source hashing, serialization, and metadata-only bounds/declaration checks.",
+    "limits": [
+      "The author uses the same model family as the coordinator.",
+      "A high-level environment memory summary was present in inherited context. No memory files, prior fixture text, or retrieval output were consulted.",
+      "The source_head value comes from the supplied exclusion-only metadata. The copied source corpus has no resolvable HEAD commit locally.",
+      "Queries were authored from inspected runtime implementations, so this is a fresh source-authored relevance set rather than a blinded user-query sample.",
+      "No claim is made that the negative capability judgments exhaust all possible behavior outside the inspected neighboring contracts."
+    ]
+  },
+  "positive_owner_paths": [
+    "mcp/servers/mmcg/src/auto_repair.rs",
+    "mcp/servers/mmcg/src/repo_map.rs",
+    "mcp/servers/mmcg/src/test_scan.rs",
+    "mcp/servers/mmcg/src/indexer/csharp.rs",
+    "mcp/servers/mmcg/src/indexer/java.rs",
+    "mcp/servers/mmcg/src/indexer/php.rs",
+    "mcp/servers/mmcg/src/miner/collection/sources.rs",
+    "mcp/servers/mmcg/src/miner/hooks/fence.rs",
+    "mcp/servers/mmcg/src/miner/hooks/quality.rs",
+    "mcp/servers/mmcg/src/miner/hooks/readiness.rs",
+    "mcp/servers/mmcg/src/miner/hooks/install.rs",
+    "mcp/servers/mmcg/src/miner/store/habit_generations.rs",
+    "mcp/servers/mmcg/src/miner/store/preferences.rs",
+    "mcp/servers/mmcg/src/miner/store/habit_review.rs",
+    "mcp/servers/mmcg/src/commands/pr_comment.rs",
+    "mcp/servers/mmcg/src/commands/spec_gate.rs"
+  ],
+  "query_constraints": [
+    {
+      "id": "v9-positive-01",
+      "utf8_bytes": 69,
+      "plain_word_count": 10,
+      "conservative_distinct_alphanumeric_terms": 10,
+      "top": 5
+    },
+    {
+      "id": "v9-positive-02",
+      "utf8_bytes": 65,
+      "plain_word_count": 11,
+      "conservative_distinct_alphanumeric_terms": 10,
+      "top": 5
+    },
+    {
+      "id": "v9-positive-03",
+      "utf8_bytes": 69,
+      "plain_word_count": 10,
+      "conservative_distinct_alphanumeric_terms": 10,
+      "top": 5
+    },
+    {
+      "id": "v9-positive-04",
+      "utf8_bytes": 69,
+      "plain_word_count": 10,
+      "conservative_distinct_alphanumeric_terms": 10,
+      "top": 5
+    },
+    {
+      "id": "v9-positive-05",
+      "utf8_bytes": 66,
+      "plain_word_count": 8,
+      "conservative_distinct_alphanumeric_terms": 8,
+      "top": 5
+    },
+    {
+      "id": "v9-positive-06",
+      "utf8_bytes": 64,
+      "plain_word_count": 8,
+      "conservative_distinct_alphanumeric_terms": 8,
+      "top": 5
+    },
+    {
+      "id": "v9-positive-07",
+      "utf8_bytes": 73,
+      "plain_word_count": 9,
+      "conservative_distinct_alphanumeric_terms": 9,
+      "top": 5
+    },
+    {
+      "id": "v9-positive-08",
+      "utf8_bytes": 73,
+      "plain_word_count": 10,
+      "conservative_distinct_alphanumeric_terms": 10,
+      "top": 5
+    },
+    {
+      "id": "v9-positive-09",
+      "utf8_bytes": 75,
+      "plain_word_count": 11,
+      "conservative_distinct_alphanumeric_terms": 10,
+      "top": 5
+    },
+    {
+      "id": "v9-positive-10",
+      "utf8_bytes": 53,
+      "plain_word_count": 10,
+      "conservative_distinct_alphanumeric_terms": 10,
+      "top": 5
+    },
+    {
+      "id": "v9-positive-11",
+      "utf8_bytes": 77,
+      "plain_word_count": 10,
+      "conservative_distinct_alphanumeric_terms": 10,
+      "top": 5
+    },
+    {
+      "id": "v9-positive-12",
+      "utf8_bytes": 65,
+      "plain_word_count": 11,
+      "conservative_distinct_alphanumeric_terms": 10,
+      "top": 5
+    },
+    {
+      "id": "v9-positive-13",
+      "utf8_bytes": 76,
+      "plain_word_count": 11,
+      "conservative_distinct_alphanumeric_terms": 11,
+      "top": 5
+    },
+    {
+      "id": "v9-positive-14",
+      "utf8_bytes": 68,
+      "plain_word_count": 11,
+      "conservative_distinct_alphanumeric_terms": 11,
+      "top": 5
+    },
+    {
+      "id": "v9-positive-15",
+      "utf8_bytes": 70,
+      "plain_word_count": 10,
+      "conservative_distinct_alphanumeric_terms": 10,
+      "top": 5
+    },
+    {
+      "id": "v9-positive-16",
+      "utf8_bytes": 52,
+      "plain_word_count": 10,
+      "conservative_distinct_alphanumeric_terms": 10,
+      "top": 5
+    },
+    {
+      "id": "v9-negative-01",
+      "utf8_bytes": 48,
+      "plain_word_count": 8,
+      "conservative_distinct_alphanumeric_terms": 8,
+      "top": 5
+    },
+    {
+      "id": "v9-negative-02",
+      "utf8_bytes": 41,
+      "plain_word_count": 7,
+      "conservative_distinct_alphanumeric_terms": 7,
+      "top": 5
+    },
+    {
+      "id": "v9-negative-03",
+      "utf8_bytes": 55,
+      "plain_word_count": 7,
+      "conservative_distinct_alphanumeric_terms": 7,
+      "top": 5
+    },
+    {
+      "id": "v9-negative-04",
+      "utf8_bytes": 65,
+      "plain_word_count": 11,
+      "conservative_distinct_alphanumeric_terms": 11,
+      "top": 5
+    },
+    {
+      "id": "v9-negative-05",
+      "utf8_bytes": 66,
+      "plain_word_count": 10,
+      "conservative_distinct_alphanumeric_terms": 10,
+      "top": 5
+    },
+    {
+      "id": "v9-negative-06",
+      "utf8_bytes": 75,
+      "plain_word_count": 10,
+      "conservative_distinct_alphanumeric_terms": 10,
+      "top": 5
+    },
+    {
+      "id": "v9-negative-07",
+      "utf8_bytes": 66,
+      "plain_word_count": 10,
+      "conservative_distinct_alphanumeric_terms": 10,
+      "top": 5
+    },
+    {
+      "id": "v9-negative-08",
+      "utf8_bytes": 69,
+      "plain_word_count": 10,
+      "conservative_distinct_alphanumeric_terms": 10,
+      "top": 5
+    }
+  ],
+  "case_evidence": [
+    {
+      "id": "v9-positive-01",
+      "kind": "positive",
+      "query": "Allow another repair attempt only after recorded checks actually fail",
+      "independently_authored_intent": "Find the decision owner that permits a bounded retry after current observed verification receipts contain a normal failure.",
+      "owner_evidence": [
+        {
+          "path": "mcp/servers/mmcg/src/auto_repair.rs",
+          "symbol": "assess",
+          "declaration_line": 142,
+          "line_start": 142,
+          "line_end": 175,
+          "source_excerpt": "pub(crate) fn assess(\n    spec: &ParsedSpec,\n    audit: &Report,\n    checks: &[CheckEvidence],\n) -> Result<(Vec<String>, Vec<String>), &'static str> {\n    validate_contract(spec)?;\n    if audit.verdict == Verdict::Held\n        || audit.findings.is_empty()\n        || audit\n            .symbol_diff\n            .as_ref()\n            .is_none_or(|diff| diff.truncated || !diff.errors.is_empty())\n    {\n        return Err(\"auto_repair_audit_incomplete\");\n    }\n    // inspect_repair_checks validates current snapshots, normal nonzero exits,\n    // and executable identity for failures as well as passes.\n    if checks.is_empty()\n        || checks.iter().any(|check| {\n            check.status != CheckEvidenceStatus::Current\n                && !(check.status == CheckEvidenceStatus::Failed\n                    && check.reason.as_deref() == Some(\"receipt_failed\"))\n        })\n    {\n        return Err(\"auto_repair_check_requires_review\");\n    }\n    let failed: BTreeSet<_> = checks\n        .iter()\n        .filter(|check| check.status == CheckEvidenceStatus::Failed)\n        .map(|check| check.id.clone())\n        .collect();\n    if failed.is_empty() {\n        return Err(\"auto_repair_no_observed_failure\");\n    }",
+          "reason": "The function validates the contract and audit, accepts only current or receipt_failed check evidence, and rejects an empty set of failed checks."
+        }
+      ],
+      "supplemental_source_evidence": [],
+      "judgment": "supported_by_runtime_implementation_or_entrypoint"
+    },
+    {
+      "id": "v9-positive-02",
+      "kind": "positive",
+      "query": "Build a short navigation map within a caller supplied byte budget",
+      "independently_authored_intent": "Find the implementation that constructs the question-specific repository navigation shortlist while honoring its byte budget.",
+      "owner_evidence": [
+        {
+          "path": "mcp/servers/mmcg/src/repo_map.rs",
+          "symbol": "build_ranked",
+          "declaration_line": 222,
+          "line_start": 320,
+          "line_end": 346,
+          "source_excerpt": "    let mut payload = format!(\n        \"Repository map: partial definition locations from frozen source {digest}.\\n\\\n         {NAVIGATION_INSTRUCTIONS}\\\n         This shortlist is navigation metadata, not behavioral evidence or complete coverage.\\n\",\n        digest = input.source_sha256\n    );\n    let mut selected = 0;\n    // A shortlist leaves room for source evidence instead of filling the whole budget.\n    for (file, symbols) in files.into_iter().take(3) {\n        let mut section = format!(\"{file}\\n\");\n        let mut section_selected = 0;\n        for row in symbols.into_iter().take(3) {\n            let line = format!(\n                \"  :{} {} {}\\n\",\n                row.line,\n                single_line(&row.kind),\n                single_line(&row.name)\n            );\n            if payload.len() + section.len() + line.len() <= input.budget_bytes {\n                section.push_str(&line);\n                section_selected += 1;\n            }\n        }\n        if section_selected > 0 {\n            payload.push_str(&section);\n            selected += section_selected;\n        }",
+          "reason": "The owner adds at most three files and three definitions per file, charging each rendered line against input.budget_bytes before inclusion."
+        }
+      ],
+      "supplemental_source_evidence": [],
+      "judgment": "supported_by_runtime_implementation_or_entrypoint"
+    },
+    {
+      "id": "v9-positive-03",
+      "kind": "positive",
+      "query": "Check whether a selected Python test directory has conventional tests",
+      "independently_authored_intent": "Find the runtime advisory scan that recognizes conventional Python test names inside the selected command scope.",
+      "owner_evidence": [
+        {
+          "path": "mcp/servers/mmcg/src/test_scan.rs",
+          "symbol": "collect",
+          "declaration_line": 240,
+          "line_start": 311,
+          "line_end": 333,
+          "source_excerpt": "                    BoundedPathKind::RegularFile => {\n                        let name = name.to_str()?;\n                        let matches = match plan.runner {\n                            TestRunner::Go => name.ends_with(\"_test.go\"),\n                            TestRunner::Pytest => {\n                                (name.starts_with(\"test_\") || name.ends_with(\"_test.py\"))\n                                    && name.ends_with(\".py\")\n                            }\n                            TestRunner::Javascript => {\n                                name.contains(\".test.\") || name.contains(\".spec.\")\n                            }\n                            TestRunner::Cargo => unreachable!(),\n                        };\n                        if matches {\n                            return Some(Collected::Present);\n                        }\n                    }\n                    _ => {}\n                }\n            }\n            snapshot.directories.push((directory, names));\n        }\n        Some(Collected::Absent(snapshot))",
+          "reason": "The scanner recognizes test_*.py and *_test.py and reports presence from bounded directory traversal rather than treating arbitrary Python files as conventional directory tests."
+        }
+      ],
+      "supplemental_source_evidence": [
+        {
+          "path": "mcp/servers/mmcg/src/test_scan.rs",
+          "symbol": "parse",
+          "declaration_line": 30,
+          "line_start": 52,
+          "line_end": 73,
+          "source_excerpt": "                    None => PathBuf::from(\".\"),\n                };\n                (path, true)\n            }\n            TestRunner::Go => match filters.as_slice() {\n                [] | [\".\"] => (PathBuf::from(\".\"), false),\n                [path] if path.starts_with(\"./\") => match path.strip_suffix(\"/...\") {\n                    Some(base) if !base.contains(\"...\") => (PathBuf::from(base), true),\n                    Some(_) => return None,\n                    None if !path.contains(\"...\") => (PathBuf::from(path), false),\n                    None => return None,\n                },\n                _ => return None,\n            },\n            TestRunner::Pytest => match filters.as_slice() {\n                [] => (PathBuf::from(\".\"), true),\n                [path] if !path.contains(\"::\") => (PathBuf::from(path), true),\n                _ => return None,\n            },\n            TestRunner::Javascript if filters.is_empty() => (PathBuf::from(\".\"), true),\n            TestRunner::Javascript => return None,\n        };",
+          "reason": "The command planner selects a single pytest path or the current directory and rejects unsupported filters, establishing the selected discovery scope."
+        }
+      ],
+      "judgment": "supported_by_runtime_implementation_or_entrypoint"
+    },
+    {
+      "id": "v9-positive-04",
+      "kind": "positive",
+      "query": "Record C sharp imported namespace paths from aliased using directives",
+      "independently_authored_intent": "Find the C sharp extractor operation that reads the right hand namespace path from an aliased using directive.",
+      "owner_evidence": [
+        {
+          "path": "mcp/servers/mmcg/src/indexer/csharp.rs",
+          "symbol": "collect_using",
+          "declaration_line": 359,
+          "line_start": 359,
+          "line_end": 383,
+          "source_excerpt": "fn collect_using(directive: &Node, source: &[u8], pending: &mut PendingFile, module_index: usize) {\n    let line = line_of(directive);\n    let Some(text) = node_text(directive, source) else {\n        return;\n    };\n    let raw = text.trim().trim_end_matches(';').trim();\n    // Strip leading `using` (and optional `static`).\n    let after_using = raw.strip_prefix(\"using\").unwrap_or(raw).trim_start();\n    let after_static = after_using\n        .strip_prefix(\"static \")\n        .map(str::trim_start)\n        .unwrap_or(after_using);\n    // Alias form `Alias = Real.Namespace` — right side is the imported path.\n    let path = if let Some((_, rhs)) = after_static.split_once('=') {\n        rhs.trim()\n    } else {\n        after_static\n    };\n    if path.is_empty() {\n        return;\n    }\n    let leaf = path.rsplit('.').next().unwrap_or(path).to_string();\n    let to_path = Some(format!(\"{path}::*\"));\n    push_import(pending, module_index, leaf, to_path, line);\n}",
+          "reason": "The implementation strips using/static prefixes, selects the right hand side of an alias assignment, and emits an import pointing at that namespace path."
+        }
+      ],
+      "supplemental_source_evidence": [],
+      "judgment": "supported_by_runtime_implementation_or_entrypoint"
+    },
+    {
+      "id": "v9-positive-05",
+      "kind": "positive",
+      "query": "Capture Java declaration annotations using their unqualified names",
+      "independently_authored_intent": "Find the extractor that records annotation names on Java declarations after stripping package qualification.",
+      "owner_evidence": [
+        {
+          "path": "mcp/servers/mmcg/src/indexer/java.rs",
+          "symbol": "collect_annotations",
+          "declaration_line": 227,
+          "line_start": 227,
+          "line_end": 255,
+          "source_excerpt": "fn collect_annotations(decl: &Node, source: &[u8]) -> Option<String> {\n    let mut names: Vec<String> = Vec::new();\n    let mut cursor = decl.walk();\n    for child in decl.children(&mut cursor) {\n        if !matches!(child.kind(), \"modifiers\") {\n            continue;\n        }\n        let mut mc = child.walk();\n        for m in child.children(&mut mc) {\n            match m.kind() {\n                \"annotation\" | \"marker_annotation\" => {\n                    if let Some(name_node) = m.child_by_field_name(\"name\") {\n                        let raw = node_text(&name_node, source).unwrap_or(\"\").trim();\n                        if !raw.is_empty() {\n                            let leaf = raw.rsplit('.').next().unwrap_or(raw);\n                            names.push(leaf.to_string());\n                        }\n                    }\n                }\n                _ => {}\n            }\n        }\n    }\n    if names.is_empty() {\n        None\n    } else {\n        Some(format!(\",{},\", names.join(\",\")))\n    }\n}",
+          "reason": "The function scans annotation and marker_annotation modifier children, retains the final dotted name segment, and returns the decorators representation."
+        }
+      ],
+      "supplemental_source_evidence": [],
+      "judgment": "supported_by_runtime_implementation_or_entrypoint"
+    },
+    {
+      "id": "v9-positive-06",
+      "kind": "positive",
+      "query": "Record aliased PHP imports inside grouped namespace declarations",
+      "independently_authored_intent": "Find the PHP extractor responsible for grouped use imports and alias names.",
+      "owner_evidence": [
+        {
+          "path": "mcp/servers/mmcg/src/indexer/php.rs",
+          "symbol": "collect_use",
+          "declaration_line": 244,
+          "line_start": 244,
+          "line_end": 267,
+          "source_excerpt": "fn collect_use(decl: &Node, source: &[u8], pending: &mut PendingFile, module_index: usize) {\n    let line = line_of(decl);\n    let Some(text) = node_text(decl, source) else {\n        return;\n    };\n    let raw = text.trim().trim_end_matches(';').trim();\n    let after_use = raw.strip_prefix(\"use\").unwrap_or(raw).trim_start();\n    // Skip optional `function ` / `const `.\n    let body = after_use\n        .strip_prefix(\"function \")\n        .or_else(|| after_use.strip_prefix(\"const \"))\n        .unwrap_or(after_use);\n\n    // Grouped form: `Foo\\Bar\\{A, B as C}`.\n    if let Some(brace) = body.find('{') {\n        let prefix = body[..brace].trim().trim_end_matches('\\\\').trim();\n        let inside = body[brace + 1..].trim_end_matches('}').trim();\n        for item in inside.split(',') {\n            emit_use_item(item.trim(), Some(prefix), pending, module_index, line);\n        }\n    } else {\n        emit_use_item(body, None, pending, module_index, line);\n    }\n}",
+          "reason": "The grouped-use parser splits the brace members and passes the namespace prefix into emit_use_item; that helper separates an alias and emits its resolved full import path."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/indexer/php.rs",
+          "symbol": "emit_use_item",
+          "declaration_line": 269,
+          "line_start": 269,
+          "line_end": 296,
+          "source_excerpt": "fn emit_use_item(\n    item: &str,\n    prefix: Option<&str>,\n    pending: &mut PendingFile,\n    module_index: usize,\n    line: u32,\n) {\n    if item.is_empty() {\n        return;\n    }\n    let (raw_path, alias) = if let Some((p, a)) = item.split_once(\" as \") {\n        (p.trim(), Some(a.trim()))\n    } else {\n        (item, None)\n    };\n    let full_path = match prefix {\n        Some(p) => format!(\"{p}\\\\{raw_path}\"),\n        None => raw_path.to_string(),\n    };\n    let leaf = alias.map(str::to_string).unwrap_or_else(|| {\n        full_path\n            .rsplit('\\\\')\n            .next()\n            .unwrap_or(&full_path)\n            .to_string()\n    });\n    push_import(pending, module_index, leaf, Some(full_path), line);\n}",
+          "reason": "The helper resolves each grouped member against the namespace prefix, separates its alias, and emits the alias name and full imported path."
+        }
+      ],
+      "supplemental_source_evidence": [],
+      "judgment": "supported_by_runtime_implementation_or_entrypoint"
+    },
+    {
+      "id": "v9-positive-07",
+      "kind": "positive",
+      "query": "Turn off transcript synchronization for one collected conversation source",
+      "independently_authored_intent": "Find the operation that opts one previously registered transcript source out of later sync selections.",
+      "owner_evidence": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/collection/sources.rs",
+          "symbol": "set_sync_enabled",
+          "declaration_line": 201,
+          "line_start": 201,
+          "line_end": 234,
+          "source_excerpt": "pub fn set_sync_enabled(\n    root: &Path,\n    source: &str,\n    enabled: bool,\n) -> Result<(), Box<dyn std::error::Error>> {\n    let root = validate_page(root, Some(source), 1, 1)?;\n    let root_text = root.to_str().ok_or(\"project root must be UTF-8\")?;\n    let path = ProfileStore::db_path().ok_or(\"could not resolve profile store\")?;\n    mutate_private_store(\n        &path,\n        |db| {\n            let selected = db\n                .map(|db| db.collection_source(source))\n                .transpose()?\n                .flatten()\n                .ok_or(\"source is not registered for this project root\")?;\n            if selected.project_root != root_text {\n                return Err(\"source is not registered for this project root\".into());\n            }\n            Ok(ControlFlow::Continue(()))\n        },\n        |db, ()| {\n            db.set_source_sync_enabled(source, root_text, enabled)?;\n            Ok(())\n        },\n    )?;\n    println!(\n        \"{}\",\n        serde_json::to_string_pretty(&json!({\n            \"source\":source, \"project_root\":root, \"sync_enabled\":enabled,\n            \"note\":\"This controls future sync selection only. Retained observations, curation receipts and reviewed claims are unchanged. Explicit collect does not remove an exclusion.\"\n        }))?\n    );\n    Ok(())",
+          "reason": "The entrypoint checks the source belongs to the exact project root, changes its sync_enabled state under the private-store mutation boundary, and retains observations and review history."
+        }
+      ],
+      "supplemental_source_evidence": [],
+      "judgment": "supported_by_runtime_implementation_or_entrypoint"
+    },
+    {
+      "id": "v9-positive-08",
+      "kind": "positive",
+      "query": "Recover pending project hook delivery markers after an interrupted update",
+      "independently_authored_intent": "Find explicit recovery of durable pending native hook delivery admission markers for one project/client prefix.",
+      "owner_evidence": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/hooks/fence.rs",
+          "symbol": "recover_at",
+          "declaration_line": 273,
+          "line_start": 273,
+          "line_end": 287,
+          "source_excerpt": "fn recover_at(directory: &Path, prefix: &str) -> Result<()> {\n    let Some(root) = existing(directory)? else {\n        return Ok(());\n    };\n    for (path, identity) in markers(&root, MAX_RECOVERY_FILES)? {\n        if path\n            .file_name()\n            .and_then(|name| name.to_str())\n            .is_some_and(|name| name.starts_with(prefix))\n        {\n            bounded_fs::remove_regular_file_expected_with_capability(&root, &path, identity)?;\n        }\n    }\n    Ok(())\n}",
+          "reason": "The recovery function enumerates the bounded marker set, filters to the requested prefix, and removes regular files only with their observed stable identities."
+        }
+      ],
+      "supplemental_source_evidence": [],
+      "judgment": "supported_by_runtime_implementation_or_entrypoint"
+    },
+    {
+      "id": "v9-positive-09",
+      "kind": "positive",
+      "query": "Compare profile task outcomes using observations bound to one task revision",
+      "independently_authored_intent": "Find the offline evaluation operation that compares supplied baseline/profile task outcomes bound to a common task revision.",
+      "owner_evidence": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/hooks/quality.rs",
+          "symbol": "evaluate",
+          "declaration_line": 59,
+          "line_start": 143,
+          "line_end": 189,
+          "source_excerpt": "    for pair in &input.task_pairs {\n        if !crate::miner::collection::valid_id(&pair.task_revision)\n            || !revisions.insert(&pair.task_revision)\n            || pair.baseline.profile_digest.is_some()\n            || !pair\n                .with_profile\n                .profile_digest\n                .as_deref()\n                .is_some_and(crate::miner::collection::valid_id)\n        {\n            return Err(\n                \"task pair must bind one task revision and opposite profile conditions\".into(),\n            );\n        }\n        for trial in [&pair.baseline, &pair.with_profile] {\n            if !identifier(&trial.session)\n                || !trial_sessions.insert(&trial.session)\n                || !(1..=20).contains(&trial.iterations)\n                || trial.user_corrections > 128\n                || !(1..=7_200_000).contains(&trial.wall_ms)\n            {\n                return Err(\"task trial has a repeated session or invalid observations\".into());\n            }\n        }\n        correctness += i64::from(pair.with_profile.correct) - i64::from(pair.baseline.correct);\n        iterations += i64::from(pair.with_profile.iterations) - i64::from(pair.baseline.iterations);\n        corrections += i64::from(pair.with_profile.user_corrections)\n            - i64::from(pair.baseline.user_corrections);\n        wall += pair.with_profile.wall_ms as i64 - pair.baseline.wall_ms as i64;\n    }\n    let ratio = |a: usize, b: usize| (b > 0).then(|| a as f64 / b as f64);\n    let mean = |value: i64| {\n        (!input.task_pairs.is_empty()).then(|| value as f64 / input.task_pairs.len() as f64)\n    };\n    Ok(\n        json!({\"schema\":1,\"processor\":local::processor(),\"provenance\":input.provenance,\n        \"labels\":{\"labeler\":input.labeler,\"independence\":\"not_verified\"},\n        \"mining\":{\"cases\":input.cases.len(),\"sessions\":sessions.len(),\n            \"held_out_cases\":input.cases.iter().filter(|case| case.partition==\"held_out\").count(),\n            \"true_positive\":tp,\"false_positive\":fp,\"false_negative\":fn_count,\"excluded_inputs\":exclusions,\n            \"precision\":ratio(tp,tp+fp),\"recall\":ratio(tp,tp+fn_count),\"failed_case_ids\":failures,\n            \"meaning\":\"Exact complete source-span agreement with supplied labels, not proof of authorship or habit truth.\"},\n        \"task_benefit\":{\"status\":if input.task_pairs.is_empty(){\"unmeasured\"}else{\"paired_observations\"},\n            \"pairs\":input.task_pairs.len(),\"profile_minus_baseline\":{\"correctness\":mean(correctness),\n                \"iterations\":mean(iterations),\"user_corrections\":mean(corrections),\"wall_ms\":mean(wall)},\n            \"causal_effect\":\"not_established\",\"meaning\":\"Supplied paired outcomes. Runtime conditions and reviewer independence are not verified.\"},\n        \"publication\":false,\"model\":false}),",
+          "reason": "The function requires a unique valid task revision and opposite profile conditions, validates trial observations, computes profile-minus-baseline means, and keeps causal effect unestablished."
+        }
+      ],
+      "supplemental_source_evidence": [],
+      "judgment": "supported_by_runtime_implementation_or_entrypoint"
+    },
+    {
+      "id": "v9-positive-10",
+      "kind": "positive",
+      "query": "Explain why project hook learning is not ready to run",
+      "independently_authored_intent": "Find the read-only readiness report that distinguishes native configuration, capture, refinement, delivery, and mining boundaries.",
+      "owner_evidence": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/hooks/readiness.rs",
+          "symbol": "report",
+          "declaration_line": 19,
+          "line_start": 19,
+          "line_end": 45,
+          "source_excerpt": "pub fn report(client: &str, root: &Path) -> Result<Value, Error> {\n    super::client(client)?;\n    let root = root.canonicalize()?;\n    if !root.is_dir() || root.to_str().is_none() {\n        return Err(\"hook_readiness_project_root_invalid\".into());\n    }\n    let database = open_journal();\n    let settings = crate::onboarding::load(&root);\n    let requested_mode = settings.as_ref().ok().and_then(|settings| {\n        settings.as_ref().map(|settings| {\n            if settings\n                .clients\n                .iter()\n                .any(|configured| configured == client)\n            {\n                settings.mining\n            } else {\n                crate::onboarding::Mining::Off\n            }\n        })\n    });\n    let analysis_requested = requested_mode.map(|mode| {\n        matches!(\n            mode,\n            crate::onboarding::Mining::On | crate::onboarding::Mining::Task\n        )\n    });",
+          "reason": "This entrypoint inspects project/client state and constructs separate readiness observations. It does not install hooks or execute a worker merely because configuration exists."
+        }
+      ],
+      "supplemental_source_evidence": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/hooks/readiness.rs",
+          "symbol": "report",
+          "declaration_line": 19,
+          "line_start": 155,
+          "line_end": 207,
+          "source_excerpt": "    let native = if cfg!(unix) {\n        match install::configure(\n            client,\n            &root,\n            false,\n            false,\n            valid_refiner.map(|config| config.timeout_secs),\n            grant\n                .as_ref()\n                .ok()\n                .and_then(Option::as_ref)\n                .is_some_and(|grant| grant.enabled && grant.profile_client.is_some()),\n        ) {\n            Ok(preview) => json!({\n                \"status\":if preview[\"changed\"]==false {\"current\"} else {\"missing_or_stale\"},\n                \"config_path\":preview[\"config_path\"],\n                \"local_hooks_disabled\":preview[\"local_hooks_disabled\"],\n                \"requires_client_trust\":preview[\"requires_client_trust\"],\n                \"client_activation\":preview[\"client_activation\"],\n                \"coverage\":\"native_events_only\",\"permission_effect\":\"none\"\n            }),\n            Err(_) => json!({\"status\":\"unavailable\",\"reason\":\"native_configuration_unavailable\",\n                \"local_hooks_disabled\":null,\"requires_client_trust\":client==\"codex\"}),\n        }\n    } else {\n        json!({\"status\":\"unsupported\",\"reason\":\"native_hooks_require_unix\",\"local_hooks_disabled\":null})\n    };\n    let mut mining = if requested_mode == Some(crate::onboarding::Mining::Task) {\n        let mut status = super::task_mining::status();\n        status[\"outcomes\"] = match (&database, &grant) {\n            (Ok(Some(db)), Ok(Some(grant))) => db.task_mining_summary(grant).unwrap_or_else(\n                |_| json!({\"status\":\"unavailable\",\"reason\":\"task_mining_summary_unavailable\"}),\n            ),\n            (Ok(None), _) | (_, Ok(None)) => json!({\"status\":\"not_observed\",\"tickets\":0}),\n            _ => json!({\"status\":\"unavailable\",\"reason\":\"capture_journal_unavailable\"}),\n        };\n        status\n    } else if cfg!(unix) {\n        background::status(client, &root)\n            .unwrap_or_else(|_| json!({\"status\":\"unavailable\",\"reason\":\"worker_state_unavailable\"}))\n    } else {\n        json!({\"status\":\"unsupported\",\"reason\":\"managed_worker_requires_unix\"})\n    };\n    mining[\"native_session_trigger_requested\"] = json!(\n        requested_mode == Some(crate::onboarding::Mining::On)\n            && settings\n                .as_ref()\n                .ok()\n                .and_then(|settings| settings.as_ref())\n                .is_some_and(|settings| settings.provider.as_deref() == Some(\"native\"))\n    );\n    mining[\"foreground_workers\"] = json!(\"not_observed\");\n    mining[\"output\"] = json!(\"unreviewed_drafts_only\");",
+          "reason": "The report previews native installation without writing, separates platform support from mining state, and marks worker outcomes and draft publication limits."
+        }
+      ],
+      "judgment": "supported_by_runtime_implementation_or_entrypoint"
+    },
+    {
+      "id": "v9-positive-11",
+      "kind": "positive",
+      "query": "Install native client hooks while preserving unrelated existing hook commands",
+      "independently_authored_intent": "Find the configuration merge operation that replaces owned native hook handlers while preserving unrelated user handlers.",
+      "owner_evidence": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/hooks/install.rs",
+          "symbol": "merge",
+          "declaration_line": 186,
+          "line_start": 224,
+          "line_end": 261,
+          "source_excerpt": "            let before = handlers.len();\n            handlers.retain(|handler| {\n                !(handler.get(\"type\").and_then(Value::as_str) == Some(\"command\")\n                    && handler\n                        .get(\"command\")\n                        .and_then(Value::as_str)\n                        .is_some_and(|command| command.ends_with(registration)))\n            });\n            removed_from_event |= before != handlers.len();\n            if before != handlers.len() && handlers.is_empty() && group.len() == 1 {\n                empty_groups.push(index);\n            }\n        }\n        for index in empty_groups.into_iter().rev() {\n            groups.remove(index);\n        }\n        removed_owned_handler |= removed_from_event;\n        if groups.is_empty() && removed_from_event {\n            empty_events.push(event.clone());\n        }\n    }\n    for event in empty_events {\n        hooks.remove(&event);\n    }\n    if !remove {\n        for (event, groups) in generated {\n            hooks\n                .entry(event.clone())\n                .or_insert_with(|| json!([]))\n                .as_array_mut()\n                .ok_or(\"native hook event must contain an array\")?\n                .extend(groups.as_array().expect(\"generated hook groups\").clone());\n        }\n    }\n    if hooks.is_empty() && removed_owned_handler {\n        object.remove(\"hooks\");\n    }\n    Ok(())",
+          "reason": "It removes only command handlers whose command ends with the exact registration suffix, leaves remaining groups intact, and appends the generated handlers."
+        }
+      ],
+      "supplemental_source_evidence": [],
+      "judgment": "supported_by_runtime_implementation_or_entrypoint"
+    },
+    {
+      "id": "v9-positive-12",
+      "kind": "positive",
+      "query": "Renew a retired habit as a new candidate without copying evidence",
+      "independently_authored_intent": "Find the lifecycle operation that renews a rejected or superseded learned habit as a fresh generation with no carried observation pin.",
+      "owner_evidence": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/store/habit_generations.rs",
+          "symbol": "renew_habit",
+          "declaration_line": 166,
+          "line_start": 182,
+          "line_end": 228,
+          "source_excerpt": "        let old = habit_review::read_habits(&tx, Some(parent))?\n            .into_iter()\n            .next()\n            .ok_or_else(|| invalid(\"parent habit missing\"))?;\n        if old.review_revision() != revision {\n            return Err(invalid(\n                \"parent review revision changed; inspect habit show again\",\n            ));\n        }\n        let status = old\n            .retired_status()\n            .ok_or_else(|| invalid(\"only rejected or superseded habits can be renewed\"))?;\n        if [\n            &old.when,\n            &old.behavior,\n            &old.outcome,\n            &old.exception,\n            &old.scope,\n            &old.role,\n            &old.workflow,\n        ]\n        .iter()\n        .any(|s| s.len() > 800)\n        {\n            return Err(invalid(\"habit definition exceeds renewal metadata limits\"));\n        }\n        let generation = old\n            .generation\n            .checked_add(1)\n            .filter(|n| *n > 1)\n            .ok_or_else(|| invalid(\"habit generation overflow\"))?;\n        tx.execute(\"INSERT INTO persona_claim(kind,when_text,behavior,outcome,exception_text,scope,role,workflow,status,generation)\n            VALUES('habit',?1,?2,?3,?4,?5,?6,?7,'candidate',?8)\", params![old.when,old.behavior,old.outcome,old.exception,old.scope,old.role,old.workflow,generation])?;\n        let child = tx.last_insert_rowid();\n        let at: i64 = tx.query_row(\"SELECT unixepoch()\", [], |r| r.get(0))?;\n        tx.execute(\"INSERT INTO persona_habit_generation(parent_id,child_id,root_id,parent_revision,parent_status,created_at)\n            VALUES(?1,?2,?3,?4,?5,?6)\",params![parent,child,old.generation_root,revision,status,at])?;\n        tx.execute(\n            \"UPDATE persona_claim SET status=?2 WHERE id=?1\",\n            params![parent, status],\n        )?;\n        tx.execute(\n            \"DELETE FROM persona_habit_observation WHERE claim_id=?1\",\n            [parent],\n        )?;\n        tx.execute(\"INSERT INTO persona_review_event(claim_id,status,at_epoch,reviewed_revision) VALUES(?1,?2,?3,?4)\",params![parent,format!(\"renewed_as:{child}\"),at,revision])?;\n        tx.execute(\"INSERT INTO persona_review_event(claim_id,status,at_epoch,reviewed_revision) VALUES(?1,?2,?3,NULL)\",params![child,format!(\"renewed_from:{parent}\"),at])?;",
+          "reason": "The method checks the reviewed parent revision and retired status, creates a candidate from its description fields, records the generation relationship, and deletes the parent's observation pin."
+        }
+      ],
+      "supplemental_source_evidence": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/store/habit_generations.rs",
+          "symbol": "renew_habit",
+          "declaration_line": 166,
+          "line_start": 164,
+          "line_end": 170,
+          "source_excerpt": "impl ProfileStore {\n    /// No source check: renewal copies only the description, never support or a pin.\n    pub(crate) fn renew_habit(\n        &mut self,\n        parent: i64,\n        revision: &str,\n    ) -> SqlResult<HabitRenewalReceipt> {",
+          "reason": "The method's explicit constraint is that renewal copies only the description and never support or a pin."
+        }
+      ],
+      "judgment": "supported_by_runtime_implementation_or_entrypoint"
+    },
+    {
+      "id": "v9-positive-13",
+      "kind": "positive",
+      "query": "Withdraw one preference source while retaining its quotes and review history",
+      "independently_authored_intent": "Find withdrawal of one collected preference observation while retaining immutable receipts and quotations.",
+      "owner_evidence": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/store/preferences.rs",
+          "symbol": "dismiss_feedback_source",
+          "declaration_line": 334,
+          "line_start": 351,
+          "line_end": 380,
+          "source_excerpt": "        let previous: Option<String> = tx.query_row(\"SELECT reviewed_revision FROM persona_feedback_dismissal WHERE candidate_id=?1 AND feedback_key=?2\", params![candidate,entry.key], |r|r.get(0)).optional()?;\n        if previous.as_deref() == Some(revision) {\n            return Ok(());\n        }\n        if revision != entry.review_revision() {\n            return Err(invalid(\n                \"review revision changed; inspect feedback show again\",\n            ));\n        }\n        if previous.is_some() {\n            return Ok(());\n        }\n        let bound: bool = tx.query_row(\"SELECT EXISTS(SELECT 1 FROM persona_candidate_feedback WHERE candidate_id=?1 AND feedback_key=?2)\",params![candidate,entry.key],|r|r.get(0))?;\n        if !bound {\n            return Err(invalid(\"candidate is not bound to this preference\"));\n        }\n        tx.execute(\n            \"INSERT INTO persona_feedback_dismissal VALUES (?1,?2,?3,unixepoch())\",\n            params![candidate, entry.key, revision],\n        )?;\n        tx.execute(\n            \"UPDATE feedback SET status=CASE WHEN status='rejected' THEN 'rejected'\n             WHEN status='superseded' OR EXISTS(SELECT 1 FROM feedback_supersession WHERE old_key=?1)\n             THEN 'superseded' ELSE 'candidate' END WHERE key=?1\",\n            [&entry.key],\n        )?;\n        tx.execute(\"DELETE FROM feedback_acceptance WHERE key=?1\", [&entry.key])?;\n        tx.execute(\"INSERT INTO feedback_review_event (key,status,at_epoch,reviewed_revision) VALUES (?1,?2,unixepoch(),?3)\",params![entry.key,format!(\"source_dismissed:{candidate}:{}\",entry.status),revision])?;\n        collection::check_size(&tx)?;\n        tx.commit()",
+          "reason": "The method binds dismissal to the inspected preference revision and candidate, inserts a dismissal record, removes acceptance, and appends a review event instead of deleting stored quotations."
+        }
+      ],
+      "supplemental_source_evidence": [],
+      "judgment": "supported_by_runtime_implementation_or_entrypoint"
+    },
+    {
+      "id": "v9-positive-14",
+      "kind": "positive",
+      "query": "Mark a learned habit observed only for the inspected review revision",
+      "independently_authored_intent": "Find the review transaction that observes a learned habit only at its currently inspected definition and evidence revision.",
+      "owner_evidence": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/store/habit_review.rs",
+          "symbol": "review_habit",
+          "declaration_line": 179,
+          "line_start": 204,
+          "line_end": 244,
+          "source_excerpt": "        if status == \"observed\" {\n            if revision != Some(habit.review_revision().as_str()) {\n                return Ok(Err(\n                    \"habit review revision changed; inspect habit show again\".into(),\n                ));\n            }\n            if let Some(reason) = habit.observation_problem() {\n                return Ok(Err(reason.into()));\n            }\n            if habit.status == \"observed\" && habit.observed_revision.as_deref() == revision {\n                return Ok(Ok(habit));\n            }\n            tx.execute(\n                \"INSERT INTO persona_habit_observation(claim_id,revision) VALUES (?1,?2)\n                ON CONFLICT(claim_id) DO UPDATE SET revision=excluded.revision\",\n                params![id, revision],\n            )?;\n            habit.observed_revision = revision.map(str::to_owned);\n        } else {\n            if habit.status == \"rejected\" {\n                return Ok(Ok(habit));\n            }\n            tx.execute(\n                \"DELETE FROM persona_habit_observation WHERE claim_id=?1\",\n                [id],\n            )?;\n            habit.observed_revision = None;\n        }\n        tx.execute(\n            \"UPDATE persona_claim SET status=?2 WHERE id=?1\",\n            params![id, status],\n        )?;\n        tx.execute(\n            \"INSERT INTO persona_review_event(claim_id,status,at_epoch,reviewed_revision)\n            VALUES (?1,?2,unixepoch(),?3)\",\n            params![\n                id,\n                status,\n                if status == \"observed\" { revision } else { None }\n            ],\n        )?;",
+          "reason": "The observed path requires the exact current review_revision, checks observation eligibility, and commits its observation pin, status, and review event atomically."
+        }
+      ],
+      "supplemental_source_evidence": [],
+      "judgment": "supported_by_runtime_implementation_or_entrypoint"
+    },
+    {
+      "id": "v9-positive-15",
+      "kind": "positive",
+      "query": "Render an audit comment after verifying repository and commit identity",
+      "independently_authored_intent": "Find the publication-oriented audit rendering entrypoint that verifies the expected repository, baseline, and head before producing Markdown.",
+      "owner_evidence": [
+        {
+          "path": "mcp/servers/mmcg/src/commands/pr_comment.rs",
+          "symbol": "run",
+          "declaration_line": 8,
+          "line_start": 8,
+          "line_end": 36,
+          "source_excerpt": "pub fn run(\n    bundle_path: &Path,\n    root: &Path,\n    expected_repository: &str,\n    expected_baseline: &str,\n    expected_head: &str,\n) -> Result<(), Box<dyn std::error::Error>> {\n    let envelope = read_envelope(bundle_path)\n        .map_err(|e| format!(\"sealed schema-v3 audit bundle required; regenerate it: {e}\"))?;\n    let report = verify_envelope(\n        &envelope,\n        &VerifyPolicy {\n            expected_repository: Some(expected_repository.to_string()),\n            expected_baseline: Some(expected_baseline.to_string()),\n            expected_head: Some(expected_head.to_string()),\n            root: Some(root.to_path_buf()),\n            require_clean_worktree: true,\n            ..VerifyPolicy::default()\n        },\n    );\n    if !report.accepted() {\n        return Err(format!(\n            \"audit bundle policy verification failed: {}\",\n            report.reasons.join(\",\")\n        )\n        .into());\n    }\n    print!(\"{}\", render(&envelope, false)?);\n    Ok(())",
+          "reason": "The command verifies a sealed envelope against expected repository and commit IDs with a clean-worktree requirement, rejects failed policy verification, and prints the trusted render."
+        }
+      ],
+      "supplemental_source_evidence": [],
+      "judgment": "supported_by_runtime_implementation_or_entrypoint"
+    },
+    {
+      "id": "v9-positive-16",
+      "kind": "positive",
+      "query": "Audit a spec using an index bound to current sources",
+      "independently_authored_intent": "Find the CLI audit entrypoint that requires a populated source-bound index and rechecks snapshot currency after the audit.",
+      "owner_evidence": [
+        {
+          "path": "mcp/servers/mmcg/src/commands/spec_gate.rs",
+          "symbol": "audit",
+          "declaration_line": 86,
+          "line_start": 95,
+          "line_end": 118,
+          "source_excerpt": "    let root = root\n        .canonicalize()\n        .map_err(|e| format!(\"canonicalize {}: {e}\", root.display()))?;\n    let source_path = std::path::absolute(spec)?;\n    let parsed = mmcg::spec::parse_file(&source_path)\n        .map_err(|e| format!(\"parse {}: {e}\", source_path.display()))?;\n    let executor_report_path_str = executor_report_path\n        .map(|path| exact_path(path, \"executor report\"))\n        .transpose()?;\n    let store = open_validated_index(index_path, &root)?.ok_or_else(|| {\n        format!(\n            \"no populated index at `{}`; run `mastermind index .`\",\n            index_path.display()\n        )\n    })?;\n\n    let executor_report = executor_report_path\n        .map(mmcg::executor_report::parse_file)\n        .transpose()\n        .map_err(|e| format!(\"executor report: {e}\"))?;\n\n    let report =\n        mmcg::audit_spec::run_with_report(&parsed, &store, &root, since, executor_report.as_ref())?;\n    store.ensure_source_snapshot_current()?;",
+          "reason": "The entrypoint opens an index through open_validated_index, runs the audit against that store, and calls ensure_source_snapshot_current after execution."
+        }
+      ],
+      "supplemental_source_evidence": [
+        {
+          "path": "mcp/servers/mmcg/src/commands/spec_gate.rs",
+          "symbol": "open_validated_index",
+          "declaration_line": 8,
+          "line_start": 26,
+          "line_end": 38,
+          "source_excerpt": "    let store = mmcg::store::Store::open_read_only(index_path)?;\n    if !store.schema_current()? {\n        return Err(format!(\n            \"index schema at `{}` is missing or outdated; rebuild with `mastermind index .`\",\n            index_path.display()\n        )\n        .into());\n    }\n    mmcg::indexer::validate_index_root(&store, root)\n        .map_err(|error| format!(\"index/root mismatch: {error}\"))?;\n    let populated = store.symbol_count()? > 0;\n    store.ensure_source_snapshot_current()?;\n    Ok(populated.then_some(store))",
+          "reason": "The called index-opening boundary checks schema, project root, population, and current source snapshot before allowing audit use."
+        }
+      ],
+      "judgment": "supported_by_runtime_implementation_or_entrypoint"
+    },
+    {
+      "id": "v9-negative-01",
+      "kind": "negative",
+      "query": "Install native prompt hooks on a Windows project",
+      "independently_authored_intent": "Request native hook installation on a platform the installer explicitly rejects.",
+      "inspected_neighbor_owners": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/hooks/install.rs",
+          "symbol": "configure",
+          "declaration_line": 33,
+          "line_start": 33,
+          "line_end": 56,
+          "source_excerpt": "pub(super) fn configure(\n    client: &str,\n    project_root: &Path,\n    write: bool,\n    remove: bool,\n    refiner_timeout: Option<u64>,\n    profile_delivery: bool,\n) -> Result<Value, Box<dyn Error>> {\n    if !cfg!(unix) {\n        return Err(\"native hook command installation currently requires a Unix platform\".into());\n    }\n    let (relative, extra_event, documentation) = match client {\n        \"claude\" => (\n            \".claude/settings.local.json\",\n            \"PostToolUseFailure\",\n            \"https://code.claude.com/docs/en/hooks\",\n        ),\n        \"codex\" => (\n            \".codex/hooks.json\",\n            \"Interrupt\",\n            \"https://learn.chatgpt.com/docs/hooks\",\n        ),\n        _ => return Err(\"hook client must be claude or codex\".into()),\n    };",
+          "reason": "configure returns an error when the platform is not Unix. No Windows native hook installer is offered by this entrypoint."
+        }
+      ],
+      "judgment": "unsupported_operation_within_inspected_runtime_contract",
+      "unsupported_reason": "configure returns an error when the platform is not Unix. No Windows native hook installer is offered by this entrypoint.",
+      "scope_limit": "This is a source-bound capability judgment from the neighboring runtime and entrypoint paths inspected, not a formal proof over every possible external integration."
+    },
+    {
+      "id": "v9-negative-02",
+      "kind": "negative",
+      "query": "Install Gemini native hooks for a project",
+      "independently_authored_intent": "Request installation for a client outside the explicit native hook client contract.",
+      "inspected_neighbor_owners": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/hooks/install.rs",
+          "symbol": "configure",
+          "declaration_line": 33,
+          "line_start": 44,
+          "line_end": 56,
+          "source_excerpt": "    let (relative, extra_event, documentation) = match client {\n        \"claude\" => (\n            \".claude/settings.local.json\",\n            \"PostToolUseFailure\",\n            \"https://code.claude.com/docs/en/hooks\",\n        ),\n        \"codex\" => (\n            \".codex/hooks.json\",\n            \"Interrupt\",\n            \"https://learn.chatgpt.com/docs/hooks\",\n        ),\n        _ => return Err(\"hook client must be claude or codex\".into()),\n    };",
+          "reason": "Both native configuration and the common hook client validator allow only claude or codex and reject other client names."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/miner/hooks/mod.rs",
+          "symbol": "client",
+          "declaration_line": 47,
+          "line_start": 47,
+          "line_end": 52,
+          "source_excerpt": "fn client(value: &str) -> Result<(), Error> {\n    if !matches!(value, \"claude\" | \"codex\") {\n        return Err(\"client must be claude or codex\".into());\n    }\n    Ok(())\n}",
+          "reason": "Both native configuration and the common hook client validator allow only claude or codex and reject other client names."
+        }
+      ],
+      "judgment": "unsupported_operation_within_inspected_runtime_contract",
+      "unsupported_reason": "Both native configuration and the common hook client validator allow only claude or codex and reject other client names.",
+      "scope_limit": "This is a source-bound capability judgment from the neighboring runtime and entrypoint paths inspected, not a formal proof over every possible external integration."
+    },
+    {
+      "id": "v9-negative-03",
+      "kind": "negative",
+      "query": "Automatically trust newly installed Codex project hooks",
+      "independently_authored_intent": "Request automatic client trust as a consequence of native hook installation.",
+      "inspected_neighbor_owners": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/hooks/install.rs",
+          "symbol": "configure",
+          "declaration_line": 33,
+          "line_start": 158,
+          "line_end": 180,
+          "source_excerpt": "    Ok(json!({\n        \"schema\": 1,\n        \"client\": client,\n        \"scope\": \"project\",\n        \"project_root\": project,\n        \"config_path\": path,\n        \"operation\": if remove { \"remove\" } else { \"install\" },\n        \"changed\": changed,\n        \"written\": write && changed,\n        \"events\": events,\n        \"hook_config\": if remove { json!({}) } else { json!({\"hooks\": generated}) },\n        \"requires_client_trust\": client == \"codex\" && !remove,\n        \"client_activation\": if remove {\n            \"Reload the client configuration; capture revocation is handled separately.\"\n        } else if client == \"codex\" {\n            \"Open /hooks in a trusted Codex project and review the generated definitions before enabling capture.\"\n        } else {\n            \"Reload the client configuration and inspect /hooks in Claude Code.\"\n        },\n        \"local_hooks_disabled\": original.get(\"disableAllHooks\").and_then(Value::as_bool) == Some(true),\n        \"platform\": \"unix\",\n        \"coverage\": \"native_events_only\",\n        \"purpose\": \"local capture, task profile context and optional prompt refinement; these hooks do not enforce action permissions\",",
+          "reason": "The installer explicitly reports requires_client_trust and directs the user to inspect /hooks. The read-only readiness path previews configuration and does not grant trust."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/miner/hooks/readiness.rs",
+          "symbol": "report",
+          "declaration_line": 19,
+          "line_start": 155,
+          "line_end": 180,
+          "source_excerpt": "    let native = if cfg!(unix) {\n        match install::configure(\n            client,\n            &root,\n            false,\n            false,\n            valid_refiner.map(|config| config.timeout_secs),\n            grant\n                .as_ref()\n                .ok()\n                .and_then(Option::as_ref)\n                .is_some_and(|grant| grant.enabled && grant.profile_client.is_some()),\n        ) {\n            Ok(preview) => json!({\n                \"status\":if preview[\"changed\"]==false {\"current\"} else {\"missing_or_stale\"},\n                \"config_path\":preview[\"config_path\"],\n                \"local_hooks_disabled\":preview[\"local_hooks_disabled\"],\n                \"requires_client_trust\":preview[\"requires_client_trust\"],\n                \"client_activation\":preview[\"client_activation\"],\n                \"coverage\":\"native_events_only\",\"permission_effect\":\"none\"\n            }),\n            Err(_) => json!({\"status\":\"unavailable\",\"reason\":\"native_configuration_unavailable\",\n                \"local_hooks_disabled\":null,\"requires_client_trust\":client==\"codex\"}),\n        }\n    } else {\n        json!({\"status\":\"unsupported\",\"reason\":\"native_hooks_require_unix\",\"local_hooks_disabled\":null})",
+          "reason": "The installer explicitly reports requires_client_trust and directs the user to inspect /hooks. The read-only readiness path previews configuration and does not grant trust."
+        }
+      ],
+      "judgment": "unsupported_operation_within_inspected_runtime_contract",
+      "unsupported_reason": "The installer explicitly reports requires_client_trust and directs the user to inspect /hooks. The read-only readiness path previews configuration and does not grant trust.",
+      "scope_limit": "This is a source-bound capability judgment from the neighboring runtime and entrypoint paths inspected, not a formal proof over every possible external integration."
+    },
+    {
+      "id": "v9-negative-04",
+      "kind": "negative",
+      "query": "Post the rendered audit comment directly to a GitHub pull request",
+      "independently_authored_intent": "Request remote publication directly from the local audit comment renderer.",
+      "inspected_neighbor_owners": [
+        {
+          "path": "mcp/servers/mmcg/src/commands/pr_comment.rs",
+          "symbol": "run",
+          "declaration_line": 8,
+          "line_start": 8,
+          "line_end": 36,
+          "source_excerpt": "pub fn run(\n    bundle_path: &Path,\n    root: &Path,\n    expected_repository: &str,\n    expected_baseline: &str,\n    expected_head: &str,\n) -> Result<(), Box<dyn std::error::Error>> {\n    let envelope = read_envelope(bundle_path)\n        .map_err(|e| format!(\"sealed schema-v3 audit bundle required; regenerate it: {e}\"))?;\n    let report = verify_envelope(\n        &envelope,\n        &VerifyPolicy {\n            expected_repository: Some(expected_repository.to_string()),\n            expected_baseline: Some(expected_baseline.to_string()),\n            expected_head: Some(expected_head.to_string()),\n            root: Some(root.to_path_buf()),\n            require_clean_worktree: true,\n            ..VerifyPolicy::default()\n        },\n    );\n    if !report.accepted() {\n        return Err(format!(\n            \"audit bundle policy verification failed: {}\",\n            report.reasons.join(\",\")\n        )\n        .into());\n    }\n    print!(\"{}\", render(&envelope, false)?);\n    Ok(())",
+          "reason": "The command prints the render to stdout. The CLI contract directs callers to use a separate gh pr comment invocation for publication and supplies no pull-request destination argument."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/main.rs",
+          "symbol": "PrComment",
+          "declaration_line": 291,
+          "line_start": 288,
+          "line_end": 294,
+          "source_excerpt": "    /// Generate a PR comment in GitHub Flavored Markdown from a bundle JSON\n    /// produced by `audit-spec --bundle`. Writes to stdout — pipe or redirect\n    /// to a file and post via `gh pr comment --body-file <file>`.\n    PrComment(PrCommentArgs),\n    /// Render an integrity-valid envelope without repository or signer trust.\n    /// The output is explicitly marked untrusted and is forbidden in publication.\n    PrCommentUntrusted { bundle: PathBuf },",
+          "reason": "The command prints the render to stdout. The CLI contract directs callers to use a separate gh pr comment invocation for publication and supplies no pull-request destination argument."
+        }
+      ],
+      "judgment": "unsupported_operation_within_inspected_runtime_contract",
+      "unsupported_reason": "The command prints the render to stdout. The CLI contract directs callers to use a separate gh pr comment invocation for publication and supplies no pull-request destination argument.",
+      "scope_limit": "This is a source-bound capability judgment from the neighboring runtime and entrypoint paths inspected, not a formal proof over every possible external integration."
+    },
+    {
+      "id": "v9-negative-05",
+      "kind": "negative",
+      "query": "Collect exact line coverage while scanning a Python test directory",
+      "independently_authored_intent": "Request execution-derived line coverage from the advisory conventional test scanner.",
+      "inspected_neighbor_owners": [
+        {
+          "path": "mcp/servers/mmcg/src/test_scan.rs",
+          "symbol": "absence_reason",
+          "declaration_line": 135,
+          "line_start": 135,
+          "line_end": 138,
+          "source_excerpt": "    pub(crate) fn absence_reason(&mut self, cmd: &str) -> Option<String> {\n        let plan = Plan::parse(cmd)?;\n        (self.scan(&plan) == Outcome::Absent).then(|| plan.absence_reason())\n    }",
+          "reason": "This scanner recognizes conventional file names and returns present, absent, or unknown evidence. Its runtime path does not execute tests, instrument Python, or produce covered-line measurements."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/test_scan.rs",
+          "symbol": "collect",
+          "declaration_line": 240,
+          "line_start": 311,
+          "line_end": 333,
+          "source_excerpt": "                    BoundedPathKind::RegularFile => {\n                        let name = name.to_str()?;\n                        let matches = match plan.runner {\n                            TestRunner::Go => name.ends_with(\"_test.go\"),\n                            TestRunner::Pytest => {\n                                (name.starts_with(\"test_\") || name.ends_with(\"_test.py\"))\n                                    && name.ends_with(\".py\")\n                            }\n                            TestRunner::Javascript => {\n                                name.contains(\".test.\") || name.contains(\".spec.\")\n                            }\n                            TestRunner::Cargo => unreachable!(),\n                        };\n                        if matches {\n                            return Some(Collected::Present);\n                        }\n                    }\n                    _ => {}\n                }\n            }\n            snapshot.directories.push((directory, names));\n        }\n        Some(Collected::Absent(snapshot))",
+          "reason": "This scanner recognizes conventional file names and returns present, absent, or unknown evidence. Its runtime path does not execute tests, instrument Python, or produce covered-line measurements."
+        }
+      ],
+      "judgment": "unsupported_operation_within_inspected_runtime_contract",
+      "unsupported_reason": "This scanner recognizes conventional file names and returns present, absent, or unknown evidence. Its runtime path does not execute tests, instrument Python, or produce covered-line measurements.",
+      "scope_limit": "This is a source-bound capability judgment from the neighboring runtime and entrypoint paths inspected, not a formal proof over every possible external integration."
+    },
+    {
+      "id": "v9-negative-06",
+      "kind": "negative",
+      "query": "Automatically discover new transcript files during a registered source sync",
+      "independently_authored_intent": "Request discovery of unregistered transcript files through an explicit registered-source sync operation.",
+      "inspected_neighbor_owners": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/collection/sources.rs",
+          "symbol": "prepare_page",
+          "declaration_line": 92,
+          "line_start": 92,
+          "line_end": 109,
+          "source_excerpt": "fn prepare_page(\n    db: Option<&ProfileStore>,\n    root: &Path,\n    after: Option<&str>,\n    limit: usize,\n) -> Result<(SourcePage, Vec<CollectionBatch>), Box<dyn std::error::Error>> {\n    let page = page(db, root, after, limit, false)?;\n    let inputs: Vec<_> = page\n        .sources\n        .iter()\n        .map(|source| CollectionInput::Registered(&source.snapshot))\n        .collect();\n    let batches = if inputs.is_empty() {\n        Vec::new()\n    } else {\n        prepare_inputs(db, root, &inputs)?\n    };\n    Ok((page, batches))",
+          "reason": "The sync path selects only stored source registrations and prepares CollectionInput::Registered entries. Its contract explicitly excludes file discovery."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/miner/collection/sources.rs",
+          "symbol": "sync",
+          "declaration_line": 146,
+          "line_start": 144,
+          "line_end": 163,
+          "source_excerpt": "/// Reread one page of already selected sources. This never discovers files,\n/// reviews candidates, changes curation receipts, or publishes a profile.\npub fn sync(\n    root: &Path,\n    after: Option<&str>,\n    limit: usize,\n    dry_run: bool,\n) -> Result<(), Box<dyn std::error::Error>> {\n    let root = validate_page(root, after, limit, MAX_FILES)?;\n    let path = ProfileStore::db_path().ok_or(\"could not resolve profile store\")?;\n    let result = (|| {\n        let db = ProfileStore::open_optional_read_only(&path)?;\n        if dry_run {\n            let (page, batches) = prepare_page(db.as_ref(), &root, after, limit)?;\n            return Ok(report(&root, &page, &batches, true, None));\n        }\n        // A read-only empty selection needs neither a store nor a lock file.\n        // For nonempty work, select AGAIN under the writer lock: an explicit\n        // collect could have relocated a source while sync waited for the lock.\n        let initial = page(db.as_ref(), &root, after, limit, false)?;",
+          "reason": "The sync path selects only stored source registrations and prepares CollectionInput::Registered entries. Its contract explicitly excludes file discovery."
+        }
+      ],
+      "judgment": "unsupported_operation_within_inspected_runtime_contract",
+      "unsupported_reason": "The sync path selects only stored source registrations and prepares CollectionInput::Registered entries. Its contract explicitly excludes file discovery.",
+      "scope_limit": "This is a source-bound capability judgment from the neighboring runtime and entrypoint paths inspected, not a formal proof over every possible external integration."
+    },
+    {
+      "id": "v9-negative-07",
+      "kind": "negative",
+      "query": "Renew a retired habit while carrying forward its accepted evidence",
+      "independently_authored_intent": "Request renewal that preserves the retired parent's accepted support or observation pin.",
+      "inspected_neighbor_owners": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/store/habit_generations.rs",
+          "symbol": "renew_habit",
+          "declaration_line": 166,
+          "line_start": 164,
+          "line_end": 170,
+          "source_excerpt": "impl ProfileStore {\n    /// No source check: renewal copies only the description, never support or a pin.\n    pub(crate) fn renew_habit(\n        &mut self,\n        parent: i64,\n        revision: &str,\n    ) -> SqlResult<HabitRenewalReceipt> {",
+          "reason": "Renewal copies description fields into a candidate, creates generation history, and removes the parent's observation pin. It deliberately does not copy support or a pin into the child."
+        },
+        {
+          "path": "mcp/servers/mmcg/src/miner/store/habit_generations.rs",
+          "symbol": "renew_habit",
+          "declaration_line": 166,
+          "line_start": 208,
+          "line_end": 228,
+          "source_excerpt": "        let generation = old\n            .generation\n            .checked_add(1)\n            .filter(|n| *n > 1)\n            .ok_or_else(|| invalid(\"habit generation overflow\"))?;\n        tx.execute(\"INSERT INTO persona_claim(kind,when_text,behavior,outcome,exception_text,scope,role,workflow,status,generation)\n            VALUES('habit',?1,?2,?3,?4,?5,?6,?7,'candidate',?8)\", params![old.when,old.behavior,old.outcome,old.exception,old.scope,old.role,old.workflow,generation])?;\n        let child = tx.last_insert_rowid();\n        let at: i64 = tx.query_row(\"SELECT unixepoch()\", [], |r| r.get(0))?;\n        tx.execute(\"INSERT INTO persona_habit_generation(parent_id,child_id,root_id,parent_revision,parent_status,created_at)\n            VALUES(?1,?2,?3,?4,?5,?6)\",params![parent,child,old.generation_root,revision,status,at])?;\n        tx.execute(\n            \"UPDATE persona_claim SET status=?2 WHERE id=?1\",\n            params![parent, status],\n        )?;\n        tx.execute(\n            \"DELETE FROM persona_habit_observation WHERE claim_id=?1\",\n            [parent],\n        )?;\n        tx.execute(\"INSERT INTO persona_review_event(claim_id,status,at_epoch,reviewed_revision) VALUES(?1,?2,?3,?4)\",params![parent,format!(\"renewed_as:{child}\"),at,revision])?;\n        tx.execute(\"INSERT INTO persona_review_event(claim_id,status,at_epoch,reviewed_revision) VALUES(?1,?2,?3,NULL)\",params![child,format!(\"renewed_from:{parent}\"),at])?;",
+          "reason": "Renewal copies description fields into a candidate, creates generation history, and removes the parent's observation pin. It deliberately does not copy support or a pin into the child."
+        }
+      ],
+      "judgment": "unsupported_operation_within_inspected_runtime_contract",
+      "unsupported_reason": "Renewal copies description fields into a candidate, creates generation history, and removes the parent's observation pin. It deliberately does not copy support or a pin into the child.",
+      "scope_limit": "This is a source-bound capability judgment from the neighboring runtime and entrypoint paths inspected, not a formal proof over every possible external integration."
+    },
+    {
+      "id": "v9-negative-08",
+      "kind": "negative",
+      "query": "Establish a causal profile benefit from supplied paired task outcomes",
+      "independently_authored_intent": "Request a causal-effect conclusion from the local paired-observation evaluation.",
+      "inspected_neighbor_owners": [
+        {
+          "path": "mcp/servers/mmcg/src/miner/hooks/quality.rs",
+          "symbol": "evaluate",
+          "declaration_line": 59,
+          "line_start": 143,
+          "line_end": 189,
+          "source_excerpt": "    for pair in &input.task_pairs {\n        if !crate::miner::collection::valid_id(&pair.task_revision)\n            || !revisions.insert(&pair.task_revision)\n            || pair.baseline.profile_digest.is_some()\n            || !pair\n                .with_profile\n                .profile_digest\n                .as_deref()\n                .is_some_and(crate::miner::collection::valid_id)\n        {\n            return Err(\n                \"task pair must bind one task revision and opposite profile conditions\".into(),\n            );\n        }\n        for trial in [&pair.baseline, &pair.with_profile] {\n            if !identifier(&trial.session)\n                || !trial_sessions.insert(&trial.session)\n                || !(1..=20).contains(&trial.iterations)\n                || trial.user_corrections > 128\n                || !(1..=7_200_000).contains(&trial.wall_ms)\n            {\n                return Err(\"task trial has a repeated session or invalid observations\".into());\n            }\n        }\n        correctness += i64::from(pair.with_profile.correct) - i64::from(pair.baseline.correct);\n        iterations += i64::from(pair.with_profile.iterations) - i64::from(pair.baseline.iterations);\n        corrections += i64::from(pair.with_profile.user_corrections)\n            - i64::from(pair.baseline.user_corrections);\n        wall += pair.with_profile.wall_ms as i64 - pair.baseline.wall_ms as i64;\n    }\n    let ratio = |a: usize, b: usize| (b > 0).then(|| a as f64 / b as f64);\n    let mean = |value: i64| {\n        (!input.task_pairs.is_empty()).then(|| value as f64 / input.task_pairs.len() as f64)\n    };\n    Ok(\n        json!({\"schema\":1,\"processor\":local::processor(),\"provenance\":input.provenance,\n        \"labels\":{\"labeler\":input.labeler,\"independence\":\"not_verified\"},\n        \"mining\":{\"cases\":input.cases.len(),\"sessions\":sessions.len(),\n            \"held_out_cases\":input.cases.iter().filter(|case| case.partition==\"held_out\").count(),\n            \"true_positive\":tp,\"false_positive\":fp,\"false_negative\":fn_count,\"excluded_inputs\":exclusions,\n            \"precision\":ratio(tp,tp+fp),\"recall\":ratio(tp,tp+fn_count),\"failed_case_ids\":failures,\n            \"meaning\":\"Exact complete source-span agreement with supplied labels, not proof of authorship or habit truth.\"},\n        \"task_benefit\":{\"status\":if input.task_pairs.is_empty(){\"unmeasured\"}else{\"paired_observations\"},\n            \"pairs\":input.task_pairs.len(),\"profile_minus_baseline\":{\"correctness\":mean(correctness),\n                \"iterations\":mean(iterations),\"user_corrections\":mean(corrections),\"wall_ms\":mean(wall)},\n            \"causal_effect\":\"not_established\",\"meaning\":\"Supplied paired outcomes. Runtime conditions and reviewer independence are not verified.\"},\n        \"publication\":false,\"model\":false}),",
+          "reason": "The evaluator aggregates supplied pairs but reports causal_effect as not_established and does not verify runtime conditions or reviewer independence."
+        }
+      ],
+      "judgment": "unsupported_operation_within_inspected_runtime_contract",
+      "unsupported_reason": "The evaluator aggregates supplied pairs but reports causal_effect as not_established and does not verify runtime conditions or reviewer independence.",
+      "scope_limit": "This is a source-bound capability judgment from the neighboring runtime and entrypoint paths inspected, not a formal proof over every possible external integration."
+    }
+  ]
+}

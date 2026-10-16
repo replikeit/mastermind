@@ -11,6 +11,13 @@ pub(super) struct ParsedOtel {
     pub deadline_reached: bool,
 }
 
+/// One OpenTelemetry OTLP span with trace, span and optional parent span IDs.
+///
+/// Trace and span identifiers are retained as nonempty strings; `parentSpanId`
+/// is optional and retained only when nonempty. Identifier widths, hexadecimal
+/// encoding and the existence of the referenced parent are not validated here.
+/// File provenance is available only when an explicit code path attribute was
+/// present; the span name does not establish a source-file binding.
 pub(super) struct OtelSpan {
     pub trace_id: String,
     pub span_id: String,
@@ -19,6 +26,12 @@ pub(super) struct OtelSpan {
     pub file: Option<String>,
 }
 
+/// Parse OpenTelemetry OTLP JSON resource and scope spans into runtime evidence.
+///
+/// Malformed JSON or a missing `resourceSpans` array returns `InvalidFormat`.
+/// Legacy `instrumentationLibrarySpans` containers are accepted. Spans without
+/// nonempty trace and span identifiers are omitted with invalid/partial flags;
+/// fact and deadline limits stop collection with explicit partial-result flags.
 pub(super) fn parse(bytes: &[u8], deadline: Option<Instant>) -> Result<ParsedOtel, SourceFailure> {
     let value: Value = serde_json::from_slice(bytes).map_err(|_| SourceFailure::InvalidFormat)?;
     let Some(resource_spans) = value.get("resourceSpans").and_then(Value::as_array) else {

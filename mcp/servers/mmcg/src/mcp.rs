@@ -296,6 +296,16 @@ static TOOLS: &[ToolDef] = &[
         handle_change_class,
     ),
     refreshable_tool("mmcg_concept", schema_concept, handle_concept),
+    refreshable_tool(
+        "mmcg_concept_prepare",
+        schema_concept_prepare,
+        handle_concept_prepare,
+    ),
+    read_only_tool(
+        "mmcg_concept_finish",
+        schema_concept_finish,
+        handle_concept_finish,
+    ),
     read_only_tool("mmcg_context", schema_context, handle_context),
     read_only_tool("mmcg_profile", schema_profile, handle_profile),
     read_only_tool(
@@ -2418,7 +2428,7 @@ fn schema_brief() -> Value {
 fn schema_concept() -> Value {
     json!({
         "name": "mmcg_concept",
-        "description": "Deterministic local concept retrieval over bounded normalized symbol names, repository paths, declaration shapes, and owned Rust/Python/JavaScript/TypeScript documentation tokens. Uses SQLite FTS5 only: no embeddings, model calls, network access, source bodies, raw comments/docstrings, literals, or defaults. Responses report exact indexed-match coverage, page truncation, and safety omissions. Results are retrieval candidates, not confidence-ranked answers.",
+        "description": "Fast lexical candidate retrieval over normalized symbol names, paths, declaration shapes and owned documentation. For operation relevance use mmcg_concept_prepare, inspect source and submit assessments with mmcg_concept_finish. This lexical tool uses SQLite FTS5 only, without source bodies or model calls. It reports exact indexed-match coverage, truncation and safety omissions. Candidate scores do not establish relevance.",
         "inputSchema": {
             "type": "object",
             "properties": {
@@ -2426,16 +2436,166 @@ fn schema_concept() -> Value {
                     "type": "string",
                     "minLength": 1,
                     "maxLength": 256,
-                    "description": "Plain text only. Terms are normalized, quoted, and joined with fixed AND semantics; raw FTS syntax is never accepted."
+                    "description": "Plain text only. Quoted terms use Porter stemming and same-stem deduplication. Full AND matches take precedence. With at least three distinct terms, qualifying partial matches can supplement the page even when full matches exist; they require at least half of all terms (rounded up, minimum two), plus min(3, overall floor, ranking_terms count) informative terms. all_and_partial_terms reports a qualified corpus containing both groups, and indexed_total counts their union before LIMIT. Fixed English function words have no primary partial-ranking weight when other terms remain. The response discloses query_terms, ranking_terms, both thresholds, match mode and matched terms. This lexical rule does not establish semantic relevance. Raw FTS syntax is never accepted."
                 },
                 "top": {
                     "type": "integer",
                     "minimum": 1,
                     "maximum": 50,
                     "default": 10
+                },
+                "include_tests": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Restore all otherwise qualifying rows from recognized Rust test scopes. The default excludes parsed test/rstest/namespaced ::test attributes and descendants of canonical cfg(test) modules before indexed_total and LIMIT. Canonical modules require kind mod, exactly the decorator list ,cfg,, and a raw signature of at most 65536 bytes starting with #[cfg(test)] after removing spaces, tabs, CR and LF. The cfg-module check does not recognize compound expressions, comments within that prefix or additional attributes. Unmarked scopes and other languages remain unclassified."
                 }
             },
             "required": ["query"],
+            "additionalProperties": false
+        }
+    })
+}
+
+fn schema_concept_prepare() -> Value {
+    let mut schema = schema_concept();
+    schema["name"] = json!("mmcg_concept_prepare");
+    schema["description"] = json!("Prepare operation-roles-v3 source review. Preserve up to 50 lexical candidates, add up to 64 operation-body candidates, then owned_scope recall from at most two nominated file owners with sixteen additional functions/methods per owner. Returns an unreviewed pool with exact declarations, bound source hashes, limits and rubric. Bind an optional request_contract authored from the query before retrieval; omitted contracts retain the full query as operation with no parsed constraints. Inspect source and supply a typed operation witness for every relevant entry before mmcg_concept_finish. Context must navigate to the requested existing operation with every explicit constraint intact. An omitted request selector does not establish absent runtime binding; rendered instructions do not establish execution. No model is invoked.");
+    schema["inputSchema"]["properties"]["query"]["description"] = json!("Describe the intended operation, object and required constraints in plain text. Source-body recall uses informative terms with OR; lexical admission floors do not filter this extra pool. Relevance is assessed separately against source evidence.");
+    schema["inputSchema"]["properties"]["hints"] = json!({
+        "type": "array", "maxItems": 8,
+        "items": {"type": "string", "minLength": 1, "maxLength": 64},
+        "description": "Optional alternative implementation vocabulary inferred by the calling agent, at most sixteen normalized extra terms. Hints broaden body recall only. Assess relevance against the original query and its constraints. No built-in synonym list or model call."
+    });
+    schema["inputSchema"]["properties"]["request_contract"] = json!({
+        "type": "object",
+        "description": "Reviewer-authored operation and explicit constraint ledger, bound into the source packet. Constraints quote exact nonblank substrings of the original query; ids and texts are unique. This ledger does not establish intent or exhaustively parse the query. Every original constraint still applies.",
+        "properties": {
+            "operation": {"type": "string", "minLength": 1, "maxLength": 256},
+            "constraints": {
+                "type": "array", "maxItems": 8,
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "id": {"type": "string", "minLength": 1, "maxLength": 64},
+                        "text": {"type": "string", "minLength": 1, "maxLength": 256},
+                        "kind": {"type": "string", "enum": ["input", "state", "scope", "result"]}
+                    },
+                    "required": ["id", "text", "kind"],
+                    "additionalProperties": false
+                }
+            }
+        },
+        "required": ["operation", "constraints"],
+        "additionalProperties": false
+    });
+    schema
+}
+
+fn schema_concept_supporting_evidence() -> Value {
+    json!({
+        "type": "array", "maxItems": 16,
+        "description": "Inspected source ranges bound to packet.source_files by exact path/hash and current line bounds. Relevant non-implementation roles require supporting_evidence; entrypoints/contracts/helpers require a range outside their declaration. Matched constraint checks require at least one evidence range. Source links validate claims and do not establish their semantic truth.",
+        "items": {
+            "type": "object",
+            "properties": {
+                "path": {"type": "string", "minLength": 1},
+                "source_sha256": {"type": "string", "minLength": 64, "maxLength": 64},
+                "start_line": {"type": "integer", "minimum": 1},
+                "end_line": {"type": "integer", "minimum": 1}
+            },
+            "required": ["path", "source_sha256", "start_line", "end_line"],
+            "additionalProperties": false
+        }
+    })
+}
+
+fn schema_concept_witness() -> Value {
+    json!({
+        "type": ["object", "null"],
+        "description": "Required for every relevant entry. Describe the candidate's own observable behavior and select its relationship after inspecting the path. Match every declared constraint exactly once using bound source evidence. Contradicted or uninspected constraints prevent relevant verdicts. Generic prerequisites are context, unless their own behavior enforces a defining requested constraint. This is a reviewer claim, not independently verified semantic truth.",
+        "properties": {
+            "behavior": {"type": "string", "minLength": 1, "maxLength": 2048},
+            "relation": {
+                "type": "string",
+                "enum": ["performs_operation", "exposes_result", "operation_contract", "domain_contribution", "operation_navigation", "generic_prerequisite"],
+                "description": "Respectively requires role implementation, entrypoint, contract, essential_helper, supporting_context, supporting_context. A specific own branch or module can expose an operation through a mandatory inspected path even when it delegates."
+            },
+            "constraint_checks": {
+                "type": "array", "maxItems": 8,
+                "items": {
+                    "type": "object",
+                    "properties": {
+                        "constraint_id": {"type": "string", "minLength": 1, "maxLength": 64},
+                        "status": {"type": "string", "enum": ["matched", "contradicted", "uninspected"]},
+                        "evidence": schema_concept_supporting_evidence()
+                    },
+                    "required": ["constraint_id", "status", "evidence"],
+                    "additionalProperties": false
+                }
+            }
+        },
+        "required": ["behavior", "relation", "constraint_checks"],
+        "additionalProperties": false
+    })
+}
+
+fn schema_concept_finish() -> Value {
+    json!({
+        "name": "mmcg_concept_finish",
+        "description": "Validate a caller's operation-roles-v3 assessment against the unchanged packet, bound request_contract and source. A prior role contract requires a new packet and source assessment. Every relevant entry requires own citations, a role and a typed operation witness with matched source-bound checks for every declared constraint. Witness relationships constrain roles; generic prerequisites are context. Non-implementation roles need supporting_evidence; entrypoints/contracts/helpers require evidence outside their declaration. Context must navigate to an existing operation satisfying every explicit query constraint. State/result constraints cannot be replaced by request selectors or rendered instructions. candidates retains useful page order; semantic_candidates excludes context. Unknowns and incomplete coverage remain explicit. Validation checks bindings and structural claims, not semantic truth. No model is invoked.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "packet": {"type": "object", "description": "The complete unchanged preparation packet, including packet_sha256."},
+                "assessment": {
+                    "type": "object",
+                    "properties": {
+                        "schema_version": {"type": "integer", "const": 1},
+                        "packet_sha256": {"type": "string", "minLength": 64, "maxLength": 64},
+                        "query_ambiguities": {
+                            "type": "array", "maxItems": 8,
+                            "items": {"type": "string", "minLength": 1, "maxLength": 256},
+                            "description": "Unresolved original-query terms or intent, without control characters. Nonempty ambiguities restrict relevant entries to context consistent with all explicit constraints and make the review incomplete. They do not excuse a known mismatch or allow dropping a stated term."
+                        },
+                        "judgments": {
+                            "type": "array", "maxItems": 146,
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "candidate_id": {"type": "string"},
+                                    "verdict": {"type": "string", "enum": ["relevant", "irrelevant", "unknown"]},
+                                    "reason": {"type": "string", "minLength": 1, "maxLength": 2048},
+                                    "role": {
+                                        "type": ["string", "null"],
+                                        "enum": ["implementation", "entrypoint", "contract", "essential_helper", "supporting_context", null],
+                                        "description": "Required non-null for relevant entries; otherwise null or omitted. supporting_context needs an inspected specific link to an operation satisfying the original action, object, scope and explicit constraints. Type dispatch, projections, explanations and operation-specific consumers can qualify. Opposite, nearby, differently scoped or unsupported behavior cannot. Context is excluded from semantic positives."
+                                    },
+                                    "witness": schema_concept_witness(),
+                                    "supporting_evidence": schema_concept_supporting_evidence(),
+                                    "citations": {
+                                        "type": "array", "maxItems": 16,
+                                        "description": "Evidence within this candidate's own declaration. Relevant entries require at least one citation.",
+                                        "items": {
+                                            "type": "object",
+                                            "properties": {
+                                                "start_line": {"type": "integer", "minimum": 1},
+                                                "end_line": {"type": "integer", "minimum": 1}
+                                            },
+                                            "required": ["start_line", "end_line"],
+                                            "additionalProperties": false
+                                        }
+                                    }
+                                },
+                                "required": ["candidate_id", "verdict", "reason", "citations"],
+                                "additionalProperties": false
+                            }
+                        }
+                    },
+                    "required": ["schema_version", "packet_sha256", "judgments"],
+                    "additionalProperties": false
+                }
+            },
+            "required": ["packet", "assessment"],
             "additionalProperties": false
         }
     })
@@ -3390,6 +3550,7 @@ fn concept_current_attempt(
     store: &Store,
     query: &str,
     top: u32,
+    include_tests: bool,
 ) -> Result<queries::ConceptResponse, queries::ConceptError> {
     let expected_data_version = store
         .data_version()
@@ -3412,10 +3573,11 @@ fn concept_current_attempt(
     if !status.concept_contract_current {
         return Err(queries::ConceptError::IndexStale);
     }
-    queries::concept_verified(
+    queries::concept_verified_with_tests(
         store,
         query,
         top,
+        include_tests,
         expected_data_version,
         queries::ConceptFreshness {
             status: "fresh".to_string(),
@@ -3432,8 +3594,18 @@ pub fn build_concept_current(
     query: &str,
     top: u32,
 ) -> Result<queries::ConceptResponse, queries::ConceptError> {
+    build_concept_current_with_tests(store, query, top, false)
+}
+
+/// Apply explicit test scope through the shared freshness and refresh boundary.
+pub fn build_concept_current_with_tests(
+    store: &mut Store,
+    query: &str,
+    top: u32,
+    include_tests: bool,
+) -> Result<queries::ConceptResponse, queries::ConceptError> {
     queries::validate_concept_request(query, top)?;
-    match concept_current_attempt(store, query, top) {
+    match concept_current_attempt(store, query, top, include_tests) {
         Err(queries::ConceptError::IndexStale) => {}
         result => return result,
     }
@@ -3463,7 +3635,7 @@ pub fn build_concept_current(
         }
         _ => queries::ConceptError::IndexStale,
     })?;
-    concept_current_attempt(store, query, top)
+    concept_current_attempt(store, query, top, include_tests)
 }
 
 fn map_brief_error(store: &Store, error: queries::BriefError) -> HandlerError {
@@ -3637,10 +3809,211 @@ fn handle_concept(store: &mut Store, args: &Value) -> Result<Value, HandlerError
                 code: "invalid_arguments",
             })?,
     };
-    let response = build_concept_current(store, query, top)
+    let include_tests = match args.get("include_tests") {
+        None => false,
+        Some(value) => value.as_bool().ok_or(HandlerError::StructuredInvalid {
+            code: "invalid_arguments",
+        })?,
+    };
+    let response = build_concept_current_with_tests(store, query, top, include_tests)
         .map_err(|error| map_concept_error(store, error))?;
     serde_json::to_value(response)
         .map_err(|error| HandlerError::internal("serialize_concept", error))
+}
+
+pub fn build_concept_review_current(
+    store: &mut Store,
+    query: &str,
+    top: u32,
+    include_tests: bool,
+) -> Result<crate::concept_review::ReviewPacket, String> {
+    build_concept_review_current_with_hints(store, query, top, include_tests, &[])
+}
+
+pub fn build_concept_review_current_with_hints(
+    store: &mut Store,
+    query: &str,
+    top: u32,
+    include_tests: bool,
+    hints: &[String],
+) -> Result<crate::concept_review::ReviewPacket, String> {
+    build_concept_review_current_with_contract(store, query, top, include_tests, hints, None)
+}
+
+pub fn build_concept_review_current_with_contract(
+    store: &mut Store,
+    query: &str,
+    top: u32,
+    include_tests: bool,
+    hints: &[String],
+    request_contract: Option<&crate::concept_review::RequestContract>,
+) -> Result<crate::concept_review::ReviewPacket, String> {
+    crate::concept_review::validate_request(query, top, hints)?;
+    if let Some(contract) = request_contract {
+        crate::concept_review::validate_request_contract(query, contract)?;
+    }
+    build_concept_current_with_tests(store, query, top, include_tests)
+        .map_err(|error| error.code().to_string())?;
+    let root = store
+        .serve_root()
+        .ok_or("concept_review_root_unavailable")?
+        .to_path_buf();
+    let packet = crate::concept_review::prepare_with_contract(
+        store,
+        &root,
+        query,
+        top,
+        include_tests,
+        hints,
+        request_contract,
+    )?;
+    ensure_concept_review_still_current(store)?;
+    Ok(packet)
+}
+
+pub fn finish_concept_review_current(
+    store: &mut Store,
+    packet: &crate::concept_review::ReviewPacket,
+    assessment: &crate::concept_review::Assessment,
+) -> Result<crate::concept_review::ReviewResult, String> {
+    concept_current_attempt(store, &packet.query, packet.top, packet.include_tests)
+        .map_err(|error| error.code().to_string())?;
+    let root = store
+        .serve_root()
+        .ok_or("concept_review_root_unavailable")?
+        .to_path_buf();
+    let result = crate::concept_review::finish(store, &root, packet, assessment)?;
+    ensure_concept_review_still_current(store)?;
+    Ok(result)
+}
+
+fn ensure_concept_review_still_current(store: &Store) -> Result<(), String> {
+    let status = safe_index_status(store).map_err(|_| "concept_review_freshness_unavailable")?;
+    if status.stale_files > 0
+        || status.freshness_error.is_some()
+        || !status.extractor_contract_current
+        || !status.concept_contract_current
+    {
+        return Err("concept_review_source_changed".into());
+    }
+    Ok(())
+}
+
+fn handle_concept_prepare(store: &mut Store, args: &Value) -> Result<Value, HandlerError> {
+    let query = non_blank_str_arg(args, "query")?;
+    let top = bounded_u64_arg(args, "top", 10, 1, 50)? as u32;
+    let include_tests = match args.get("include_tests") {
+        None => false,
+        Some(value) => value.as_bool().ok_or(HandlerError::StructuredInvalid {
+            code: "invalid_arguments",
+        })?,
+    };
+    let hints = match args.get("hints") {
+        None => Vec::new(),
+        Some(Value::Array(values)) if values.len() <= 8 => values
+            .iter()
+            .map(|value| {
+                value
+                    .as_str()
+                    .map(str::to_owned)
+                    .ok_or(HandlerError::StructuredInvalid {
+                        code: "invalid_arguments",
+                    })
+            })
+            .collect::<Result<Vec<_>, _>>()?,
+        Some(_) => {
+            return Err(HandlerError::StructuredInvalid {
+                code: "invalid_arguments",
+            })
+        }
+    };
+    let contract = args
+        .get("request_contract")
+        .cloned()
+        .map(serde_json::from_value)
+        .transpose()
+        .map_err(|_| HandlerError::StructuredInvalid {
+            code: "concept_review_request_contract_invalid",
+        })?;
+    let packet = build_concept_review_current_with_contract(
+        store,
+        query,
+        top,
+        include_tests,
+        &hints,
+        contract.as_ref(),
+    )
+    .map_err(|error| map_concept_review_error(store, error))?;
+    serde_json::to_value(packet)
+        .map_err(|error| HandlerError::internal("serialize_concept_review", error))
+}
+
+fn handle_concept_finish(store: &mut Store, args: &Value) -> Result<Value, HandlerError> {
+    let packet = serde_json::from_value(args.get("packet").cloned().ok_or(
+        HandlerError::StructuredInvalid {
+            code: "invalid_arguments",
+        },
+    )?)
+    .map_err(|_| HandlerError::StructuredInvalid {
+        code: "invalid_concept_review_packet",
+    })?;
+    let assessment = serde_json::from_value(args.get("assessment").cloned().ok_or(
+        HandlerError::StructuredInvalid {
+            code: "invalid_arguments",
+        },
+    )?)
+    .map_err(|_| HandlerError::StructuredInvalid {
+        code: "invalid_concept_review_assessment",
+    })?;
+    let result = finish_concept_review_current(store, &packet, &assessment)
+        .map_err(|error| map_concept_review_error(store, error))?;
+    serde_json::to_value(result)
+        .map_err(|error| HandlerError::internal("serialize_concept_review", error))
+}
+
+fn map_concept_review_error(store: &Store, error: String) -> HandlerError {
+    const ASSESSMENT_ERRORS: &[&str] = &[
+        "concept_review_request_contract_invalid",
+        "concept_review_witness_required",
+        "concept_review_witness_invalid",
+        "concept_review_witness_role_mismatch",
+        "concept_review_constraint_checks_incomplete",
+        "concept_review_constraint_not_matched",
+        "concept_review_constraint_evidence_required",
+        "concept_review_query_ambiguities_invalid",
+        "concept_review_supporting_evidence_limit",
+        "concept_review_supporting_evidence_unbound",
+        "concept_review_supporting_citation_outside_source",
+        "concept_review_role_missing",
+        "concept_review_ambiguous_semantic_claim",
+        "concept_review_supporting_evidence_required",
+        "concept_review_external_role_evidence_required",
+        "concept_review_role_requires_relevant",
+    ];
+    if let Some(code) = ASSESSMENT_ERRORS
+        .iter()
+        .copied()
+        .find(|code| *code == error.as_str())
+    {
+        return HandlerError::StructuredInvalid { code };
+    }
+    let concept_error = match error.as_str() {
+        "invalid_arguments" | "concept_review_invalid_arguments" => {
+            queries::ConceptError::InvalidArguments
+        }
+        "index_stale" | "concept_review_index_stale" => queries::ConceptError::IndexStale,
+        "schema_incompatible" => queries::ConceptError::SchemaIncompatible,
+        "snapshot_changed"
+        | "concept_review_snapshot_changed"
+        | "concept_review_inventory_changed"
+        | "concept_review_source_changed"
+        | "concept_review_prepared_evidence_changed" => queries::ConceptError::SnapshotChanged,
+        "work_limit_exceeded"
+        | "concept_review_work_limit_exceeded"
+        | "concept_review_work_interrupted" => queries::ConceptError::WorkLimitExceeded,
+        _ => return HandlerError::InvalidArguments(error),
+    };
+    map_concept_error(store, concept_error)
 }
 
 fn handle_change_impact(store: &mut Store, args: &Value) -> Result<Value, HandlerError> {
@@ -4687,6 +5060,7 @@ mod tests {
             "mmcg_context",
             "mmcg_profile",
             "mmcg_effort_route",
+            "mmcg_concept_finish",
         ];
         let refreshers = [
             "mmcg_search",
@@ -4710,6 +5084,7 @@ mod tests {
             "mmcg_brief",
             "mmcg_test_impact",
             "mmcg_concept",
+            "mmcg_concept_prepare",
         ];
         let additions = ["mmcg_scratchpad_append", "mmcg_mining_submit"];
         let expected: std::collections::BTreeSet<_> = readers
@@ -5567,6 +5942,188 @@ mod tests {
     }
 
     #[test]
+    fn concept_review_mcp_delivers_source_and_keeps_unreviewed_results_explicit() {
+        let (root, mut store) = impact_fixture_with_source(
+            "concept-operation-review",
+            "src/app.py",
+            "def old():\n    return 0\n",
+            "def decide(origin):\n    if origin == 'alien':\n        return 'reject cross origin'\n    return 'accept'\n\ndef describe():\n    return 'reject cross origin message'\n",
+        );
+        let contract = crate::concept_review::RequestContract {
+            operation: "Reject an incoming foreign origin".into(),
+            constraints: vec![crate::concept_review::QueryConstraint {
+                id: "origin".into(),
+                text: "cross origin".into(),
+                kind: crate::concept_review::ConstraintKind::Scope,
+            }],
+        };
+        let packet = build_concept_review_current_with_contract(
+            &mut store,
+            "reject cross origin",
+            1,
+            false,
+            &["alien".into()],
+            Some(&contract),
+        )
+        .unwrap();
+        let expected = serde_json::to_value(&packet).unwrap();
+        let delivered = handle_tools_call(ProtocolVersion::Current, &mut store, &json!({
+            "name": "mmcg_concept_prepare", "arguments": {"query": "reject cross origin", "top": 1, "hints": ["alien"], "request_contract": contract}
+        })).unwrap();
+        assert_eq!(delivered["isError"], false);
+        assert_eq!(delivered["structuredContent"], expected);
+        assert_eq!(unwrap_content(&delivered), expected);
+
+        let mut assessment = packet.assessment_template.clone();
+        let candidate = packet
+            .candidates
+            .iter()
+            .find(|candidate| candidate.name == "decide")
+            .unwrap();
+        let judgment = assessment
+            .judgments
+            .iter_mut()
+            .find(|judgment| judgment.candidate_id == candidate.id)
+            .unwrap();
+        judgment.verdict = crate::concept_review::Verdict::Relevant;
+        judgment.reason = "The branch rejects the alien origin before returning acceptance".into();
+        judgment.citations = vec![crate::concept_review::Citation {
+            start_line: 2,
+            end_line: 4,
+        }];
+        let missing_role = handle_tools_call(ProtocolVersion::Current, &mut store, &json!({
+            "name": "mmcg_concept_finish", "arguments": {"packet": packet, "assessment": assessment}
+        })).unwrap();
+        assert_eq!(missing_role["isError"], true);
+        assert_eq!(
+            missing_role["structuredContent"]["code"],
+            "concept_review_role_missing"
+        );
+        let judgment = assessment
+            .judgments
+            .iter_mut()
+            .find(|judgment| judgment.candidate_id == candidate.id)
+            .unwrap();
+        judgment.role = Some(crate::concept_review::Role::Implementation);
+        let missing_witness = handle_tools_call(ProtocolVersion::Current, &mut store, &json!({
+            "name": "mmcg_concept_finish", "arguments": {"packet": packet, "assessment": assessment}
+        })).unwrap();
+        assert_eq!(missing_witness["isError"], true);
+        assert_eq!(
+            missing_witness["structuredContent"]["code"],
+            "concept_review_witness_required"
+        );
+        assessment
+            .judgments
+            .iter_mut()
+            .find(|row| row.candidate_id == candidate.id)
+            .unwrap()
+            .witness = Some(crate::concept_review::OperationWitness {
+            behavior: "Rejects the alien origin before granting acceptance".into(),
+            relation: crate::concept_review::OperationRelation::PerformsOperation,
+            constraint_checks: vec![crate::concept_review::ConstraintCheck {
+                constraint_id: "origin".into(),
+                status: crate::concept_review::ConstraintStatus::Matched,
+                evidence: vec![crate::concept_review::SupportingEvidence {
+                    path: candidate.path.clone(),
+                    source_sha256: candidate.source_sha256.clone(),
+                    start_line: 2,
+                    end_line: 4,
+                }],
+            }],
+        });
+        let finished = handle_tools_call(ProtocolVersion::Current, &mut store, &json!({
+            "name": "mmcg_concept_finish", "arguments": {"packet": packet, "assessment": assessment}
+        })).unwrap();
+        assert_eq!(finished["isError"], false);
+        let result = &finished["structuredContent"];
+        assert_eq!(result["count"], 1);
+        assert_eq!(result["candidates"][0]["name"], "decide");
+        assert_eq!(result["candidates"][0]["role"], "implementation");
+        assert_eq!(
+            result["request_contract"],
+            serde_json::to_value(&contract).unwrap()
+        );
+        assert_eq!(
+            result["candidates"][0]["witness"]["constraint_checks"][0]["status"],
+            "matched"
+        );
+        assert_eq!(result["semantic_candidates"], result["candidates"]);
+        assert_eq!(result["supporting_context"], json!([]));
+        assert_eq!(result["review_status"], "incomplete");
+        assert!(result["unknown_count"].as_u64().unwrap() > 0);
+        assert_eq!(unwrap_content(&finished), *result);
+        std::fs::remove_dir_all(root).ok();
+    }
+
+    #[test]
+    fn concept_cli_builder_and_mcp_apply_test_scope_before_count_and_limit() {
+        let (root, mut store) = impact_fixture_with_source(
+            "concept-test-scope",
+            "src/lib.rs",
+            "fn baseline() {}\n",
+            concat!(
+                "#[test]\nfn retrieval_scope() {}\n",
+                "#[rstest]\nfn retrieval_scope_fixture() {}\n",
+                "#[tokio::test]\nasync fn retrieval_scope_async() {}\n",
+                "#[custom::Test]\nfn retrieval_scope_case_sensitive() {}\n",
+                "fn retrieval_scope_handler() {}\n",
+                "#[cfg(\n test\n)]\nmod verification { fn retrieval_scope_support() {} }\n",
+                "#[cfg(TEST)]\nmod capital { fn retrieval_scope_capital_support() {} }\n",
+            ),
+        );
+        let symbols = store.symbols_in_file("src/lib.rs").unwrap();
+        for (name, decorators) in [
+            ("retrieval_scope", Some(",test,")),
+            ("retrieval_scope_fixture", Some(",rstest,")),
+            ("retrieval_scope_async", Some(",tokio::test,")),
+            ("retrieval_scope_case_sensitive", Some(",custom::Test,")),
+            ("retrieval_scope_handler", None),
+            ("retrieval_scope_support", None),
+            ("retrieval_scope_capital_support", None),
+        ] {
+            let symbol = symbols.iter().find(|symbol| symbol.name == name).unwrap();
+            assert_eq!(symbol.decorators.as_deref(), decorators, "{name}");
+        }
+
+        for (query, match_mode) in [
+            ("retrieval scope", "all_terms"),
+            ("retrieval scope absent missing", "partial_terms"),
+        ] {
+            for (include_tests, indexed_total, name) in [
+                (false, 3, "retrieval_scope_handler"),
+                (true, 7, "retrieval_scope"),
+            ] {
+                let expected = serde_json::to_value(
+                    build_concept_current_with_tests(&mut store, query, 1, include_tests).unwrap(),
+                )
+                .unwrap();
+                assert_eq!(expected["schema_version"], 5);
+                assert_eq!(expected["include_tests"], include_tests);
+                assert_eq!(expected["match_mode"], match_mode);
+                assert_eq!(expected["indexed_total"], indexed_total);
+                assert_eq!(expected["count"], 1);
+                assert_eq!(expected["result_truncated"], true);
+                assert_eq!(expected["candidates"][0]["name"], name);
+                let mut arguments = json!({ "query": query, "top": 1 });
+                if include_tests {
+                    arguments["include_tests"] = json!(true);
+                }
+                let actual = handle_tools_call(
+                    ProtocolVersion::Current,
+                    &mut store,
+                    &json!({ "name": "mmcg_concept", "arguments": arguments }),
+                )
+                .unwrap();
+                assert_eq!(actual["isError"], false);
+                assert_eq!(unwrap_content(&actual), expected);
+                assert_eq!(actual["structuredContent"], expected);
+            }
+        }
+        std::fs::remove_dir_all(root).ok();
+    }
+
+    #[test]
     fn concept_managed_source_staleness_refreshes_once_before_claiming_fresh() {
         let (root, mut store) = impact_fixture("concept-refresh");
         std::fs::write(
@@ -5594,6 +6151,100 @@ mod tests {
         assert!(payload["candidates"]
             .as_array()
             .is_some_and(|items| !items.is_empty()));
+        std::fs::remove_dir_all(root).ok();
+    }
+
+    #[test]
+    fn concept_tokenizer_migration_repairs_managed_and_preserves_custom_indexes() {
+        let (root, store) = impact_fixture("concept-tokenizer-migration");
+        let db = store.db_path().to_path_buf();
+        drop(store);
+        let connection = rusqlite::Connection::open(&db).unwrap();
+        connection
+            .execute_batch(
+                "DROP TABLE symbol_concepts_fts;
+                 CREATE VIRTUAL TABLE symbol_concepts_fts USING fts5(
+                     name_search, path_search, signature_search, documentation_search,
+                     content='symbol_concepts', content_rowid='symbol_id',
+                     tokenize = \"unicode61 remove_diacritics 0 tokenchars '_'\"
+                 );
+                 INSERT INTO symbol_concepts_fts(symbol_concepts_fts) VALUES ('rebuild');
+                 UPDATE meta SET value = 'mmcg-concepts-v3'
+                 WHERE key = 'concept_normalization_version';",
+            )
+            .unwrap();
+        drop(connection);
+
+        let before = std::fs::read(&db).unwrap();
+        let mut custom = crate::store::Store::open_for_serve(&db, None).unwrap();
+        let refused = handle_tools_call(
+            ProtocolVersion::Current,
+            &mut custom,
+            &json!({ "name": "mmcg_concept", "arguments": { "query": "values" } }),
+        )
+        .unwrap();
+        assert_eq!(refused["isError"], true);
+        assert_eq!(unwrap_content(&refused)["code"], "index_stale");
+        assert_eq!(std::fs::read(&db).unwrap(), before);
+        drop(custom);
+
+        let mut managed = crate::store::Store::open_for_serve(&db, Some(&root)).unwrap();
+        assert!(managed.concept_schema_objects_current().unwrap());
+        assert!(!managed.concept_contract_current().unwrap());
+        let refreshed = handle_tools_call(
+            ProtocolVersion::Current,
+            &mut managed,
+            &json!({ "name": "mmcg_concept", "arguments": { "query": "values" } }),
+        )
+        .unwrap();
+        assert_eq!(refreshed["isError"], false);
+        let payload = unwrap_content(&refreshed);
+        assert_eq!(payload["schema_version"], 5);
+        assert_eq!(
+            payload["freshness"]["normalization_contract"],
+            "mmcg-concepts-v5"
+        );
+        assert_eq!(payload["candidates"][0]["name"], "value");
+        assert_eq!(payload["candidates"][0]["matched_terms"], json!(["values"]));
+        assert!(managed.concept_contract_current().unwrap());
+        std::fs::remove_dir_all(root).ok();
+    }
+
+    #[test]
+    fn concept_compound_normalization_refreshes_managed_and_keeps_custom_read_only() {
+        let (root, store) = impact_fixture_with_source(
+            "concept-compound-migration",
+            "src/app.py",
+            "def parse_JUnit(): pass\n",
+            "def parse_JUnit(): pass\n",
+        );
+        let db = store.db_path().to_path_buf();
+        drop(store);
+        let connection = rusqlite::Connection::open(&db).unwrap();
+        connection
+            .execute_batch(
+                "UPDATE symbol_concepts SET name_search = 'parsejunit parse j unit';
+             UPDATE meta SET value = 'mmcg-concepts-v4'
+             WHERE key = 'concept_normalization_version';",
+            )
+            .unwrap();
+        drop(connection);
+        let before = std::fs::read(&db).unwrap();
+        let request = json!({"name":"mmcg_concept", "arguments":{"query":"JUnit"}});
+        let mut custom = crate::store::Store::open_for_serve(&db, None).unwrap();
+        let refused = handle_tools_call(ProtocolVersion::Current, &mut custom, &request).unwrap();
+        assert_eq!(unwrap_content(&refused)["code"], "index_stale");
+        assert_eq!(std::fs::read(&db).unwrap(), before);
+        drop(custom);
+
+        let mut managed = crate::store::Store::open_for_serve(&db, Some(&root)).unwrap();
+        let refreshed =
+            handle_tools_call(ProtocolVersion::Current, &mut managed, &request).unwrap();
+        let payload = unwrap_content(&refreshed);
+        assert_eq!(refreshed["isError"], false);
+        assert_eq!(payload["candidates"][0]["name"], "parse_JUnit");
+        assert_eq!(payload["query_terms"], json!(["junit", "j", "unit"]));
+        assert!(managed.concept_contract_current().unwrap());
         std::fs::remove_dir_all(root).ok();
     }
 
@@ -5836,17 +6487,21 @@ mod tests {
         )
         .unwrap();
 
-        let actual = handle_tools_call(
-            ProtocolVersion::Current,
-            &mut store,
-            &json!({
-                "name": "mmcg_concept",
-                "arguments": { "query": "bad\u{0}query", "top": 10 }
-            }),
-        )
-        .unwrap();
-        assert_eq!(actual["isError"], true);
-        assert_eq!(unwrap_content(&actual)["code"], "invalid_arguments");
+        for arguments in [
+            json!({ "query": "bad\u{0}query", "top": 10 }),
+            json!({ "query": "value", "include_tests": "true" }),
+            json!({ "query": "value", "include_tests": 1 }),
+            json!({ "query": "value", "include_tests": null }),
+        ] {
+            let actual = handle_tools_call(
+                ProtocolVersion::Current,
+                &mut store,
+                &json!({ "name": "mmcg_concept", "arguments": arguments }),
+            )
+            .unwrap();
+            assert_eq!(actual["isError"], true);
+            assert_eq!(unwrap_content(&actual)["code"], "invalid_arguments");
+        }
         assert!(
             queries::search(&store, "should_not_be_indexed", None, None, true)
                 .unwrap()
@@ -7642,10 +8297,16 @@ mod checks {
                     "root": root.to_string_lossy(),
                     "budget_tokens": 2000
                 }),
-                "mmcg_concept" => json!({ "query": "value" }),
+                "mmcg_concept" | "mmcg_concept_prepare" => json!({ "query": "value" }),
                 name => panic!("missing valid-argument fixture for structural tool {name}"),
             };
             let result = (tool.handler)(&mut store, &arguments);
+            if tool.name == "mmcg_concept_prepare" {
+                let packet = result.expect("source preparation uses the refreshed managed index");
+                assert_eq!(packet["query"], "value");
+                assert!(store.file_mtime("src/unindexed.py").unwrap().is_some());
+                continue;
+            }
             if tool.name == "mmcg_concept" {
                 let response = result.expect("concept owns its one managed refresh");
                 assert_eq!(response["freshness"]["status"], "fresh");
@@ -7682,6 +8343,7 @@ mod checks {
             "mmcg_profile",
             "mmcg_effort_route",
             "mmcg_mining_submit",
+            "mmcg_concept_finish",
         ];
         for tool in TOOLS {
             assert_eq!(
