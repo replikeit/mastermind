@@ -459,26 +459,32 @@ struct ConceptArgs {
 #[derive(clap::Subcommand)]
 enum ConceptReviewCmd {
     /// Collect lexical candidates and operation bodies for source review.
-    Prepare {
-        query: String,
-        #[arg(long, default_value_t = 10, value_parser = clap::value_parser!(u32).range(1..=50))]
-        top: u32,
-        #[arg(long)]
-        include_tests: bool,
-        /// Extra recall vocabulary; the original query still defines relevance.
-        #[arg(long = "hint")]
-        hints: Vec<String>,
-        /// JSON operation and exact-query constraint ledger authored before retrieval.
-        #[arg(long)]
-        request_contract: Option<PathBuf>,
-    },
+    Prepare(ConceptReviewPrepareArgs),
     /// Validate a complete assessment against the current source packet.
-    Finish {
-        #[arg(long)]
-        packet: PathBuf,
-        #[arg(long)]
-        assessment: PathBuf,
-    },
+    Finish(ConceptReviewFinishArgs),
+}
+
+#[derive(clap::Args)]
+struct ConceptReviewPrepareArgs {
+    query: String,
+    #[arg(long, default_value_t = 10, value_parser = clap::value_parser!(u32).range(1..=50))]
+    top: u32,
+    #[arg(long)]
+    include_tests: bool,
+    /// Extra recall vocabulary; the original query still defines relevance.
+    #[arg(long = "hint")]
+    hints: Vec<String>,
+    /// JSON operation and exact-query constraint ledger authored before retrieval.
+    #[arg(long)]
+    request_contract: Option<PathBuf>,
+}
+
+#[derive(clap::Args)]
+struct ConceptReviewFinishArgs {
+    #[arg(long)]
+    packet: PathBuf,
+    #[arg(long)]
+    assessment: PathBuf,
 }
 
 #[derive(clap::Args)]
@@ -2426,11 +2432,11 @@ fn run_cli_inner(
         Cmd::ConceptReview(command) => {
             let root = std::env::current_dir()?.canonicalize()?;
             let request_contract = match &command {
-                ConceptReviewCmd::Prepare {
+                ConceptReviewCmd::Prepare(ConceptReviewPrepareArgs {
                     query,
                     request_contract: Some(path),
                     ..
-                } => {
+                }) => {
                     let contract = read_concept_review_json(path)?;
                     mmcg::concept_review::validate_request_contract(query, &contract)?;
                     Some(contract)
@@ -2438,15 +2444,13 @@ fn run_cli_inner(
                 _ => None,
             };
             let mut store = match &command {
-                ConceptReviewCmd::Prepare {
+                ConceptReviewCmd::Prepare(ConceptReviewPrepareArgs {
                     query, top, hints, ..
-                } => {
+                }) => {
                     mmcg::concept_review::validate_request(query, *top, hints)?;
                     Store::open_for_serve(&index_path, Some(&root))?
                 }
-                ConceptReviewCmd::Finish { .. } => {
-                    Store::open_read_only_for_root(&index_path, &root)?
-                }
+                ConceptReviewCmd::Finish(_) => Store::open_read_only_for_root(&index_path, &root)?,
             };
             store.set_default_work_budget_ms(mmcg::store::query_budget_ms_from_env(
                 mmcg::store::DEFAULT_CLI_BUDGET_MS,
@@ -2454,13 +2458,13 @@ fn run_cli_inner(
             let budget = store.default_work_budget();
             store.push_work_budget(budget);
             let result = match command {
-                ConceptReviewCmd::Prepare {
+                ConceptReviewCmd::Prepare(ConceptReviewPrepareArgs {
                     query,
                     top,
                     include_tests,
                     hints,
                     ..
-                } => mmcg::mcp::build_concept_review_current_with_contract(
+                }) => mmcg::mcp::build_concept_review_current_with_contract(
                     &mut store,
                     &query,
                     top,
@@ -2472,7 +2476,7 @@ fn run_cli_inner(
                     serde_json::to_value(packet)
                         .map_err(|_| "concept_review_serialization_failed".into())
                 }),
-                ConceptReviewCmd::Finish { packet, assessment } => {
+                ConceptReviewCmd::Finish(ConceptReviewFinishArgs { packet, assessment }) => {
                     let packet = read_concept_review_json(&packet)?;
                     let assessment = read_concept_review_json(&assessment)?;
                     mmcg::mcp::finish_concept_review_current(&mut store, &packet, &assessment)
@@ -3636,6 +3640,35 @@ mod tests {
                         ..
                     })
                 ));
+                assert!(matches!(
+                    Cli::try_parse_from([
+                        "mastermind",
+                        "concept-review",
+                        "prepare",
+                        "reject stale observations",
+                        "--hint",
+                        "invalidate",
+                        "--request-contract",
+                        "request.json",
+                    ])
+                    .unwrap()
+                    .cmd,
+                    Cmd::ConceptReview(ConceptReviewCmd::Prepare(_))
+                ));
+                assert!(matches!(
+                    Cli::try_parse_from([
+                        "mastermind",
+                        "concept-review",
+                        "finish",
+                        "--packet",
+                        "packet.json",
+                        "--assessment",
+                        "assessment.json",
+                    ])
+                    .unwrap()
+                    .cmd,
+                    Cmd::ConceptReview(ConceptReviewCmd::Finish(_))
+                ));
             })
             .unwrap()
             .join()
@@ -4246,12 +4279,12 @@ mod tests {
         .unwrap();
         assert!(matches!(
             prepare.cmd,
-            Cmd::ConceptReview(ConceptReviewCmd::Prepare {
+            Cmd::ConceptReview(ConceptReviewCmd::Prepare(ConceptReviewPrepareArgs {
                 top: 5,
                 include_tests: true,
                 request_contract: Some(_),
                 ..
-            })
+            }))
         ));
         assert!(Cli::try_parse_from([
             "mastermind",
@@ -4273,7 +4306,7 @@ mod tests {
         .unwrap();
         assert!(matches!(
             finish.cmd,
-            Cmd::ConceptReview(ConceptReviewCmd::Finish { .. })
+            Cmd::ConceptReview(ConceptReviewCmd::Finish(_))
         ));
     }
 

@@ -275,6 +275,42 @@ impl Fixture {
 }
 
 #[test]
+fn guarded_executor_refuses_oversized_runner_before_native_effects() {
+    let f = Fixture::new("positive");
+    let binary = f._temp.path().join("oversized-mmcg");
+    fs::copy(env!("CARGO_BIN_EXE_mmcg"), &binary).unwrap();
+    let copied = fs::OpenOptions::new().write(true).open(&binary).unwrap();
+    let limit = 256 * 1024 * 1024;
+    copied
+        .set_len(copied.metadata().unwrap().len().max(limit) + 1)
+        .unwrap();
+    drop(copied);
+    let output = f
+        .command(binary.to_str().unwrap())
+        .args([
+            "--index",
+            ".mastermind/index.db",
+            "run-task",
+            SPEC,
+            "--exec",
+            "--guarded-exec",
+        ])
+        .output()
+        .unwrap();
+    assert!(!output.status.success());
+    let receipt = f.json(RECEIPT);
+    assert_eq!(receipt["status"], "failed");
+    assert_eq!(receipt["reason"], "invocation_guard_runner_too_large");
+    assert_eq!(receipt["native"]["events"], 0);
+    assert!(!f.harness.join("argv.json").exists());
+    assert!(!f.root.join(MANIFEST).exists());
+    assert_eq!(
+        fs::read_to_string(f.root.join("service.py")).unwrap(),
+        "def keep():\n    return 1\n"
+    );
+}
+
+#[test]
 fn guarded_executor_reconciles_exact_calls_and_keeps_payloads_private() {
     for mode in ["positive", "duplicate_delivery", "dash_check"] {
         let f = Fixture::new(mode);

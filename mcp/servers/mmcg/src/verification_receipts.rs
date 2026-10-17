@@ -817,16 +817,14 @@ fn inspect_receipt(
 
 #[derive(Debug)]
 struct SnapshotFailure {
+    #[cfg(unix)]
     status: Status,
     reason: String,
 }
 
 impl From<String> for SnapshotFailure {
     fn from(reason: String) -> Self {
-        Self {
-            status: Status::Unavailable,
-            reason,
-        }
+        Self::new(Status::Unavailable, reason)
     }
 }
 
@@ -837,27 +835,26 @@ impl From<&str> for SnapshotFailure {
 }
 
 impl SnapshotFailure {
+    fn new(_status: Status, reason: impl Into<String>) -> Self {
+        Self {
+            #[cfg(unix)]
+            status: _status,
+            reason: reason.into(),
+        }
+    }
+
     fn preparation(reason: String, deadline: Instant) -> Self {
         if interrupted() {
-            Self {
-                status: Status::Interrupted,
-                reason: "verification_interrupted".into(),
-            }
+            Self::new(Status::Interrupted, "verification_interrupted")
         } else if Instant::now() >= deadline {
-            Self {
-                status: Status::Timeout,
-                reason: "verification_snapshot_timeout".into(),
-            }
+            Self::new(Status::Timeout, "verification_snapshot_timeout")
         } else {
             reason.into()
         }
     }
 
     fn changed(reason: &str) -> Self {
-        Self {
-            status: Status::InputChanged,
-            reason: reason.into(),
-        }
+        Self::new(Status::InputChanged, reason)
     }
 
     fn read(error: bounded_fs::BoundedReadError, reason: &str) -> Self {
@@ -873,10 +870,7 @@ impl SnapshotFailure {
             }
             _ => (Status::Unavailable, reason),
         };
-        Self {
-            status,
-            reason: reason.into(),
-        }
+        Self::new(status, reason)
     }
 }
 
@@ -900,10 +894,10 @@ pub(crate) fn preflight_snapshot_capability(
 
 fn git(root: &Path, args: &[&str], deadline: Instant) -> Result<Vec<u8>, SnapshotFailure> {
     if interrupted() {
-        return Err(SnapshotFailure {
-            status: Status::Interrupted,
-            reason: "verification_interrupted".into(),
-        });
+        return Err(SnapshotFailure::new(
+            Status::Interrupted,
+            "verification_interrupted",
+        ));
     }
     let mut controlled = vec![
         "--literal-pathspecs",
@@ -921,13 +915,15 @@ fn git(root: &Path, args: &[&str], deadline: Instant) -> Result<Vec<u8>, Snapsho
         Some(deadline),
         Some(&interrupted),
     )
-    .map_err(|error| SnapshotFailure {
-        status: match error {
-            crate::diff::WorkingTreeDiffError::SnapshotChanged => Status::InputChanged,
-            crate::diff::WorkingTreeDiffError::GitTimeout => Status::Timeout,
-            _ => Status::Unavailable,
-        },
-        reason: format!("verification_snapshot_{}", error.code()),
+    .map_err(|error| {
+        SnapshotFailure::new(
+            match error {
+                crate::diff::WorkingTreeDiffError::SnapshotChanged => Status::InputChanged,
+                crate::diff::WorkingTreeDiffError::GitTimeout => Status::Timeout,
+                _ => Status::Unavailable,
+            },
+            format!("verification_snapshot_{}", error.code()),
+        )
     })?;
     if !result.success {
         return Err("verification_snapshot_git_failed".into());

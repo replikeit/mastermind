@@ -164,12 +164,24 @@ fn runner() -> Result<Executable, String> {
         .map_err(|_| "invocation_guard_runner_unavailable")?;
     let parent = RootCapability::open(path.parent().ok_or("invocation_guard_runner_unavailable")?)
         .map_err(|_| "invocation_guard_runner_unavailable")?;
-    let bytes = read(
+    let bytes = bounded_fs::read_regular_file_with_capability(
         &parent,
         &path,
         EXECUTABLE_LIMIT,
-        Instant::now() + Duration::from_secs(3),
-    )?;
+        EXECUTABLE_LIMIT,
+        ReadControl {
+            deadline: Some(Instant::now() + Duration::from_secs(3)),
+            interrupted: Some(&interrupted),
+        },
+    )
+    .map_err(|error| match error {
+        bounded_fs::BoundedReadError::TooLarge { .. } => "invocation_guard_runner_too_large",
+        bounded_fs::BoundedReadError::DeadlineExceeded => "invocation_guard_runner_timeout",
+        bounded_fs::BoundedReadError::SnapshotChanged => "invocation_guard_runner_changed",
+        bounded_fs::BoundedReadError::Interrupted => "invocation_guard_runner_interrupted",
+        _ => "invocation_guard_runner_unavailable",
+    })?
+    .bytes;
     let path = path
         .to_str()
         .ok_or("invocation_guard_runner_path_invalid")?
@@ -179,6 +191,19 @@ fn runner() -> Result<Executable, String> {
         resolved_path: path,
         sha256: sha(&bytes),
     })
+}
+
+#[cfg(unix)]
+pub(super) fn preparation_reason(error: &str) -> &'static str {
+    match error {
+        "invocation_guard_runner_too_large" => "invocation_guard_runner_too_large",
+        "invocation_guard_runner_timeout" => "invocation_guard_runner_timeout",
+        "invocation_guard_runner_changed" => "invocation_guard_runner_changed",
+        "invocation_guard_runner_interrupted" => "invocation_guard_runner_interrupted",
+        "invocation_guard_runner_unavailable" => "invocation_guard_runner_unavailable",
+        "invocation_guard_runner_path_invalid" => "invocation_guard_runner_path_invalid",
+        _ => "invocation_guard_preparation_failed",
+    }
 }
 
 #[cfg(unix)]

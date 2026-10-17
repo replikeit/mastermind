@@ -95,6 +95,10 @@ windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_Storage
 name = "indexer"
 harness = false
 
+[profile.dev]
+# Guard hooks pin this executable; full debug information can exceed its input cap.
+debug = 1
+
 [profile.release]
 opt-level = 3
 lto = "thin"

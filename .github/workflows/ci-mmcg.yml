@@ -134,7 +134,13 @@ jobs:
         run: cargo clippy --all-targets --locked --target ${{ matrix.target }} -- -D warnings
 
       - name: cargo test --all
-        run: cargo test --all --locked --target ${{ matrix.target }}
+        run: |
+          # Guarded execution pins this binary; retain its size before running tests.
+          cargo test --all --locked --target ${{ matrix.target }} --no-run
+          EXE=""
+          [ "${{ runner.os }}" = "Windows" ] && EXE=".exe"
+          wc -c "target/${{ matrix.target }}/debug/mmcg${EXE}"
+          cargo test --all --locked --target ${{ matrix.target }}
 
       - name: Lens DOM + accessibility regressions
         if: matrix.target == 'x86_64-unknown-linux-gnu'

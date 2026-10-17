@@ -271,10 +271,18 @@ mastermind run-task .mastermind/tasks/001-feature/spec.md \
 | Other tools and subagents | Rejected |
 | Native settings | `dontAsk`, restricted mode, isolated settings, private PreToolUse hook, strict empty MCP, disabled slash commands |
 | Binding | Invocation, session, repository, task revision, intake, policy and expiry |
+| Hook runner | Pins the Mastermind executable; at most 256 MiB, with a bounded identity-checked read |
 | Decision log | Tool name, input hash and decision. No raw tool arguments |
 | Successful receipt | Every observed tool call matches a durable allow decision, no denied calls, current artifacts |
 | Failed or missing log | Unknown counts stay null, successful publication is blocked |
 | Receipt schema | [v2](../../schemas/invocation-receipt-v2.schema.json). Default executor and reviewer retain schema v1 |
+
+If preparation records `invocation_guard_runner_too_large`, build with
+`cargo build --release --manifest-path mcp/servers/mmcg/Cargo.toml` and invoke
+`mcp/servers/mmcg/target/release/mmcg`. The repository's dev/test profile retains
+line-table debug information to keep normal debug builds within this bound.
+Runner timeouts, interruption, changed identity and unavailability have separate
+fixed reasons; receipts contain no raw filesystem errors.
 
 | Enforcement boundary | Meaning |
 |---|---|

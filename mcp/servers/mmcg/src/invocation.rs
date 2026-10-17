@@ -1174,7 +1174,7 @@ pub(crate) fn execute_with_feedback(
         if options.guarded {
             guarded = Some(
                 guard::Prepared::new(&task, &mut receipt)
-                    .map_err(|_| (Status::Failed, "invocation_guard_preparation_failed"))?,
+                    .map_err(|error| (Status::Failed, guard::preparation_reason(&error)))?,
             );
         }
         crate::miner::hooks::drain_local_for_task(task.root.canonical_root());
