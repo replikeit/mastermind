@@ -121,7 +121,7 @@ jobs:
             mcp/servers/mmcg/target
           # Per-target key so musl builds don't clobber gnu builds in the same
           # OS's cache.
-          key: ${{ runner.os }}-${{ matrix.target }}-cargo-${{ hashFiles('mcp/servers/mmcg/Cargo.lock') }}
+          key: ${{ runner.os }}-${{ matrix.target }}-cargo-${{ hashFiles('mcp/servers/mmcg/Cargo.lock', 'mcp/servers/mmcg/Cargo.toml') }}
           restore-keys: |
             ${{ runner.os }}-${{ matrix.target }}-cargo-
 

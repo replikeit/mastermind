@@ -188,6 +188,7 @@ struct Cli {
 }
 
 #[derive(Subcommand)]
+#[command(defer = true)]
 enum Cmd {
     /// Build or refresh the index. Incremental by default — skips files whose
     /// mtime matches the stored index. Use --force to re-parse everything.
@@ -1152,6 +1153,7 @@ enum AuditCmd {
 }
 
 #[derive(Subcommand)]
+#[command(defer = true)]
 enum MinerCmd {
     /// Start a fresh bounded run using the settings saved by init.
     Start {
@@ -1249,6 +1251,7 @@ enum MinerCmd {
 }
 
 #[derive(Subcommand)]
+#[command(defer = true)]
 enum HookCmd {
     #[command(hide = true)]
     FinishTask {
@@ -1766,6 +1769,7 @@ enum HabitCmd {
 }
 
 #[derive(Subcommand)]
+#[command(defer = true)]
 enum QueryCmd {
     /// Find symbols by exact name.
     Search {

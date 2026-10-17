@@ -280,7 +280,7 @@ mastermind run-task .mastermind/tasks/001-feature/spec.md \
 If preparation records `invocation_guard_runner_too_large`, build with
 `cargo build --release --manifest-path mcp/servers/mmcg/Cargo.toml` and invoke
 `mcp/servers/mmcg/target/release/mmcg`. The repository's dev/test profile retains
-line-table debug information to keep normal debug builds within this bound.
+limited debug information (`debug = 1`) to keep normal debug builds within this bound.
 Runner timeouts, interruption, changed identity and unavailability have separate
 fixed reasons; receipts contain no raw filesystem errors.
 
