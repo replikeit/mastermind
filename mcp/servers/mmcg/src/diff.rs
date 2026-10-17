@@ -779,14 +779,49 @@ pub(crate) fn symbols_changed_in_worktree_with_declarations(
     interrupted: Option<&dyn Fn() -> bool>,
     prove_additions: bool,
 ) -> Result<(WorkingTreeSymbolDiff, DeclarationChanges), WorkingTreeDiffError> {
+    symbols_changed_in_worktree_with_task(
+        store,
+        repo_root,
+        git_ref,
+        deadline,
+        interrupted,
+        prove_additions,
+        None,
+    )
+}
+
+pub(crate) fn symbols_changed_in_worktree_with_task(
+    store: &Store,
+    repo_root: &Path,
+    git_ref: &str,
+    deadline: Option<Instant>,
+    interrupted: Option<&dyn Fn() -> bool>,
+    prove_additions: bool,
+    task: Option<&crate::task_worktree::Comparison>,
+) -> Result<(WorkingTreeSymbolDiff, DeclarationChanges), WorkingTreeDiffError> {
     let baseline_oid = resolve_commit_controlled(repo_root, git_ref, deadline, interrupted)?;
     let head_oid = resolve_head_controlled(repo_root, deadline, interrupted)?;
-    let (files, files_total, files_truncated, skipped_non_utf8_paths) =
-        collect_worktree_paths_controlled(repo_root, &baseline_oid, None, deadline, interrupted)?;
+    let (raw_files, mut files_total, files_truncated, skipped_non_utf8_paths) =
+        collect_worktree_paths_controlled(
+            repo_root,
+            &baseline_oid,
+            task.map(|_| ".mastermind"),
+            deadline,
+            interrupted,
+        )?;
+    let files = match task {
+        Some(task) if task.raw_files == raw_files => {
+            files_total = Some(task.files.len() as u32);
+            task.files.clone()
+        }
+        Some(_) => return Err(WorkingTreeDiffError::SnapshotChanged),
+        None => raw_files.clone(),
+    };
+    // Task attribution narrows evidence, while the raw snapshot still binds prior work.
     let snapshot_token = working_tree_snapshot_token_controlled(
         repo_root,
         &head_oid,
-        &files,
+        &raw_files,
         deadline,
         interrupted,
     )?;
@@ -809,6 +844,13 @@ pub(crate) fn symbols_changed_in_worktree_with_declarations(
         deadline,
         interrupted,
     )?);
+    if let Some(task) = task {
+        for file in &files {
+            if let Some(bytes) = task.preimages.get(&file.path) {
+                old_blobs.insert(file.path.clone(), bytes.clone());
+            }
+        }
+    }
 
     let mut added = Vec::new();
     let mut removed = Vec::new();
@@ -1509,7 +1551,7 @@ fn collect_worktree_paths(
     collect_worktree_paths_controlled(repo, baseline_oid, None, None, None)
 }
 
-fn collect_worktree_paths_controlled(
+pub(crate) fn collect_worktree_paths_controlled(
     repo: &Path,
     baseline_oid: &str,
     ignored_path_prefix: Option<&str>,

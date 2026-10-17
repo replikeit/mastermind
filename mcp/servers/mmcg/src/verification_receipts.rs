@@ -20,7 +20,7 @@ const GIT_LIMIT: usize = 8 * 1024 * 1024;
 const EXECUTABLE_LIMIT: u64 = 128 * 1024 * 1024;
 #[cfg(unix)]
 const OUTPUT_LIMIT: usize = 1024 * 1024;
-const MAX_SNAPSHOT_FILES: usize = 10_000;
+const MAX_SNAPSHOT_FILES: usize = MAX_INDEX_FILES;
 const MAX_INDEX_FILES: usize = 100_000;
 const SNAPSHOT_VERSION: u32 = 1;
 
@@ -31,6 +31,9 @@ pub struct RunDeclaration {
     pub argv: Vec<String>,
     pub cwd: String,
     pub timeout_secs: u64,
+    /// Additional repository-relative check inputs, including ignored scripts.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub inputs: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -43,6 +46,7 @@ pub enum Status {
     Interrupted,
     OutputLimit,
     InputChanged,
+    Unavailable,
     SpawnFailed,
     IoFailed,
 }
@@ -227,6 +231,20 @@ pub(crate) fn validate_declarations(spec: &ParsedSpec) -> Result<(), String> {
         {
             return Err(format!(
                 "observed verification `{}` needs a canonical repository-relative cwd",
+                run.id
+            ));
+        }
+        let mut inputs = BTreeSet::new();
+        if run.inputs.len() > 128
+            || run.inputs.iter().any(|path| {
+                path.len() > 4096
+                    || !bounded_fs::normalize_repository_relative_path(Path::new(path))
+                        .is_ok_and(|normalized| normalized == *path)
+                    || !inputs.insert(path)
+            })
+        {
+            return Err(format!(
+                "observed verification `{}` needs at most 128 unique repository-relative input files",
                 run.id
             ));
         }
@@ -496,14 +514,33 @@ pub(crate) fn inspect_repair_checks(
 
 /// Bind all observed tracked and nonignored worktree inputs independently of
 /// controller state or iteration. The supplied baseline, HEAD and index remain
-/// part of the existing snapshot contract; `.mastermind/` artifacts do not.
+/// part of the snapshot contract. Mutable controller artifacts are excluded;
+/// verification kits and declared check inputs remain bound.
 pub(crate) fn repair_input_revision(
     root: &Path,
     baseline: &str,
+    spec_path: &Path,
     deadline: Instant,
 ) -> Result<String, String> {
     let root = RootCapability::open(root).map_err(|_| "verification_root_unavailable")?;
-    snapshot(&root, baseline, deadline).map_err(|_| "verification_snapshot_unavailable".into())
+    let body = bounded_fs::read_regular_file_with_capability(
+        &root,
+        spec_path,
+        FILE_LIMIT,
+        FILE_LIMIT,
+        ReadControl {
+            deadline: Some(deadline),
+            interrupted: Some(&interrupted),
+        },
+    )
+    .map_err(|_| "verification_spec_unavailable")?;
+    let body = String::from_utf8(body.bytes).map_err(|_| "verification_spec_unavailable")?;
+    let spec = crate::spec::parse_str(&spec_path.to_string_lossy(), &body);
+    if spec.frontmatter_error.is_some() {
+        return Err("verification_declarations_invalid".into());
+    }
+    validate_declarations(&spec)?;
+    snapshot(&root, baseline, &spec, deadline).map_err(|failure| failure.reason)
 }
 
 /// Pin only each declared top-level executable and its resolution. This does
@@ -622,8 +659,8 @@ fn inspect_checks_with_mode(
         }
         _ => return Err("verification_lock_unavailable".into()),
     };
-    let snapshot = snapshot(&current.root, baseline, deadline)
-        .map_err(|_| "verification_snapshot_unavailable")?;
+    let snapshot =
+        snapshot(&current.root, baseline, spec, deadline).map_err(|failure| failure.reason)?;
     let mut evidence = Vec::new();
     for (cmd, run) in declarations(spec) {
         let bytes = read_receipt_bytes(&current, &run.id, deadline)
@@ -694,6 +731,10 @@ fn inspect_receipt(
         match receipt.status {
             Status::Pending => Some((CheckEvidenceStatus::Pending, "receipt_pending")),
             Status::InputChanged => Some((CheckEvidenceStatus::Stale, "receipt_inputs_changed")),
+            Status::Unavailable => Some((
+                CheckEvidenceStatus::Unavailable,
+                "receipt_inputs_unavailable",
+            )),
             Status::Passed => None,
             Status::Failed if mode == InspectionMode::Repair => None,
             Status::Failed => Some((CheckEvidenceStatus::Failed, "receipt_failed")),
@@ -774,9 +815,95 @@ fn inspect_receipt(
     Ok(evidence)
 }
 
-fn git(root: &Path, args: &[&str], deadline: Instant) -> Result<Vec<u8>, String> {
+#[derive(Debug)]
+struct SnapshotFailure {
+    status: Status,
+    reason: String,
+}
+
+impl From<String> for SnapshotFailure {
+    fn from(reason: String) -> Self {
+        Self {
+            status: Status::Unavailable,
+            reason,
+        }
+    }
+}
+
+impl From<&str> for SnapshotFailure {
+    fn from(reason: &str) -> Self {
+        reason.to_owned().into()
+    }
+}
+
+impl SnapshotFailure {
+    fn preparation(reason: String, deadline: Instant) -> Self {
+        if interrupted() {
+            Self {
+                status: Status::Interrupted,
+                reason: "verification_interrupted".into(),
+            }
+        } else if Instant::now() >= deadline {
+            Self {
+                status: Status::Timeout,
+                reason: "verification_snapshot_timeout".into(),
+            }
+        } else {
+            reason.into()
+        }
+    }
+
+    fn changed(reason: &str) -> Self {
+        Self {
+            status: Status::InputChanged,
+            reason: reason.into(),
+        }
+    }
+
+    fn read(error: bounded_fs::BoundedReadError, reason: &str) -> Self {
+        let (status, reason) = match error {
+            bounded_fs::BoundedReadError::SnapshotChanged => {
+                (Status::InputChanged, "verification_snapshot_changed")
+            }
+            bounded_fs::BoundedReadError::Interrupted => {
+                (Status::Interrupted, "verification_interrupted")
+            }
+            bounded_fs::BoundedReadError::DeadlineExceeded => {
+                (Status::Timeout, "verification_snapshot_timeout")
+            }
+            _ => (Status::Unavailable, reason),
+        };
+        Self {
+            status,
+            reason: reason.into(),
+        }
+    }
+}
+
+/// Probe the same bounded inputs as the runner without executing any command.
+/// Approval does not freeze implementation bytes; every run snapshots again.
+pub(crate) fn preflight_snapshot_capability(
+    spec: &ParsedSpec,
+    root: &Path,
+    baseline: &str,
+    deadline: Instant,
+) -> Result<(), String> {
+    if !has_observed(spec) {
+        return Ok(());
+    }
+    validate_declarations(spec)?;
+    let root = RootCapability::open(root).map_err(|_| "verification_root_unavailable")?;
+    snapshot(&root, baseline, spec, deadline)
+        .map(|_| ())
+        .map_err(|failure| failure.reason)
+}
+
+fn git(root: &Path, args: &[&str], deadline: Instant) -> Result<Vec<u8>, SnapshotFailure> {
     if interrupted() {
-        return Err("verification_interrupted".into());
+        return Err(SnapshotFailure {
+            status: Status::Interrupted,
+            reason: "verification_interrupted".into(),
+        });
     }
     let mut controlled = vec![
         "--literal-pathspecs",
@@ -794,17 +921,29 @@ fn git(root: &Path, args: &[&str], deadline: Instant) -> Result<Vec<u8>, String>
         Some(deadline),
         Some(&interrupted),
     )
-    .map_err(|e| format!("verification_snapshot_{}", e.code()))?;
+    .map_err(|error| SnapshotFailure {
+        status: match error {
+            crate::diff::WorkingTreeDiffError::SnapshotChanged => Status::InputChanged,
+            crate::diff::WorkingTreeDiffError::GitTimeout => Status::Timeout,
+            _ => Status::Unavailable,
+        },
+        reason: format!("verification_snapshot_{}", error.code()),
+    })?;
     if !result.success {
         return Err("verification_snapshot_git_failed".into());
     }
     Ok(result.stdout)
 }
 
-fn snapshot(root: &RootCapability, baseline: &str, deadline: Instant) -> Result<String, String> {
-    let first = snapshot_once(root, baseline, deadline)?;
-    if snapshot_once(root, baseline, deadline)? != first {
-        return Err("verification_snapshot_changed".into());
+fn snapshot(
+    root: &RootCapability,
+    baseline: &str,
+    spec: &ParsedSpec,
+    deadline: Instant,
+) -> Result<String, SnapshotFailure> {
+    let first = snapshot_once(root, baseline, spec, deadline)?;
+    if snapshot_once(root, baseline, spec, deadline)? != first {
+        return Err(SnapshotFailure::changed("verification_snapshot_changed"));
     }
     Ok(first)
 }
@@ -812,8 +951,9 @@ fn snapshot(root: &RootCapability, baseline: &str, deadline: Instant) -> Result<
 fn snapshot_once(
     root: &RootCapability,
     baseline: &str,
+    spec: &ParsedSpec,
     deadline: Instant,
-) -> Result<String, String> {
+) -> Result<String, SnapshotFailure> {
     let repo = root.canonical_root();
     let baseline_commit = git(
         repo,
@@ -835,6 +975,7 @@ fn snapshot_once(
         .filter(|entry| !entry.is_empty())
         .collect::<Vec<_>>();
     let mut paths = BTreeSet::new();
+    let mut symlinks = BTreeSet::new();
     if entries.len() > MAX_INDEX_FILES {
         return Err("verification_snapshot_index_limit".into());
     }
@@ -850,8 +991,14 @@ fn snapshot_once(
         let header = std::str::from_utf8(&entry[..tab])
             .map_err(|_| "verification_snapshot_index_invalid")?;
         let parts = header.split(' ').collect::<Vec<_>>();
-        if parts.len() != 3 || !matches!(parts[0], "100644" | "100755") || parts[2] != "0" {
+        if parts.len() != 3
+            || !matches!(parts[0], "100644" | "100755" | "120000")
+            || parts[2] != "0"
+        {
             return Err("verification_snapshot_unsupported_git_entry".into());
+        }
+        if parts[0] == "120000" {
+            symlinks.insert(path.clone());
         }
         paths.insert(path);
         if paths.len() > MAX_SNAPSHOT_FILES {
@@ -886,11 +1033,70 @@ fn snapshot_once(
             }
         }
     }
+    let inputs = crate::verification_inputs::paths(
+        root,
+        spec,
+        ReadControl {
+            deadline: Some(deadline),
+            interrupted: Some(&interrupted),
+        },
+    )
+    .map_err(|reason| SnapshotFailure::preparation(reason, deadline))?;
+    paths.extend(inputs.iter().cloned());
+    if paths.len() > MAX_SNAPSHOT_FILES {
+        return Err("verification_snapshot_file_limit".into());
+    }
     let mut remaining = TOTAL_FILE_LIMIT;
     for path in paths {
         digest.update(path.as_bytes());
         digest.update([0]);
         let limit = remaining.min(FILE_LIMIT);
+        if symlinks.contains(&path) {
+            let target = match bounded_fs::read_internal_symlink_with_capability(
+                root,
+                &root.requested_root().join(&path),
+                limit.min(4096),
+                ReadControl {
+                    deadline: Some(deadline),
+                    interrupted: Some(&interrupted),
+                },
+            ) {
+                Ok(target) => target,
+                Err(bounded_fs::BoundedReadError::Io(error))
+                    if error.kind() == std::io::ErrorKind::NotFound && !inputs.contains(&path) =>
+                {
+                    digest.update(b"missing\0");
+                    digest.update([0]);
+                    continue;
+                }
+                Err(error) => {
+                    let reason = match &error {
+                        bounded_fs::BoundedReadError::OutsideRoot
+                        | bounded_fs::BoundedReadError::InvalidPath => {
+                            "verification_snapshot_symlink_target_unsafe"
+                        }
+                        bounded_fs::BoundedReadError::NotRegular => {
+                            "verification_snapshot_symlink_target_unavailable"
+                        }
+                        bounded_fs::BoundedReadError::TooLarge { .. } => {
+                            if remaining < 4096 {
+                                "verification_snapshot_total_byte_limit"
+                            } else {
+                                "verification_snapshot_symlink_limit"
+                            }
+                        }
+                        _ => "verification_snapshot_symlink_unavailable",
+                    };
+                    return Err(SnapshotFailure::read(error, reason));
+                }
+            };
+            remaining -= target.len() as u64;
+            digest.update(b"symlink\0");
+            digest.update((target.len() as u64).to_le_bytes());
+            digest.update(target);
+            digest.update([0]);
+            continue;
+        }
         match bounded_fs::read_regular_file_with_capability(
             root,
             &root.requested_root().join(&path),
@@ -909,15 +1115,27 @@ fn snapshot_once(
                 digest.update(file.bytes);
             }
             Err(bounded_fs::BoundedReadError::Io(e))
-                if e.kind() == std::io::ErrorKind::NotFound =>
+                if e.kind() == std::io::ErrorKind::NotFound && !inputs.contains(&path) =>
             {
                 digest.update(b"missing\0");
             }
-            Err(e) => return Err(format!("verification_snapshot_file_unavailable: {e}")),
+            Err(error) => {
+                let reason = if matches!(&error, bounded_fs::BoundedReadError::TooLarge { .. }) {
+                    if remaining < FILE_LIMIT {
+                        "verification_snapshot_total_byte_limit"
+                    } else {
+                        "verification_snapshot_file_byte_limit"
+                    }
+                } else {
+                    "verification_snapshot_file_unavailable"
+                };
+                return Err(SnapshotFailure::read(error, reason));
+            }
         }
         digest.update([0]);
     }
-    root.verify().map_err(|e| e.to_string())?;
+    root.verify()
+        .map_err(|error| SnapshotFailure::read(error, "verification_snapshot_root_unavailable"))?;
     Ok(crate::hex::encode(&digest.finalize()))
 }
 
@@ -1107,20 +1325,31 @@ pub fn run(spec_path: &Path, repo_root: &Path, check_id: &str) -> Result<Receipt
     };
     // Revoke the earlier success before preparation or spawn can fail/crash.
     write_receipt(&context, &receipt)?;
-    let prepare = || -> Result<(String, Executable, PathBuf), String> {
-        let snapshot = snapshot(&context.root, &context.binding.baseline_oid, deadline)?;
-        let executable = resolve_executable(&context.root, declaration, deadline)?;
-        let cwd = cwd(&context.root, declaration)?;
-        if self::context(spec_path, repo_root, deadline)?.binding != context.binding {
-            return Err("verification_task_changed".into());
+    let prepare = || -> Result<(String, Executable, PathBuf), SnapshotFailure> {
+        let snapshot = snapshot(
+            &context.root,
+            &context.binding.baseline_oid,
+            &context.spec,
+            deadline,
+        )?;
+        let executable = resolve_executable(&context.root, declaration, deadline)
+            .map_err(|reason| SnapshotFailure::preparation(reason, deadline))?;
+        let cwd = cwd(&context.root, declaration)
+            .map_err(|reason| SnapshotFailure::preparation(reason, deadline))?;
+        if self::context(spec_path, repo_root, deadline)
+            .map_err(|reason| SnapshotFailure::preparation(reason, deadline))?
+            .binding
+            != context.binding
+        {
+            return Err(SnapshotFailure::changed("verification_task_changed"));
         }
         Ok((snapshot, executable, cwd))
     };
     let (before, executable, directory) = match prepare() {
         Ok(inputs) => inputs,
-        Err(reason) => {
-            receipt.status = Status::InputChanged;
-            receipt.reason = Some(reason);
+        Err(failure) => {
+            receipt.status = failure.status;
+            receipt.reason = Some(failure.reason);
             publish_receipt(&context, &mut receipt, &interrupted)?;
             return Ok(receipt);
         }
@@ -1137,19 +1366,40 @@ pub fn run(spec_path: &Path, repo_root: &Path, check_id: &str) -> Result<Receipt
     receipt.stdout = observation.stdout;
     receipt.stderr = observation.stderr;
     let deadline = Instant::now() + crate::diff::git_timeout();
-    let after = snapshot(&context.root, &context.binding.baseline_oid, deadline);
-    let unchanged = after.as_ref().ok() == receipt.snapshot_before.as_ref()
-        && self::context(spec_path, repo_root, deadline)
-            .ok()
-            .is_some_and(|current| current.binding == context.binding)
-        && resolve_executable(&context.root, declaration, deadline)
-            .as_ref()
-            .ok()
-            == Some(&executable);
-    receipt.snapshot_after = after.ok();
-    if !unchanged {
-        receipt.status = Status::InputChanged;
-        receipt.reason = Some("verification_inputs_changed_or_unavailable".into());
+    let after = snapshot(
+        &context.root,
+        &context.binding.baseline_oid,
+        &context.spec,
+        deadline,
+    );
+    match after {
+        Err(failure) => {
+            receipt.status = failure.status;
+            receipt.reason = Some(failure.reason);
+        }
+        Ok(after) => {
+            let current = self::context(spec_path, repo_root, deadline);
+            let executable_after = resolve_executable(&context.root, declaration, deadline);
+            let changed = receipt.snapshot_before.as_ref() != Some(&after)
+                || current
+                    .as_ref()
+                    .is_ok_and(|current| current.binding != context.binding)
+                || executable_after
+                    .as_ref()
+                    .is_ok_and(|current| current != &executable);
+            receipt.snapshot_after = Some(after);
+            if changed {
+                receipt.status = Status::InputChanged;
+                receipt.reason = Some("verification_inputs_changed".into());
+            } else if current.is_err() || executable_after.is_err() {
+                let failure = SnapshotFailure::preparation(
+                    "verification_inputs_unavailable".into(),
+                    deadline,
+                );
+                receipt.status = failure.status;
+                receipt.reason = Some(failure.reason);
+            }
+        }
     }
     publish_receipt(&context, &mut receipt, &interrupted)?;
     Ok(receipt)
@@ -1415,6 +1665,7 @@ mod tests {
             argv: vec!["/usr/bin/true".into()],
             cwd: ".".into(),
             timeout_secs: 1,
+            inputs: Vec::new(),
         };
         let successful = Receipt {
             schema_version: 1,
@@ -1543,6 +1794,7 @@ mod tests {
         for (case, status) in [
             ("pending", CheckEvidenceStatus::Pending),
             ("failed", CheckEvidenceStatus::Failed),
+            ("unavailable", CheckEvidenceStatus::Unavailable),
             ("unknown_source", CheckEvidenceStatus::Unavailable),
             ("bad_version", CheckEvidenceStatus::Unavailable),
             ("bad_run_id", CheckEvidenceStatus::Unavailable),
@@ -1564,6 +1816,7 @@ mod tests {
                     changed.exit_code = Some(7);
                     changed.reason = Some("/private/secret".into());
                 }
+                "unavailable" => changed.status = Status::Unavailable,
                 "unknown_source" => changed.provenance = "external_claim:/private/secret".into(),
                 "bad_version" => changed.schema_version = 2,
                 "bad_run_id" => changed.run_id = "/private/secret".into(),
@@ -1663,7 +1916,8 @@ mod tests {
         receipt.binding = context.binding.clone();
         receipt.executable =
             Some(resolve_executable(&context.root, declaration, deadline).unwrap());
-        receipt.snapshot_before = Some(snapshot(&context.root, &baseline, deadline).unwrap());
+        receipt.snapshot_before =
+            Some(snapshot(&context.root, &baseline, &context.spec, deadline).unwrap());
         receipt.snapshot_after = receipt.snapshot_before.clone();
         receipt.status = Status::Failed;
         receipt.exit_code = Some(7);
@@ -1672,6 +1926,85 @@ mod tests {
         drop(lock);
         let parsed = context.spec.clone();
         (directory, parsed, context, receipt)
+    }
+
+    #[test]
+    fn tracked_symlink_runner_distinguishes_stable_changed_and_unavailable_inputs() {
+        use std::os::unix::fs::symlink;
+        let (directory, spec, context, _) = repair_fixture();
+        let root = directory.path();
+        std::fs::write(root.join("other.txt"), "other\n").unwrap();
+        symlink("source.txt", root.join("source-link")).unwrap();
+        let output = std::process::Command::new("/usr/bin/git")
+            .current_dir(root)
+            .env_clear()
+            .env("PATH", "/usr/bin:/bin")
+            .env("HOME", root.join(".mastermind"))
+            .env("GIT_CONFIG_NOSYSTEM", "1")
+            .env("GIT_CONFIG_GLOBAL", "/dev/null")
+            .args(["add", "source-link", "other.txt"])
+            .output()
+            .unwrap();
+        assert!(output.status.success());
+        let deadline = Instant::now() + Duration::from_secs(20);
+        preflight_snapshot_capability(&spec, root, &context.binding.baseline_oid, deadline)
+            .unwrap();
+        let spec_path = root.join(&context.binding.spec_path);
+        let receipt = run(&spec_path, root, "test").unwrap();
+        assert_eq!(receipt.status, Status::Failed);
+        assert_eq!(receipt.exit_code, Some(7));
+        assert_eq!(receipt.snapshot_before, receipt.snapshot_after);
+        let before = receipt.snapshot_after.unwrap();
+        std::fs::remove_file(root.join("source-link")).unwrap();
+        symlink("other.txt", root.join("source-link")).unwrap();
+        let link_changed = snapshot(
+            &context.root,
+            &context.binding.baseline_oid,
+            &spec,
+            deadline,
+        )
+        .unwrap();
+        assert_ne!(before, link_changed);
+        std::fs::write(root.join("other.txt"), "modified target\n").unwrap();
+        assert_ne!(
+            link_changed,
+            snapshot(
+                &context.root,
+                &context.binding.baseline_oid,
+                &spec,
+                deadline
+            )
+            .unwrap()
+        );
+
+        std::fs::write(
+            root.join(".mastermind/check.sh"),
+            "#!/bin/sh\n/bin/rm source-link\n/bin/ln -s source.txt source-link\nexit 0\n",
+        )
+        .unwrap();
+        let changed = run(&spec_path, root, "test").unwrap();
+        assert_eq!(changed.exit_code, Some(0));
+        assert_eq!(changed.status, Status::InputChanged);
+        assert_eq!(
+            changed.reason.as_deref(),
+            Some("verification_inputs_changed")
+        );
+        assert_ne!(changed.snapshot_before, changed.snapshot_after);
+
+        std::fs::remove_file(root.join("source-link")).unwrap();
+        symlink("../outside", root.join("source-link")).unwrap();
+        assert_eq!(
+            preflight_snapshot_capability(&spec, root, &context.binding.baseline_oid, deadline)
+                .unwrap_err(),
+            "verification_snapshot_symlink_target_unsafe"
+        );
+        let unavailable = run(&spec_path, root, "test").unwrap();
+        assert_eq!(unavailable.status, Status::Unavailable);
+        assert_eq!(unavailable.exit_code, None);
+        assert_eq!(
+            unavailable.reason.as_deref(),
+            Some("verification_snapshot_symlink_target_unsafe")
+        );
     }
 
     #[test]
@@ -1737,7 +2070,8 @@ mod tests {
         let root = directory.path();
         let baseline = &receipt.binding.baseline_oid;
         let deadline = Instant::now() + Duration::from_secs(20);
-        let before = repair_input_revision(root, baseline, deadline).unwrap();
+        let before =
+            repair_input_revision(root, baseline, &root.join(&spec.path), deadline).unwrap();
         let git = |args: &[&str]| {
             let output = std::process::Command::new("/usr/bin/git")
                 .current_dir(root)
@@ -1754,7 +2088,7 @@ mod tests {
         };
         git(&["update-index", "--assume-unchanged", "source.txt"]);
         assert_eq!(
-            repair_input_revision(root, baseline, deadline).unwrap(),
+            repair_input_revision(root, baseline, &root.join(&spec.path), deadline).unwrap(),
             before
         );
         std::fs::write(root.join("source.txt"), "hidden dependency mutation\n").unwrap();
@@ -1767,7 +2101,8 @@ mod tests {
             "source.txt"
         ])
         .is_empty());
-        let changed = repair_input_revision(root, baseline, deadline).unwrap();
+        let changed =
+            repair_input_revision(root, baseline, &root.join(&spec.path), deadline).unwrap();
         assert_ne!(changed, before);
 
         // Re-approval metadata does not alter the input digest. The baseline
@@ -1779,10 +2114,12 @@ mod tests {
         state["baseline_ref"] = serde_json::json!("f".repeat(40));
         std::fs::write(state_path, serde_json::to_vec(&state).unwrap()).unwrap();
         assert_eq!(
-            repair_input_revision(root, baseline, deadline).unwrap(),
+            repair_input_revision(root, baseline, &root.join(&spec.path), deadline).unwrap(),
             changed
         );
-        assert!(repair_input_revision(root, baseline, Instant::now()).is_err());
+        assert!(
+            repair_input_revision(root, baseline, &root.join(&spec.path), Instant::now()).is_err()
+        );
     }
 
     #[test]
@@ -1814,6 +2151,7 @@ mod tests {
             "output_limit",
             "spawn_failed",
             "io_failed",
+            "unavailable",
         ] {
             let mut changed = receipt.clone();
             match case {
@@ -1837,6 +2175,7 @@ mod tests {
                 "output_limit" => changed.status = Status::OutputLimit,
                 "spawn_failed" => changed.status = Status::SpawnFailed,
                 "io_failed" => changed.status = Status::IoFailed,
+                "unavailable" => changed.status = Status::Unavailable,
                 _ => unreachable!(),
             }
             let bytes = serde_json::to_vec(&changed).unwrap();

@@ -5539,6 +5539,8 @@ mod tests {
             intake_revision: None,
             spec_hash: "0".repeat(64),
             baseline_ref: "0".repeat(40),
+            initial_worktree: None,
+            preflight_approval_sha256: None,
             held_snapshot_sha256: None,
             held_snapshot_version: crate::run_task::STRICT_SNAPSHOT_VERSION,
             history_snapshot_sha256: None,

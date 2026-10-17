@@ -125,6 +125,11 @@ The native runner owns its invocation record; a handed-off agent must not
 invent a delivery record. Satisfied evidence requirements do not establish
 semantic coverage or bypass postflight.
 
+Keep task-specific check scripts under `<task>/verify/` so their bytes are bound
+even when ignored. Declare other ignored check files in `verify[].run.inputs`
+using repository-relative paths. Editing the kit or declared inputs requires
+fresh recorded checks.
+
 For a runnable UI change or a spec with `## Design Context`, collect browser
 observations before closing the report. Record the accessibility tree states,
 console/network errors, and checked viewports in prose; state `not checked` and

@@ -16,7 +16,10 @@ flowchart LR
 ```
 
 Feedback may require inspection or a project-history update. Scope changes need
-a new approved contract.
+a new approved contract. Re-run `mastermind run-task <spec> --pre-only` after
+revising the spec. Reapproval retains validated historical preconditions and the
+original task baseline while checking new conditions and current declarations.
+Keep the task's `preflight-approvals/` and `preflight-inputs/` recovery artifacts.
 
 ## Choose a mode
 
@@ -86,6 +89,10 @@ mastermind run-task "$TASK_SPEC" --pre-only
 
 Preflight binds the spec, baseline, and iteration. Contract edits require
 approval and another preflight. Retries keep the original baseline.
+The first approval also retains the existing local changes and their source
+bytes. Postflight excludes unchanged prior work; editing, deleting, restoring,
+or changing the executable mode of those files remains part of the task diff.
+Retries keep this initial worktree rather than absorbing implementation into it.
 
 ### 2. Implement and record checks
 
@@ -109,6 +116,10 @@ mastermind acceptance status "$TASK_SPEC" --json
 | Repeated run | Replaces the receipt and may invalidate unfinished review |
 
 The report must agree with observed results. Argument arrays do not imply a shell.
+Store task-specific check scripts under `<task>/verify/`; the runner binds that
+directory even when ignored. Declare other ignored check files with
+`verify[].run.inputs` using repository-relative paths. Editing these inputs
+requires a fresh recorded run.
 
 | Runner limit | Value |
 |---|---:|
@@ -127,6 +138,10 @@ mastermind run-task "$TASK_SPEC" --post-only
 
 Postflight compares the contract, report, receipts, and actual diff, including
 staged, unstaged, and untracked work. Inspection does not launch checks.
+Its file list and release draft cover changes since the initial approval.
+Standalone `audit-spec --since` and CI still inspect the whole change from the
+requested commit. Older task states without initial worktree evidence retain
+that conservative commit-based comparison; a retry cannot infer prior ownership.
 
 | Result | Next action |
 |---|---|

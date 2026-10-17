@@ -57,6 +57,15 @@ impl Fixture {
             .unwrap()
             .unwrap()
     }
+    fn audit_evidence(&self) -> Value {
+        let body = std::fs::read_to_string(self.spec().with_file_name("audit.md")).unwrap();
+        serde_json::from_str(
+            body.split_once("Structured audit evidence (JSON; null means not evaluated):")
+                .unwrap()
+                .1,
+        )
+        .unwrap()
+    }
     fn write(&self, path: &str, bytes: &[u8]) {
         let path = self.root().join(path);
         std::fs::create_dir_all(path.parent().unwrap()).unwrap();
@@ -260,6 +269,7 @@ fn creates_public_workflow_retains_baseline_across_drafts_commits_and_recovery()
         run_task::Outcome::PreReady
     );
     let baseline = fixture.state().baseline_ref;
+    let initial_worktree = serde_json::to_value(fixture.state().initial_worktree).unwrap();
     assert!(!fixture.root().join("new.py").exists());
     fixture.write("new.py", b"def added():\n    return 2\n");
     fixture.write(doc, b"# New guide\nAdded behavior.\n");
@@ -272,6 +282,10 @@ fn creates_public_workflow_retains_baseline_across_drafts_commits_and_recovery()
         run_task::Outcome::PreReady
     );
     assert_eq!(fixture.state().baseline_ref, baseline);
+    assert_eq!(
+        serde_json::to_value(fixture.state().initial_worktree).unwrap(),
+        initial_worktree
+    );
     assert_eq!(fixture.controller(false), run_task::Outcome::PostHeld);
     let held = fixture.state();
     assert!(held.held_snapshot_sha256.is_some() && held.history_snapshot_sha256.is_some());
@@ -283,6 +297,10 @@ fn creates_public_workflow_retains_baseline_across_drafts_commits_and_recovery()
         run_task::Outcome::PreReady
     );
     assert_eq!(fixture.state().baseline_ref, baseline);
+    assert_eq!(
+        serde_json::to_value(fixture.state().initial_worktree).unwrap(),
+        initial_worktree
+    );
     assert_eq!(fixture.controller(false), run_task::Outcome::PostHeld);
     assert_eq!(
         fixture.state().held_snapshot_sha256,
@@ -315,6 +333,216 @@ fn creates_public_workflow_retains_baseline_across_drafts_commits_and_recovery()
     assert_eq!(fixture.controller(false), run_task::Outcome::PostHeld);
     assert_eq!(fixture.state().baseline_ref, baseline);
     assert!(!fixture.root().join(".mastermind/should-not-run").exists());
+}
+
+#[test]
+fn controller_attributes_only_changes_after_the_initial_worktree() {
+    let mut fixture = Fixture::new();
+    fixture.write_spec(&[]);
+    fixture.write("service.py", b"def keep():\n    return 8\n");
+    fixture.write(DOC, b"Prior local documentation.\n");
+    fixture.write("local-notes.md", b"Prior local notes.\n");
+    fixture.write("unfinished.py", b"def unfinished(\n");
+    fixture.write("deleted-before.txt", b"Prior committed file.\n");
+    git(fixture.root(), &["add", "deleted-before.txt"]);
+    git(fixture.root(), &["commit", "-qm", "prior file"]);
+    std::fs::remove_file(fixture.root().join("deleted-before.txt")).unwrap();
+    assert_eq!(fixture.controller(true), run_task::Outcome::PreReady);
+    fixture.write("service.py", b"def keep():\n    return 2\n");
+    fixture.refresh();
+    fixture.report(&["service.py"]);
+    assert_eq!(fixture.controller(false), run_task::Outcome::PostHeld);
+    let audit = fixture.audit_evidence();
+    assert_eq!(audit["symbol_diff"]["files_in_diff"], json!(["service.py"]));
+    assert_eq!(audit["ownership"]["basis"], "initial_worktree");
+    assert_eq!(
+        audit["ownership"]["unchanged_prior_files"],
+        json!(["deleted-before.txt", DOC, "local-notes.md", "unfinished.py"])
+    );
+    let release =
+        std::fs::read_to_string(run_task::release_file_path(fixture.root(), &fixture.spec()))
+            .unwrap();
+    assert!(release.contains("service.py"));
+    for prior in [DOC, "deleted-before.txt", "local-notes.md", "unfinished.py"] {
+        assert!(!release.contains(prior), "{release}");
+    }
+    assert_eq!(
+        std::fs::read(fixture.root().join("local-notes.md")).unwrap(),
+        b"Prior local notes.\n"
+    );
+    assert_eq!(
+        fixture.audit_with_report(false)["verdict"],
+        "broken",
+        "standalone audit must retain its whole-change contract"
+    );
+}
+
+#[test]
+fn controller_does_not_exempt_modified_removed_or_restored_prior_work() {
+    for action in ["edit", "delete", "restore", "mode", "new-on-retry"] {
+        if action == "mode" && !cfg!(unix) {
+            continue;
+        }
+        let mut fixture = Fixture::new();
+        fixture.write_spec(&[]);
+        fixture.write(DOC, b"Prior local documentation.\n");
+        fixture.write("local-notes.md", b"Prior local notes.\n");
+        assert_eq!(fixture.controller(true), run_task::Outcome::PreReady);
+        let initial = serde_json::to_value(fixture.state().initial_worktree).unwrap();
+        fixture.write("service.py", b"def keep():\n    return 2\n");
+        let changed = match action {
+            "edit" => {
+                fixture.write("local-notes.md", b"Changed prior notes.\n");
+                "local-notes.md"
+            }
+            "delete" => {
+                std::fs::remove_file(fixture.root().join("local-notes.md")).unwrap();
+                "local-notes.md"
+            }
+            "restore" => {
+                fixture.write(DOC, b"# Guide\nBefore.\n");
+                DOC
+            }
+            "mode" => {
+                #[cfg(unix)]
+                {
+                    use std::os::unix::fs::PermissionsExt;
+                    std::fs::set_permissions(
+                        fixture.root().join("local-notes.md"),
+                        std::fs::Permissions::from_mode(0o755),
+                    )
+                    .unwrap();
+                }
+                "local-notes.md"
+            }
+            "new-on-retry" => {
+                fixture.write("new-local.md", b"New undeclared work.\n");
+                "new-local.md"
+            }
+            _ => unreachable!(),
+        };
+        fixture.refresh();
+        fixture.report(&["service.py"]);
+        if action == "new-on-retry" {
+            assert_eq!(fixture.controller(true), run_task::Outcome::PreReady);
+            assert_eq!(
+                serde_json::to_value(fixture.state().initial_worktree).unwrap(),
+                initial
+            );
+        }
+        assert_eq!(
+            fixture.controller(false),
+            run_task::Outcome::PostBroken,
+            "{action}"
+        );
+        let audit = fixture.audit_evidence();
+        assert!(
+            audit["symbol_diff"]["files_in_diff"]
+                .as_array()
+                .unwrap()
+                .contains(&json!(changed)),
+            "{action}: {audit}"
+        );
+        let text = std::fs::read_to_string(fixture.spec().with_file_name("audit.md")).unwrap();
+        assert!(
+            text.contains(&format!("unexpected_file: `{changed}`")),
+            "{action}: {text}"
+        );
+        assert!(
+            text.contains(&format!(
+                "executor_report_missing_changed_file: `{changed}`"
+            )),
+            "{action}: {text}"
+        );
+    }
+}
+
+#[test]
+fn controller_checks_added_claims_against_dirty_source_preimages() {
+    let mut fixture = Fixture::new();
+    fixture.write(
+        "draft.py",
+        b"def keep():\n    return 1\n\ndef obsolete():\n    return 0\n",
+    );
+    fixture.write_creation_spec("verified", &["draft.py"], &[], &[]);
+    let body = std::fs::read_to_string(fixture.spec()).unwrap().replacen(
+        "mode: verified\n",
+        "mode: verified\nbreaking_changes:\n  removed_symbols:\n    - name: obsolete\n      file: draft.py\n",
+        1,
+    );
+    fixture.write(SPEC, body.as_bytes());
+    assert_eq!(fixture.controller(true), run_task::Outcome::PreReady);
+    fixture.write(
+        "draft.py",
+        b"def keep():\n    return 1\n\ndef fresh():\n    return 2\n",
+    );
+    fixture.refresh();
+    fixture.report(&["draft.py"]);
+    let report_path = fixture.spec().with_file_name("executor-report.md");
+    let mut report: Value = serde_json::from_slice(&std::fs::read(&report_path).unwrap()).unwrap();
+    report["claims"] = json!([
+        {"kind":"function_added", "symbol":"keep", "file":"draft.py"},
+        {"kind":"function_added", "symbol":"fresh", "file":"draft.py"}
+    ]);
+    std::fs::write(&report_path, report.to_string()).unwrap();
+    assert_eq!(fixture.controller(false), run_task::Outcome::PostBroken);
+    let audit = fixture.audit_evidence();
+    assert_eq!(
+        audit["claim_checks"][0]["finding"]["kind"],
+        "claimed_symbol_not_added"
+    );
+    assert_eq!(audit["claim_checks"][1]["status"], "verified");
+    report["claims"] = json!([{"kind":"function_added", "symbol":"fresh", "file":"draft.py"}]);
+    std::fs::write(&report_path, report.to_string()).unwrap();
+    assert_eq!(fixture.controller(false), run_task::Outcome::PostHeld);
+}
+
+#[test]
+fn controller_never_infers_legacy_ownership_or_accepts_missing_preimages() {
+    for case in ["legacy", "missing-preimage", "changed-preimage"] {
+        let mut fixture = Fixture::new();
+        fixture.write_spec(&[]);
+        fixture.write("local-notes.md", b"Prior local notes.\n");
+        assert_eq!(fixture.controller(true), run_task::Outcome::PreReady);
+        let baseline = fixture.state().baseline_ref;
+        if case == "legacy" {
+            let state_path = run_task::state_file_path(fixture.root(), &fixture.spec());
+            let mut state: Value =
+                serde_json::from_slice(&std::fs::read(&state_path).unwrap()).unwrap();
+            state.as_object_mut().unwrap().remove("initial_worktree");
+            state
+                .as_object_mut()
+                .unwrap()
+                .remove("preflight_approval_sha256");
+            std::fs::write(&state_path, state.to_string()).unwrap();
+        } else {
+            let initial = fixture.state().initial_worktree.unwrap();
+            let hash = match &initial.entries[0].state {
+                mmcg::task_worktree::PathState::Regular { sha256, .. } => sha256,
+                _ => panic!("expected notes preimage"),
+            };
+            let preimage = fixture.spec().with_file_name("preflight-inputs").join(hash);
+            if case == "missing-preimage" {
+                std::fs::remove_file(preimage).unwrap();
+            } else {
+                std::fs::write(preimage, b"Changed retained input.\n").unwrap();
+            }
+        }
+        fixture.write("service.py", b"def keep():\n    return 2\n");
+        fixture.refresh();
+        fixture.report(&["service.py"]);
+        if case == "legacy" {
+            assert_eq!(fixture.controller(true), run_task::Outcome::PreReady);
+            assert!(fixture.state().initial_worktree.is_none());
+        }
+        assert_eq!(
+            fixture.controller(false),
+            run_task::Outcome::PostBroken,
+            "{case}"
+        );
+        assert_eq!(fixture.state().baseline_ref, baseline);
+        assert!(!run_task::release_file_path(fixture.root(), &fixture.spec()).exists());
+    }
 }
 
 #[test]

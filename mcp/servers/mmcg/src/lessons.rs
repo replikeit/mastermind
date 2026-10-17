@@ -576,6 +576,7 @@ mod tests {
 
     fn report(verdict: Verdict, findings: Vec<Finding>) -> Report {
         Report {
+            ownership: None,
             spec: "irrelevant".into(),
             git_ref: "HEAD".into(),
             verdict,

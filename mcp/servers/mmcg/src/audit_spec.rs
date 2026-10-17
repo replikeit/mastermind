@@ -176,8 +176,8 @@ pub struct Report {
     pub git_ref: String,
     pub verdict: Verdict,
     pub findings: Vec<Finding>,
-    /// Raw symbol-level diff of baseline → working tree — pasted in so the LLM
-    /// auditor has full context for semantic judgment.
+    /// Symbol changes from the commit or retained initial task inputs.
+    /// Ownership evidence identifies a controller's preflight comparison.
     pub symbol_diff: Option<SymbolDiff>,
     /// None means executor claims were not evaluated; Some([]) is an evaluated empty list.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -188,6 +188,8 @@ pub struct Report {
     /// Absent for legacy tasks without a structured acceptance contract.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub acceptance: Option<crate::acceptance::Report>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ownership: Option<crate::task_worktree::OwnershipEvidence>,
 }
 
 #[derive(Serialize)]
@@ -198,6 +200,8 @@ struct TextEvidence<'a> {
     executor_report: &'a Option<ExecutorReport>,
     #[serde(skip_serializing_if = "Option::is_none")]
     acceptance: Option<&'a crate::acceptance::Report>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    ownership: Option<&'a crate::task_worktree::OwnershipEvidence>,
 }
 
 fn append_indented_json<T: Serialize>(out: &mut String, value: &T) {
@@ -229,6 +233,11 @@ impl Report {
             escape_terminal(&self.git_ref),
             self.findings.len(),
         ));
+        if self.ownership.is_some() {
+            out.push_str(
+                "  comparison: initial approved worktree; original Git baseline retained\n\n",
+            );
+        }
         for f in &self.findings {
             let icon = match f {
                 Finding::UnexpectedFile { .. }
@@ -279,6 +288,7 @@ impl Report {
                 claim_checks: &self.claim_checks,
                 executor_report: &self.executor_report,
                 acceptance: self.acceptance.as_ref(),
+                ownership: self.ownership.as_ref(),
             },
         );
         out
@@ -455,7 +465,7 @@ pub fn run(
     repo_root: &Path,
     git_ref: &str,
 ) -> Result<Report, DiffError> {
-    run_internal(spec, store, repo_root, git_ref, false, None).map(|(report, _)| report)
+    run_internal(spec, store, repo_root, git_ref, false, None, None).map(|(report, _)| report)
 }
 
 fn run_internal(
@@ -465,6 +475,7 @@ fn run_internal(
     git_ref: &str,
     verify_postflight: bool,
     executor_report: Option<&ExecutorReport>,
+    initial: Option<&crate::task_worktree::InitialWorktree>,
 ) -> Result<(Report, Option<crate::verify_spec::Report>), DiffError> {
     // Worktree-scoped, not `<ref>..HEAD` — post-flight audits work that has not
     // been committed yet. See the module header.
@@ -485,7 +496,13 @@ fn run_internal(
     {
         return Err(DiffError::GitFailed("index_stale".into()));
     }
-    let (worktree, declarations) = diff::symbols_changed_in_worktree_with_declarations(
+    let task = initial
+        .map(|initial| {
+            crate::task_worktree::compare(repo_root, Path::new(&spec.path), initial, deadline)
+        })
+        .transpose()
+        .map_err(DiffError::GitFailed)?;
+    let (worktree, declarations) = diff::symbols_changed_in_worktree_with_task(
         store,
         repo_root,
         git_ref,
@@ -497,6 +514,7 @@ fn run_internal(
                 .iter()
                 .any(|claim| matches!(claim, Claim::FunctionAdded { .. }))
         }),
+        task.as_ref(),
     )
     .map_err(|error| diff::worktree_scope_error(git_ref, error))?;
     let symbol_diff = &worktree.diff;
@@ -522,7 +540,7 @@ fn run_internal(
             reason: reason.clone(),
         });
     }
-    let removal_plan = spec_removals::Plan::build(
+    let removal_plan = spec_removals::Plan::build_with_preimages(
         spec,
         repo_root,
         &worktree.baseline_oid,
@@ -531,6 +549,7 @@ fn run_internal(
         !worktree.files_truncated
             && worktree.skipped_non_utf8_paths == 0
             && symbol_diff.errors.is_empty(),
+        task.as_ref().map(|task| &task.preimages),
     );
     if let Some(plan) = &removal_plan {
         for error in &plan.errors {
@@ -712,12 +731,19 @@ fn run_internal(
     // the derived diff, so a concurrent edit cannot make file evidence look
     // consistent with a different revision.
     if removal_plan.is_some() || has_claims || has_canonical_report {
-        diff::validate_working_tree_snapshot_controlled(
+        diff::validate_working_tree_projection_controlled(
             repo_root,
             &worktree.baseline_oid,
             &worktree.head_oid,
-            &worktree.files,
-            &worktree.snapshot_token,
+            diff::WorkingTreeSnapshotExpectation {
+                files: task
+                    .as_ref()
+                    .map_or(worktree.files.as_slice(), |task| task.raw_files.as_slice()),
+                files_truncated: worktree.files_truncated,
+                skipped_non_utf8_paths: worktree.skipped_non_utf8_paths,
+                token: &worktree.snapshot_token,
+                ignored_path_prefix: task.as_ref().map(|_| ".mastermind"),
+            },
             Some(deadline),
             None,
         )
@@ -802,6 +828,16 @@ fn run_internal(
         }
     };
     let verdict = compute_verdict(&findings);
+    if let Some(initial) = initial {
+        let current =
+            crate::task_worktree::compare(repo_root, Path::new(&spec.path), initial, deadline)
+                .map_err(DiffError::GitFailed)?;
+        if task.as_ref() != Some(&current) {
+            return Err(DiffError::GitFailed(
+                "initial_worktree_changed_during_audit".into(),
+            ));
+        }
+    }
     Ok((
         Report {
             spec: spec.path.clone(),
@@ -812,6 +848,7 @@ fn run_internal(
             claim_checks,
             executor_report: executor_report.cloned(),
             acceptance,
+            ownership: task.as_ref().map(|task| task.evidence.clone()),
         },
         verification,
     ))
@@ -827,7 +864,7 @@ pub fn run_ci_with_report(
     executor_report: Option<&crate::executor_report::ExecutorReport>,
 ) -> Result<(crate::verify_spec::Report, Report), DiffError> {
     let (report, verification) =
-        run_internal(spec, store, repo_root, git_ref, true, executor_report)?;
+        run_internal(spec, store, repo_root, git_ref, true, executor_report, None)?;
     Ok((verification.expect("CI verification requested"), report))
 }
 
@@ -846,7 +883,39 @@ pub fn run_with_report(
     git_ref: &str,
     executor_report: Option<&crate::executor_report::ExecutorReport>,
 ) -> Result<Report, DiffError> {
-    run_internal(spec, store, repo_root, git_ref, false, executor_report).map(|(report, _)| report)
+    run_internal(
+        spec,
+        store,
+        repo_root,
+        git_ref,
+        false,
+        executor_report,
+        None,
+    )
+    .map(|(report, _)| report)
+}
+
+pub(crate) fn run_for_task(
+    spec: &ParsedSpec,
+    store: &Store,
+    repo_root: &Path,
+    git_ref: &str,
+    executor_report: &ExecutorReport,
+    initial: Option<&crate::task_worktree::InitialWorktree>,
+) -> Result<Report, DiffError> {
+    if let Some(initial) = initial {
+        initial.validate(git_ref).map_err(DiffError::GitFailed)?;
+    }
+    run_internal(
+        spec,
+        store,
+        repo_root,
+        git_ref,
+        false,
+        Some(executor_report),
+        initial,
+    )
+    .map(|(report, _)| report)
 }
 
 fn norm_path(p: &str) -> String {
@@ -1925,6 +1994,7 @@ mod tests {
     fn bundle_preserves_legacy_aliases_and_constructor() {
         let report = Report {
             acceptance: None,
+            ownership: None,
             spec: "spec.md".into(),
             git_ref: "main".into(),
             verdict: Verdict::Held,
@@ -1970,6 +2040,7 @@ mod tests {
         };
         let report = Report {
             acceptance: None,
+            ownership: None,
             spec: "spec\u{1b}.md".into(),
             git_ref: "main\u{202e}".into(),
             verdict: Verdict::Drift,

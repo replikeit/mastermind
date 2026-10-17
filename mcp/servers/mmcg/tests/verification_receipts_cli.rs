@@ -361,7 +361,7 @@ esac
                 &wrapper,
                 r#"#!/bin/sh
 set -eu
-if test "$#" -eq 10 && test "$1" = -c &&
+if test "$#" -ge 4 && test "$1" = -c &&
    test "$2" = core.fsmonitor=false && test "$3" = diff && test "$4" = --stat; then
   /bin/cp "$MMCG_LATE_POST_RECEIPT" "$MMCG_LATE_POST_HARNESS/receipt-at-release"
   /bin/cp "$MMCG_LATE_POST_HISTORY" "$MMCG_LATE_POST_HARNESS/history-at-release"
@@ -544,6 +544,108 @@ exec /usr/bin/git "$@"
     }
 
     #[test]
+    fn ignored_verification_inputs_are_bound_without_binding_mutable_controller_artifacts() {
+        for script in [
+            ".mastermind/tasks/001-receipts/verify/check.sh",
+            ".mastermind/custom/check.sh",
+        ] {
+            let fixture = Fixture::with_argv(vec!["/bin/sh".into(), script.into()], ".", 10);
+            fs::create_dir_all(fixture.path(script).parent().unwrap()).unwrap();
+            fs::write(fixture.path(script), "exit 0\n").unwrap();
+            if script.contains("/custom/") {
+                let body = fs::read_to_string(fixture.path(SPEC)).unwrap();
+                fs::write(
+                    fixture.path(SPEC),
+                    body.replace(
+                        "timeout_secs: 10",
+                        &format!("timeout_secs: 10\n    inputs: [{script}]"),
+                    ),
+                )
+                .unwrap();
+            }
+            fixture.prepare();
+            assert!(fixture.verify().0.status.success());
+            fixture.write_report();
+            fs::write(fixture.path(".mastermind/controller-note"), "mutable note").unwrap();
+            assert_eq!(fixture.audit().1["verdict"], "held");
+
+            fs::write(fixture.path(script), "exit 19\n").unwrap();
+            let (_, audit) = fixture.audit();
+            assert_eq!(audit["verdict"], "broken", "{script}: {audit}");
+            assert!(
+                audit.to_string().contains("receipt_snapshot_changed"),
+                "{audit}"
+            );
+            let (output, receipt) = fixture.verify();
+            assert!(!output.status.success());
+            assert_eq!(receipt["exit_code"], 19);
+        }
+    }
+
+    #[test]
+    fn unsupported_observed_inputs_are_rejected_before_handoff() {
+        for case in ["unsafe-link", "submodule", "large-file"] {
+            let fixture = Fixture::new("success", 10);
+            let reason = match case {
+                "unsafe-link" => {
+                    symlink("../outside.txt", fixture.path("input-link")).unwrap();
+                    assert!(Fixture::git_command(fixture.root())
+                        .args(["add", "input-link"])
+                        .status()
+                        .unwrap()
+                        .success());
+                    "verification_snapshot_symlink_target_unsafe"
+                }
+                "submodule" => {
+                    let oid = Fixture::git_command(fixture.root())
+                        .args(["rev-parse", "HEAD"])
+                        .output()
+                        .unwrap();
+                    let entry = format!(
+                        "160000,{},vendor/module",
+                        String::from_utf8(oid.stdout).unwrap().trim()
+                    );
+                    assert!(Fixture::git_command(fixture.root())
+                        .args(["update-index", "--add", "--cacheinfo", &entry])
+                        .status()
+                        .unwrap()
+                        .success());
+                    "verification_snapshot_unsupported_git_entry"
+                }
+                "large-file" => {
+                    fs::write(fixture.path("large.bin"), vec![0; 4 * 1024 * 1024 + 1]).unwrap();
+                    assert!(Fixture::git_command(fixture.root())
+                        .args(["add", "large.bin"])
+                        .status()
+                        .unwrap()
+                        .success());
+                    "verification_snapshot_file_byte_limit"
+                }
+                _ => unreachable!(),
+            };
+            assert!(Fixture::git_command(fixture.root())
+                .args(["commit", "-qm", "input fixture"])
+                .status()
+                .unwrap()
+                .success());
+            let preflight = fixture.run(&["run-task", SPEC, "--pre-only"]);
+            assert!(!preflight.status.success(), "{case}: {preflight:?}");
+            assert!(
+                String::from_utf8_lossy(&preflight.stderr).contains(reason),
+                "{case}: {preflight:?}"
+            );
+            assert!(
+                !fixture.path(STATE).exists(),
+                "{case}: must not approve unsupported inputs"
+            );
+            assert!(
+                !fixture.path(".mastermind/ran").exists(),
+                "{case}: must not execute a check"
+            );
+        }
+    }
+
+    #[test]
     fn input_mutation_during_execution_is_not_a_pass() {
         let fixture = Fixture::new("change", 10);
         fixture.prepare();
@@ -688,6 +790,8 @@ exec /usr/bin/git "$@"
             "unknown",
             "timeout",
             "empty_argv",
+            "input_escape",
+            "duplicate_input",
         ] {
             let mut value = metadata.clone();
             match invalid {
@@ -700,6 +804,10 @@ exec /usr/bin/git "$@"
                 "unknown" => value["verify"][0]["run"]["ignored"] = json!(true),
                 "timeout" => value["verify"][0]["run"]["timeout_secs"] = json!(0),
                 "empty_argv" => value["verify"][0]["run"]["argv"] = json!([]),
+                "input_escape" => value["verify"][0]["run"]["inputs"] = json!(["../outside"]),
+                "duplicate_input" => {
+                    value["verify"][0]["run"]["inputs"] = json!(["check.sh", "check.sh"])
+                }
                 _ => unreachable!(),
             }
             fs::write(

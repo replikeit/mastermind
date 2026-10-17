@@ -1148,6 +1148,7 @@ pub(crate) fn execute_with_feedback(
                 || !crate::verification_receipts::repair_input_revision(
                     task.root.canonical_root(),
                     &source.baseline_oid,
+                    spec_path,
                     Instant::now() + crate::diff::git_timeout(),
                 )
                 .is_ok_and(|revision| revision == feedback.source_verification_inputs_sha256)
@@ -1293,6 +1294,7 @@ pub(crate) fn execute_with_feedback(
                     || !crate::verification_receipts::repair_input_revision(
                         task.root.canonical_root(),
                         &task.binding.baseline_oid,
+                        spec_path,
                         Instant::now() + crate::diff::git_timeout(),
                     )
                     .is_ok_and(|revision| revision == feedback.source_verification_inputs_sha256)

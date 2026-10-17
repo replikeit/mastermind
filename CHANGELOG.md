@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Bind task verification kits and declared ignored inputs to observed check receipts.
+- Preserve initial local work across task retries and audit only subsequent changes.
+- Reapprove revised specs after implementation while retaining validated preconditions
+  and checking new requirements.
+- Support contained tracked symlinks on Unix and up to 100,000 observed files;
+  reject unavailable snapshot inputs before executor handoff.
+- Exclude plural test filenames from production maps and refresh old classification
+  flags without replacing graph rows.
+
 ## [3.3.1] - 2026-10-15
 
 ### Added

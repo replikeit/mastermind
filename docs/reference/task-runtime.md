@@ -6,6 +6,67 @@ All receipts below are owner-writable local records. They establish observed
 execution and revision consistency, not independent attestation, test quality or
 semantic correctness.
 
+## Initial worktree ownership
+
+The first successful preflight records the original Git commit and a separate
+`state.json.initial_worktree` manifest of existing local changes. Their bounded
+regular-file preimages are retained under `<task>/preflight-inputs/<sha256>`.
+Keep these artifacts with the task when moving or recovering its checkout.
+
+| Input or transition | Contract |
+|---|---|
+| Unchanged pre-existing tracked edits, deletions and untracked files | Excluded from the controller's task file set |
+| New change to prior work, including restoration to commit contents | Included; normal scope and report checks apply |
+| Symbol additions/removals in initially dirty source | Compared with its retained preflight bytes |
+| Retry, reset, repair or reapproval | Retains the first manifest and original Git baseline |
+| Missing or changed retained preimage | Blocks evidence; restore the exact retained artifact |
+| Legacy state without a manifest | Keeps whole commit-to-worktree auditing; no retroactive exemption |
+| Standalone audit-spec and CI | Preserve their explicit commit-to-worktree scope |
+| Freshness and semantic review | Continue to bind current execution inputs; ownership grants no writes |
+
+Initial dirty inputs are limited to 1,000 entries, 512 KiB of manifest metadata,
+the indexer's per-file byte limit and 32 MiB of retained file bytes. Unsupported
+or incomplete input fails preflight before handoff. This manifest establishes
+local attribution, not authenticated authorship. Release draft statistics use
+the original commit for the selected task files and separately list files
+changed from the initial worktree.
+
+## Revise an approved task
+
+After changing an approved spec, explicitly approve the revised contract:
+
+```bash
+mastermind run-task .mastermind/tasks/001-feature/spec.md --pre-only
+```
+
+Each successful preflight retains the exact spec and a validation receipt under
+`<task>/preflight-approvals/`, pinned by `state.json.preflight_approval_sha256`.
+Keep the retained spec, receipts and initial-worktree preimages with the task.
+
+| Reapproval input or transition | Contract |
+|---|---|
+| Unchanged FIND and pre-edit symbol conditions in an amended spec | Retain their prior successful validation; implemented replacements need not restore old text or symbols |
+| Re-run preflight with the same retained spec | Rechecks current preconditions in full; invalid or unreadable targets still block approval |
+| New or changed literal, symbol, signature, caller count, file or language scope | Requires current verification |
+| Current declarations, creates, verification, acceptance and strict requirements | Checked in full against the revised contract |
+| Original Git baseline and initial-worktree manifest | Retained; implementation stays in the task delta |
+| Approval attempt | Consumes the cumulative iteration budget, including failures |
+| Native invocation requirement | Retained; a receipt from an older spec or iteration cannot satisfy the new attempt |
+| Ordinary resume, post-only or restoring old spec bytes | Does not bypass required explicit preflight |
+| Missing or changed retained approval ancestor | Blocks reuse; restore the exact artifact |
+
+Historical conditions are prior local validation, not fresh caller measurements.
+The current risk report covers newly evaluated snapshot claims. Approval chains
+are limited to 128 records and 32 MiB of retained receipt/spec reads per check.
+
+For a legacy state without retained approval artifacts, explicit `--pre-only`
+can retain historical conditions only when the current spec exactly matches its
+saved approved hash and the repository/baseline binding is valid. The new
+receipt labels this basis `legacy_prior_approval`; it does not reconstruct an
+original attempt or native execution. When recovering such a task, restore the
+approved spec first, run explicit preflight, then revise it and reapprove. Changed
+conditions without that prior contract must pass current checks.
+
 ## Observed verification
 
 Declare a check before preflight:
@@ -61,20 +122,28 @@ Running a check neither requires nor modifies the executor report.
 |---|---|
 | Task and Git state | Spec, HEAD, index and baseline |
 | Repository files | Tracked and nonignored untracked files outside `.mastermind/` |
+| Verification kit | Regular files under the current spec's sibling `verify/` directory, including ignored files |
+| Additional check inputs | Explicit `verify[].run.inputs` repository-relative files, including ignored files |
 | Executable | Top-level executable bytes |
-| Unsupported entries | Symlinks, submodules and conflicts rejected by bounded repository reads |
+| Tracked symlinks on Unix | Exact relative link text is bound without following the link. Targets must remain lexically inside the repository and exist through no-follow paths. Absolute, escaping, dangling and chained targets are rejected |
+| Link target contents | Bound independently only when tracked, nonignored or an explicit verification input. Ignored target bytes are not read through the link |
+| Dirty or untracked symlinks | Initial-worktree and source readers still reject them before handoff; tracked link support does not grant source or write access through aliases |
+| Unsupported entries | Submodules and conflicts rejected before approval for observed checks |
 
 | Input | Limit |
 |---|---|
-| Observed files | 10,000 |
+| Observed files | 100,000 |
 | Individual / total file bytes | 4 MiB / 64 MiB |
 | Git response | 8 MiB |
 | Executable | 128 MiB |
 | Receipt JSON | 128 KiB |
+| Verification kit entries | 1,024 files and directories per task |
+| Additional inputs | 128 unique files per check |
 
 | Change or limitation | Effect |
 |---|---|
-| Incomplete or changed bound input | Receipt withheld |
+| Unsupported, over-limit or unreadable snapshot | Preflight rejects observed checks early; direct runner records `unavailable` with a specific reason. Before spawn there is no command exit; after spawn the observed exit is retained |
+| Changed bound input | `input_changed`; receipt cannot satisfy checks |
 | Dependency edit, staging, commit, executable replacement or new preflight | Can invalidate the receipt |
 | Receipt change during unfinished review | Invalidates that review |
 | Final completion | Rechecks receipt bindings |
@@ -83,6 +152,24 @@ Running a check neither requires nor modifies the executor report.
 | Ignored dependencies, external services, full environment | Outside snapshot coverage |
 | Temporary mutation restored before the final snapshot | Not detected by equal before/after snapshots |
 | Pinned interpreter | Does not freeze scripts or establish assertion quality |
+
+Keep task-specific check scripts in `<task>/verify/`. This directory is bound
+automatically; receipt and controller files elsewhere in the task remain mutable.
+For other ignored check inputs, declare exact repository-relative regular files:
+
+```yaml
+run:
+  id: lock
+  argv: [bash, .mastermind/checks/lock.sh]
+  cwd: .
+  timeout_secs: 300
+  inputs: [.mastermind/checks/lock.sh]
+```
+
+Input paths resolve from the repository root, independently of `cwd`. Changes to
+the verification kit or declared inputs require fresh checks. Missing declared
+files block verification. This binds named bytes, not arbitrary interpreter
+dependencies, external services, or the semantic quality of assertions.
 
 ### Process supervision
 

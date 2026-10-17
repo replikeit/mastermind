@@ -342,6 +342,7 @@ fn collect_target(
     let inputs = crate::verification_receipts::repair_input_revision(
         repository,
         &state.baseline_ref,
+        spec_path,
         deadline,
     )?;
     if state.invocation_required {
@@ -428,6 +429,7 @@ fn collect_target(
             != crate::verification_receipts::repair_input_revision(
                 repository,
                 &state.baseline_ref,
+                spec_path,
                 deadline,
             )?
         || project_history != history_disposition::capture(root)?

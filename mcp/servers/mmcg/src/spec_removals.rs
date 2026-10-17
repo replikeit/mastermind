@@ -26,6 +26,7 @@ pub(crate) struct Plan {
 }
 
 impl Plan {
+    #[cfg(test)]
     pub(crate) fn build(
         spec: &ParsedSpec,
         root: &Path,
@@ -33,6 +34,18 @@ impl Plan {
         removed: &RemovedDeclarations,
         deadline: Instant,
         complete: bool,
+    ) -> Option<Self> {
+        Self::build_with_preimages(spec, root, baseline_oid, removed, deadline, complete, None)
+    }
+
+    pub(crate) fn build_with_preimages(
+        spec: &ParsedSpec,
+        root: &Path,
+        baseline_oid: &str,
+        removed: &RemovedDeclarations,
+        deadline: Instant,
+        complete: bool,
+        preimages: Option<&BTreeMap<String, Option<Vec<u8>>>>,
     ) -> Option<Self> {
         let acknowledgements = &spec.frontmatter.as_ref()?.breaking_changes.removed_symbols;
         if acknowledgements.is_empty() {
@@ -61,7 +74,7 @@ impl Plan {
             }
         }
         let baseline = if complete {
-            Baseline::load(root, baseline_oid, &scopes, removed, deadline)
+            Baseline::load(root, baseline_oid, &scopes, removed, deadline, preimages)
         } else {
             Err(Unresolved::unavailable("diff_incomplete"))
         };
@@ -162,6 +175,7 @@ impl Baseline {
         scopes: &[Scope<'_>],
         removed: &RemovedDeclarations,
         deadline: Instant,
+        preimages: Option<&BTreeMap<String, Option<Vec<u8>>>>,
     ) -> Result<Self, Unresolved> {
         let mut requested: BTreeSet<_> = removed.keys().cloned().collect();
         let mut global = false;
@@ -173,10 +187,32 @@ impl Baseline {
                 None => global = true,
             }
         }
-        let paths = regular_paths(root, oid, (!global).then_some(&requested), deadline)?;
-        let blobs =
+        let mut paths = regular_paths(root, oid, (!global).then_some(&requested), deadline)?;
+        if let Some(preimages) = preimages {
+            for (path, bytes) in preimages {
+                if global || requested.contains(path) {
+                    paths.retain(|candidate| candidate != path);
+                    if bytes.is_some() && extractor_for_path(Path::new(path)).is_some() {
+                        paths.push(path.clone());
+                    }
+                }
+            }
+            paths.sort();
+            paths.dedup();
+            if paths.len() > diff::CHANGE_FILE_LIMIT {
+                return Err(Unresolved::unavailable("baseline_file_limit"));
+            }
+        }
+        let mut blobs =
             diff::baseline_blobs_for_paths_controlled(root, oid, &paths, Some(deadline), None)
                 .map_err(|error| Unresolved::unavailable(error.code()))?;
+        if let Some(preimages) = preimages {
+            for path in &paths {
+                if let Some(bytes) = preimages.get(path) {
+                    blobs.insert(path.clone(), bytes.clone());
+                }
+            }
+        }
         let mut files = BTreeMap::new();
         let mut symbols = 0usize;
         for path in paths {
@@ -495,6 +531,7 @@ mod tests {
             &[scope],
             &BTreeMap::new(),
             Instant::now() + Duration::from_secs(30),
+            None,
         )
         .unwrap();
         assert!(loaded.resolve("run", &[], None).is_ok());

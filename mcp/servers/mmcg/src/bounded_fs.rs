@@ -1439,6 +1439,122 @@ fn open_relative_directory_nofollow(root: &Dir, relative: &Path) -> Result<Dir, 
     Ok(directory)
 }
 
+/// Read a tracked link's identity without traversing it or reading target bytes.
+/// Internal targets must exist through ordinary no-follow repository paths.
+#[cfg(unix)]
+pub(crate) fn read_internal_symlink_with_capability(
+    root: &RootCapability,
+    path: &Path,
+    max_bytes: u64,
+    control: ReadControl<'_>,
+) -> Result<Vec<u8>, BoundedReadError> {
+    use std::os::unix::ffi::OsStrExt;
+    control.check()?;
+    root.verify()?;
+    let relative = root.relative(path)?;
+    let parent_relative = relative.parent().ok_or(BoundedReadError::InvalidPath)?;
+    let name = relative.file_name().ok_or(BoundedReadError::InvalidPath)?;
+    let parent = open_relative_directory_nofollow(&root.directory, parent_relative)?;
+    let parent_identity = directory_identity(&parent)?;
+    let metadata = parent
+        .symlink_metadata(name)
+        .map_err(BoundedReadError::Io)?;
+    if !metadata.file_type().is_symlink() {
+        return Err(BoundedReadError::NotRegular);
+    }
+    let before = stable_metadata_identity(&metadata).map_err(BoundedReadError::Io)?;
+    if metadata.len() > max_bytes {
+        return Err(BoundedReadError::TooLarge {
+            size: metadata.len(),
+            limit: max_bytes,
+        });
+    }
+    let target = parent
+        .read_link_contents(name)
+        .map_err(BoundedReadError::Io)?;
+    let bytes = target.as_os_str().as_bytes();
+    if bytes.len() as u64 > max_bytes {
+        return Err(BoundedReadError::TooLarge {
+            size: bytes.len() as u64,
+            limit: max_bytes,
+        });
+    }
+    let mut resolved = parent_relative.to_path_buf();
+    let mut components = target.components().peekable();
+    while let Some(component) = components.next() {
+        match component {
+            Component::Normal(name) => {
+                resolved.push(name);
+                if components.peek().is_some() {
+                    match inspect_path_kind_with_capability(
+                        root,
+                        &root.requested_root().join(&resolved),
+                        control,
+                    ) {
+                        Ok(BoundedPathKind::Directory) => {}
+                        Err(BoundedReadError::Interrupted) => {
+                            return Err(BoundedReadError::Interrupted)
+                        }
+                        Err(BoundedReadError::DeadlineExceeded) => {
+                            return Err(BoundedReadError::DeadlineExceeded)
+                        }
+                        Err(BoundedReadError::SnapshotChanged) => {
+                            return Err(BoundedReadError::SnapshotChanged)
+                        }
+                        _ => return Err(BoundedReadError::NotRegular),
+                    }
+                }
+            }
+            Component::CurDir => {}
+            Component::ParentDir if resolved.pop() => {}
+            _ => return Err(BoundedReadError::OutsideRoot),
+        }
+    }
+    if resolved.as_os_str().is_empty() {
+        return Err(BoundedReadError::InvalidPath);
+    }
+    // Inspect the target independently, never by opening the symbolic link.
+    match inspect_path_kind_with_capability(root, &root.requested_root().join(resolved), control) {
+        Ok(BoundedPathKind::RegularFile | BoundedPathKind::Directory) => {}
+        Err(BoundedReadError::Interrupted) => return Err(BoundedReadError::Interrupted),
+        Err(BoundedReadError::DeadlineExceeded) => return Err(BoundedReadError::DeadlineExceeded),
+        Err(BoundedReadError::SnapshotChanged) => return Err(BoundedReadError::SnapshotChanged),
+        _ => return Err(BoundedReadError::NotRegular),
+    }
+    control.check()?;
+    let current_parent = open_relative_directory_nofollow(&root.directory, parent_relative)
+        .map_err(|_| BoundedReadError::SnapshotChanged)?;
+    let after = current_parent
+        .symlink_metadata(name)
+        .map_err(|_| BoundedReadError::SnapshotChanged)?;
+    let current_target = current_parent
+        .read_link_contents(name)
+        .map_err(|_| BoundedReadError::SnapshotChanged)?;
+    root.verify()?;
+    control.check()?;
+    if !directory_identity(&current_parent)?.same_object(parent_identity)
+        || !after.file_type().is_symlink()
+        || before != stable_metadata_identity(&after).map_err(BoundedReadError::Io)?
+        || current_target != target
+    {
+        return Err(BoundedReadError::SnapshotChanged);
+    }
+    Ok(bytes.to_vec())
+}
+
+#[cfg(not(unix))]
+pub(crate) fn read_internal_symlink_with_capability(
+    _root: &RootCapability,
+    _path: &Path,
+    _max_bytes: u64,
+    _control: ReadControl<'_>,
+) -> Result<Vec<u8>, BoundedReadError> {
+    Err(BoundedReadError::Io(std::io::Error::new(
+        std::io::ErrorKind::Unsupported,
+        "verification symlink snapshots require Unix identity support",
+    )))
+}
+
 pub(crate) fn inspect_path_kind_with_capability(
     root: &RootCapability,
     path: &Path,
@@ -2295,6 +2411,34 @@ mod tests {
             ),
             Err(BoundedReadError::SnapshotChanged)
         ));
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn internal_link_reader_preserves_text_and_rejects_unsafe_or_dangling_targets() {
+        use std::os::unix::fs::symlink;
+        let directory = tempfile::tempdir().unwrap();
+        let root = RootCapability::open(directory.path()).unwrap();
+        std::fs::create_dir(directory.path().join("sub")).unwrap();
+        std::fs::write(directory.path().join("source"), "target bytes\n").unwrap();
+        symlink(directory.path(), directory.path().join("jump")).unwrap();
+        for (name, target, accepted) in [
+            ("safe", "../source", true),
+            ("escape", "../../outside", false),
+            ("absolute", "/outside", false),
+            ("dangling", "../absent", false),
+            ("chained", "../jump/../source", false),
+        ] {
+            let path = directory.path().join("sub").join(name);
+            symlink(target, &path).unwrap();
+            let read =
+                read_internal_symlink_with_capability(&root, &path, 4096, ReadControl::default());
+            if accepted {
+                assert_eq!(read.unwrap(), target.as_bytes());
+            } else {
+                assert!(read.is_err(), "{name}");
+            }
+        }
     }
 
     #[cfg(unix)]

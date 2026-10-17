@@ -7748,6 +7748,10 @@ mod tests {
             "src/core/service_test.py",
             "src/core/widget.test.ts",
             "src/core/DatabaseTest.cpp",
+            "src/core/service_tests.rs",
+            "src/core/widget.tests.js",
+            "src/core/service_tests_helper.rs",
+            "src/core/contests.rs",
             "tests/fixture/main.rs",
             "examples/demo.rs",
             "evals/runner.py",
@@ -7800,11 +7804,31 @@ mod tests {
             .insert_edge(caller, Some(helper), "helper_target", "calls", 4)
             .unwrap();
 
+        for (name, file) in [
+            ("plural_rust_test", "src/core/service_tests.rs"),
+            ("plural_js_test", "src/core/widget.tests.js"),
+            ("plural_helper_control", "src/core/service_tests_helper.rs"),
+            ("contests_control", "src/core/contests.rs"),
+        ] {
+            let target = store
+                .insert_symbol(name, "function", file, 1, 3, None, None)
+                .unwrap();
+            store
+                .insert_edge(caller, Some(target), name, "calls", 2)
+                .unwrap();
+        }
+        let all =
+            serde_json::to_value(project_map_with_options(&store, ".", 2, 20, false).unwrap())
+                .unwrap();
+        assert_eq!(all["files"]["total"], 13);
+        let all_rendered = serde_json::to_string(&all).unwrap();
+        assert!(all_rendered.contains("plural_rust_test"));
+        assert!(all_rendered.contains("plural_js_test"));
         let value =
             serde_json::to_value(project_map_with_options(&store, ".", 2, 20, true).unwrap())
                 .unwrap();
         assert_eq!(value["scope"]["production_only"], true);
-        assert_eq!(value["files"]["total"], 3);
+        assert_eq!(value["files"]["total"], 5);
         let rendered = serde_json::to_string(&value).unwrap();
         assert!(!rendered.contains("tests/fixture"));
         assert!(!rendered.contains("examples/demo"));
@@ -7815,6 +7839,10 @@ mod tests {
         assert!(rendered.contains("production_target"));
         assert!(rendered.contains("test_helpers/service.py"));
         assert!(rendered.contains("helper_target"));
+        assert!(rendered.contains("plural_helper_control"));
+        assert!(rendered.contains("contests_control"));
+        assert!(!rendered.contains("plural_rust_test"));
+        assert!(!rendered.contains("plural_js_test"));
         std::fs::remove_file(&path).ok();
     }
 

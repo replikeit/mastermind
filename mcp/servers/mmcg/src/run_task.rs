@@ -70,9 +70,15 @@ pub struct RunState {
     /// SHA-256 of the approved spec body. Legacy 16-digit hashes remain readable.
     /// Post-flight requires an exact match or a new explicit pre-flight.
     pub spec_hash: String,
+    /// Immutable successful preflight contract, retained through failed retries.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub preflight_approval_sha256: Option<String>,
     /// `git rev-parse HEAD` captured at the first pre-flight — the audit's `--since`.
     /// Retries preserve it so previously committed implementation stays in scope.
     pub baseline_ref: String,
+    /// First-approved local inputs, retained across retries without absorbing implementation.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub initial_worktree: Option<crate::task_worktree::InitialWorktree>,
     /// SHA-256 binding a held strict audit to the exact declared touch files.
     /// Older state files deserialize without it and are not accepted as
     /// architecture-policy evidence.
@@ -142,6 +148,21 @@ pub(crate) fn validate_run_status(status: &str) -> Result<(), String> {
 
 pub(crate) fn validate_run_state(state: &RunState) -> Result<(), String> {
     validate_run_status(&state.status)?;
+    if state
+        .preflight_approval_sha256
+        .as_deref()
+        .is_some_and(|pin| {
+            pin.len() != 64
+                || !pin
+                    .bytes()
+                    .all(|b| b.is_ascii_digit() || (b'a'..=b'f').contains(&b))
+        })
+    {
+        return Err("controller preflight approval pin is invalid".into());
+    }
+    if let Some(initial) = &state.initial_worktree {
+        initial.validate(&state.baseline_ref)?;
+    }
     if let Some(revision) = state.semantic_review_sha256.as_deref() {
         if !state.semantic_review_required
             || revision.len() != 64
@@ -759,6 +780,16 @@ fn history_input_snapshot(
     digest.update(state.baseline_ref.as_bytes());
     digest.update(state.iteration.to_le_bytes());
     digest.update(state.started_at.to_le_bytes());
+    if let Some(initial) = &state.initial_worktree {
+        initial.preimages(repo_root, spec_path)?;
+        digest.update(b"initial-worktree\0");
+        digest.update(initial.revision()?.as_bytes());
+    }
+    if let Some(approval) = state.preflight_approval_sha256.as_deref() {
+        crate::task_approval::validate(repo_root, spec_path, state)?;
+        digest.update(b"preflight-approval\0");
+        digest.update(approval.as_bytes());
+    }
     let mut bytes_left = STRICT_EVIDENCE_TOTAL_BYTE_LIMIT;
     let spec = repository_relative_identity(&root, spec_path)?;
     let report =
@@ -1625,7 +1656,16 @@ fn git_head(repo_root: &Path) -> Result<String, String> {
         .map_err(|error| format!("git rev-parse HEAD: {}", error.code()))
 }
 
+#[cfg(test)]
 fn git_diff_stat(repo_root: &Path, baseline_ref: &str) -> Result<String, String> {
+    git_diff_stat_for_files(repo_root, baseline_ref, None)
+}
+
+fn git_diff_stat_for_files(
+    repo_root: &Path,
+    baseline_ref: &str,
+    files: Option<&[String]>,
+) -> Result<String, String> {
     let run = |args: &[&str]| {
         let output = crate::diff::run_bounded_git_with_limit(
             repo_root,
@@ -1639,7 +1679,7 @@ fn git_diff_stat(repo_root: &Path, baseline_ref: &str) -> Result<String, String>
         }
         Ok(output.stdout)
     };
-    let stat = run(&[
+    let mut args = vec![
         "-c",
         "core.fsmonitor=false",
         "diff",
@@ -1648,9 +1688,22 @@ fn git_diff_stat(repo_root: &Path, baseline_ref: &str) -> Result<String, String>
         "--no-textconv",
         baseline_ref,
         "--",
-        ".",
-        ":(exclude).mastermind",
-    ])?;
+    ];
+    let pathspecs = files.map(|files| {
+        files
+            .iter()
+            .map(|file| format!(":(top,literal){file}"))
+            .collect::<Vec<_>>()
+    });
+    if let Some(paths) = &pathspecs {
+        if paths.is_empty() {
+            return Ok("(no task files changed)".into());
+        }
+        args.extend(paths.iter().map(String::as_str));
+    } else {
+        args.extend([".", ":(exclude).mastermind"]);
+    }
+    let stat = run(&args)?;
     let mut body = String::from_utf8(stat)
         .map_err(|_| "release diff is not UTF-8")?
         .trim_end()
@@ -1666,7 +1719,9 @@ fn git_diff_stat(repo_root: &Path, baseline_ref: &str) -> Result<String, String>
     let mut untracked = BTreeSet::new();
     for path in raw.split(|byte| *byte == 0).filter(|path| !path.is_empty()) {
         let path = std::str::from_utf8(path).map_err(|_| "untracked release path is not UTF-8")?;
-        if !path.starts_with(".mastermind/") {
+        if !path.starts_with(".mastermind/")
+            && files.is_none_or(|files| files.iter().any(|file| file == path))
+        {
             let path = crate::audit_bundle::normalize_relative_path(Path::new(path))
                 .map_err(|_| "untracked release path is invalid")?;
             untracked.insert(path);
@@ -1802,13 +1857,36 @@ pub fn compute_release_notes(
     baseline_ref: &str,
     audit_verdict: &str,
 ) -> ReleaseNotes {
+    compute_release_notes_for_files(
+        spec,
+        spec_body,
+        repo_root,
+        baseline_ref,
+        audit_verdict,
+        None,
+    )
+}
+
+fn compute_release_notes_for_files(
+    spec: &ParsedSpec,
+    spec_body: &str,
+    repo_root: &Path,
+    baseline_ref: &str,
+    audit_verdict: &str,
+    files: Option<&[String]>,
+) -> ReleaseNotes {
     let title = extract_h1_title(spec_body).unwrap_or_else(|| spec_basename(Path::new(&spec.path)));
     let goals = spec::section_body(spec, "Goals").unwrap_or("").to_string();
     let tests = spec::section_body(spec, "Tests Plan")
         .unwrap_or("")
         .to_string();
-    let diff_stat = git_diff_stat(repo_root, baseline_ref)
+    let mut diff_stat = git_diff_stat_for_files(repo_root, baseline_ref, files)
         .unwrap_or_else(|e| format!("(diff unavailable: {e})"));
+    if let Some(files) = files {
+        diff_stat
+            .push_str("\nFiles changed from initial worktree (stats above use original commit):\n");
+        diff_stat.push_str(&files.join("\n"));
+    }
     ReleaseNotes {
         title,
         goals,
@@ -2344,6 +2422,7 @@ fn run_native_loop(
                 && receipts::repair_input_revision(
                     repo_root,
                     &prior.baseline_ref,
+                    spec_path,
                     std::time::Instant::now() + crate::diff::git_timeout(),
                 )
                 .is_ok_and(|revision| revision == feedback.source_verification_inputs_sha256)
@@ -2443,6 +2522,7 @@ fn run_native_loop(
                     || !receipts::repair_input_revision(
                         repo_root,
                         &prior.baseline_ref,
+                        spec_path,
                         std::time::Instant::now() + crate::diff::git_timeout(),
                     )
                     .is_ok_and(|revision| revision == feedback.source_verification_inputs_sha256)
@@ -2573,6 +2653,7 @@ fn run_native_loop(
                 || !receipts::repair_input_revision(
                     repo_root,
                     &state.baseline_ref,
+                    spec_path,
                     std::time::Instant::now() + crate::diff::git_timeout(),
                 )
                 .is_ok_and(|revision| revision == packet.target.verification_inputs_sha256)
@@ -2618,6 +2699,7 @@ fn run_native_loop(
         let verification_inputs = match receipts::repair_input_revision(
             repo_root,
             &state.baseline_ref,
+            spec_path,
             std::time::Instant::now() + crate::diff::git_timeout(),
         ) {
             Ok(revision) => revision,
@@ -2665,6 +2747,7 @@ fn run_native_loop(
             || !receipts::repair_input_revision(
                 repo_root,
                 &state.baseline_ref,
+                spec_path,
                 std::time::Instant::now() + crate::diff::git_timeout(),
             )
             .is_ok_and(|revision| revision == verification_inputs)
@@ -2797,6 +2880,45 @@ fn run_pre(
 
     println!("=== Pre-flight: {} ===", spec_path.display());
 
+    let head = match preflight_baseline(repo_root, previous) {
+        Ok(head) => head,
+        Err(error) => {
+            eprintln!("error: resolving task baseline: {error}");
+            return Outcome::PreFailed;
+        }
+    };
+    let initial_worktree = match previous {
+        Some(previous) => previous.initial_worktree.clone(),
+        None => match crate::task_worktree::capture(repo_root, spec_path, &head) {
+            Ok(initial) => Some(initial),
+            Err(error) => {
+                eprintln!("error: capturing initial task worktree: {error}");
+                return Outcome::PreFailed;
+            }
+        },
+    };
+    if previous.is_some() && initial_worktree.is_none() {
+        println!("Prior-work attribution is unavailable for this legacy task; the original commit baseline remains authoritative.");
+    }
+    let approval_inputs = match initial_worktree
+        .as_ref()
+        .map(|initial| {
+            crate::task_worktree::compare(
+                repo_root,
+                spec_path,
+                initial,
+                std::time::Instant::now() + crate::diff::git_timeout(),
+            )
+        })
+        .transpose()
+    {
+        Ok(inputs) => inputs,
+        Err(error) => {
+            eprintln!("error: initial task inputs unavailable: {error}");
+            return Outcome::PreFailed;
+        }
+    };
+
     // Index existence + non-empty check — hard fail by default. mmcg's gates
     // are only as strong as the codegraph they reason from; against an absent
     // or empty index, verify-spec silently degrades to file-existence checks and
@@ -2834,9 +2956,24 @@ fn run_pre(
         };
     }
 
-    // 1. verify-spec (store optional — without index, only mandatory-section +
-    //    missing-file checks run).
-    let mut verify = verify_spec::run(&parsed, store.as_ref(), repo_root);
+    let validation = match crate::task_approval::prepare(
+        repo_root,
+        spec_path,
+        &parsed,
+        &spec_body,
+        previous,
+        opts.pre_only,
+    ) {
+        Ok(validation) => validation,
+        Err(error) => {
+            eprintln!("error: previous preflight approval is unavailable: {error}");
+            return Outcome::PreFailed;
+        }
+    };
+    if validation.carried > 0 {
+        println!("Reapproval retains {} historical precondition(s); new or changed conditions and current file declarations are checked below.", validation.carried);
+    }
+    let mut verify = verify_spec::run(&validation.current, store.as_ref(), repo_root);
     if opts.strict {
         for f in verify_spec::strict_check(&parsed) {
             verify.push_error(f);
@@ -2852,8 +2989,11 @@ fn run_pre(
 
     // 2. risk report (needs an open store for caller counts; without one,
     //    reporting zeros would mislead).
+    if validation.carried > 0 {
+        println!("Current risk report covers newly evaluated snapshot claims; retained historical conditions are not fresh caller measurements.");
+    }
     match &store {
-        Some(store) => match compute_risk_report(&parsed, store) {
+        Some(store) => match compute_risk_report(&validation.current, store) {
             Ok(risk) => print!("{}", render_risk_report(&risk)),
             Err(error) => {
                 eprintln!("❌ Risk report is incomplete: {error}. Pre-flight cannot approve this task.");
@@ -2866,14 +3006,29 @@ fn run_pre(
         ),
     }
 
+    if let Err(reason) = crate::verification_receipts::preflight_snapshot_capability(
+        &parsed,
+        repo_root,
+        &head,
+        std::time::Instant::now() + crate::diff::git_timeout(),
+    ) {
+        eprintln!("error: observed verification snapshot unavailable: {reason}");
+        return Outcome::PreFailed;
+    }
+
     // 3. Keep all implementation since the original pre-flight in audit scope.
-    let head = match preflight_baseline(repo_root, previous) {
-        Ok(h) => h,
-        Err(e) => {
-            eprintln!("error: resolving task baseline: {e}");
+    if let Some(initial) = initial_worktree.as_ref() {
+        let current = crate::task_worktree::compare(
+            repo_root,
+            spec_path,
+            initial,
+            std::time::Instant::now() + crate::diff::git_timeout(),
+        );
+        if current.ok().as_ref() != approval_inputs.as_ref() {
+            eprintln!("error: task inputs changed during pre-flight");
             return Outcome::PreFailed;
         }
-    };
+    }
     if read_preflight_spec(repo_root, spec_path).ok().as_ref() != Some(&spec_body) {
         eprintln!("error: spec changed during pre-flight; review it and retry --pre-only");
         return Outcome::PreFailed;
@@ -2910,7 +3065,7 @@ fn run_pre(
         eprintln!("error: task intake changed during pre-flight");
         return Outcome::PreFailed;
     }
-    let state = RunState {
+    let mut state = RunState {
         status: "approved".into(),
         risk: Some(declared_risk.into()),
         next_step: Some("run_executor".into()),
@@ -2920,7 +3075,9 @@ fn run_pre(
         repository_identity: Some(final_identity.repository),
         intake_revision,
         spec_hash: hash_text(&spec_body),
+        preflight_approval_sha256: None,
         baseline_ref: head.clone(),
+        initial_worktree,
         held_snapshot_sha256: None,
         held_snapshot_version: STRICT_SNAPSHOT_VERSION,
         history_snapshot_sha256: None,
@@ -2928,12 +3085,31 @@ fn run_pre(
         iteration,
         allow_no_index: opts.allow_no_index,
         strict: opts.strict,
-        invocation_required: opts.exec && !opts.pre_only,
+        invocation_required: (opts.exec && !opts.pre_only)
+            || previous.is_some_and(|state| state.invocation_required),
         semantic_review_required: crate::acceptance::declared(&parsed).is_some(),
         semantic_review_sha256: None,
-        profile_client: opts.invocation.profile_client.clone(),
+        profile_client: opts
+            .invocation
+            .profile_client
+            .clone()
+            .or_else(|| previous.and_then(|state| state.profile_client.clone())),
         profile_refresh: None,
     };
+    match crate::task_approval::retain(
+        repo_root,
+        spec_path,
+        &state,
+        &spec_body,
+        &validation,
+        store.is_some(),
+    ) {
+        Ok(pin) => state.preflight_approval_sha256 = Some(pin),
+        Err(error) => {
+            eprintln!("error: retaining successful preflight approval: {error}");
+            return Outcome::PreFailed;
+        }
+    }
     if let Err(e) = save_state_in_repository(repo_root, state_path, &state) {
         eprintln!("error: writing state `{}`: {e}", state_path.display());
         return Outcome::PreFailed;
@@ -3111,12 +3287,13 @@ fn run_post_with_evidence(
         }
     };
 
-    let audit = match audit_spec::run_with_report(
+    let audit = match audit_spec::run_for_task(
         &parsed,
         &store,
         repo_root,
         &state.baseline_ref,
-        Some(&executor_report),
+        &executor_report,
+        state.initial_worktree.as_ref(),
     ) {
         Ok(r) => r,
         Err(e) => {
@@ -3217,12 +3394,18 @@ fn run_post_with_evidence(
             }
             _ => None,
         };
-        let notes = compute_release_notes(
+        let notes = compute_release_notes_for_files(
             &parsed,
             &spec_body,
             repo_root,
             &state.baseline_ref,
             verdict_label,
+            state.initial_worktree.as_ref().and_then(|_| {
+                audit
+                    .symbol_diff
+                    .as_ref()
+                    .map(|diff| diff.files_in_diff.as_slice())
+            }),
         );
         let body = render_release_notes(&notes);
         println!("\n--- Release notes draft ---\n{body}");
@@ -3569,6 +3752,8 @@ verifications: []\n\
             intake_revision: None,
             spec_hash: "deadbeefcafef00d".into(),
             baseline_ref: "abc1234".into(),
+            initial_worktree: None,
+            preflight_approval_sha256: None,
             held_snapshot_sha256: Some("feedface".into()),
             held_snapshot_version: STRICT_SNAPSHOT_VERSION,
             history_snapshot_sha256: Some("reviewed-snapshot".into()),
@@ -5262,7 +5447,7 @@ python3 -m py_compile src/lib.py
         // recognized source extensions and does not infer a .txt touch.
         fs::write(
             &spec,
-            format!("---\ntouches:\n  - file: src.txt\n---\n{body}"),
+            format!("---\ntouches:\n  - file: src.txt\n---\n{body}\n## Phase 1\n**File:** `src.txt`\nFIND:\n```text\nbefore\n```\n"),
         )
         .unwrap();
         assert_eq!(
@@ -5280,6 +5465,7 @@ python3 -m py_compile src/lib.py
         );
         let state_path = state_file_path(root.path(), &spec);
         let first = load_state(&state_path).unwrap().unwrap();
+        let initial_revision = first.initial_worktree.as_ref().unwrap().revision().unwrap();
         let approved_body = fs::read_to_string(&spec).unwrap();
         fs::write(root.path().join("src.txt"), "implemented\n").unwrap();
         git(root.path(), &["add", "src.txt"]);
@@ -5332,6 +5518,19 @@ python3 -m py_compile src/lib.py
         assert_eq!(retried.baseline_ref, first.baseline_ref);
         assert_ne!(retried.baseline_ref, git_head(root.path()).unwrap());
         assert_eq!(retried.iteration, 2);
+        assert_eq!(
+            retried
+                .initial_worktree
+                .as_ref()
+                .unwrap()
+                .revision()
+                .unwrap(),
+            initial_revision
+        );
+        assert_ne!(
+            retried.preflight_approval_sha256,
+            first.preflight_approval_sha256
+        );
         assert!(retried.allow_no_index);
         assert_eq!(retried.spec_hash, hash_text(&revised));
         assert!(git_diff_stat(root.path(), &retried.baseline_ref)
@@ -5344,6 +5543,158 @@ python3 -m py_compile src/lib.py
         assert!(
             !db.exists(),
             "docs-only post-flight must not materialize an index"
+        );
+
+        // Changed literal preconditions still require live evidence.
+        fs::write(&spec, revised.replace("before\n```", "never existed\n```")).unwrap();
+        assert_eq!(
+            run(
+                &spec,
+                root.path(),
+                &db,
+                RunOpts {
+                    pre_only: true,
+                    ..Default::default()
+                }
+            ),
+            Outcome::PreFailed
+        );
+        let failed = load_state(&state_path).unwrap().unwrap();
+        assert_eq!(failed.iteration, 3);
+        assert_eq!(
+            failed.preflight_approval_sha256,
+            retried.preflight_approval_sha256
+        );
+    }
+
+    #[test]
+    fn legacy_exact_contract_reapproval_retains_historical_find_without_implicit_resume() {
+        let (root, spec, db) = preflight_fixture();
+        let original = format!("---\ntouches:\n  - file: src.txt\n---\n{}\n## Phase 1\n**File:** `src.txt`\nFIND:\n```text\nbefore\n```\n", fs::read_to_string(&spec).unwrap());
+        fs::write(&spec, &original).unwrap();
+        assert_eq!(
+            run(
+                &spec,
+                root.path(),
+                &db,
+                RunOpts {
+                    pre_only: true,
+                    allow_no_index: true,
+                    ..Default::default()
+                }
+            ),
+            Outcome::PreReady
+        );
+        let state_path = state_file_path(root.path(), &spec);
+        let mut legacy = load_state(&state_path).unwrap().unwrap();
+        legacy.preflight_approval_sha256 = None;
+        legacy = preflight_required_state(&legacy, "spec changed since approval");
+        save_state_in_repository(root.path(), &state_path, &legacy).unwrap();
+        fs::write(root.path().join("src.txt"), "implemented\n").unwrap();
+        assert_eq!(
+            run(&spec, root.path(), &db, RunOpts::default()),
+            Outcome::PreFailed
+        );
+        assert_eq!(
+            run(
+                &spec,
+                root.path(),
+                &db,
+                RunOpts {
+                    pre_only: true,
+                    ..Default::default()
+                }
+            ),
+            Outcome::PreReady
+        );
+        let recovered = load_state(&state_path).unwrap().unwrap();
+        assert_eq!(recovered.baseline_ref, legacy.baseline_ref);
+        assert_eq!(recovered.iteration, 2);
+        assert!(recovered.preflight_approval_sha256.is_some());
+        let clarification = format!("{original}\nClarified wording.\n");
+        fs::write(&spec, clarification).unwrap();
+        assert_eq!(
+            run(
+                &spec,
+                root.path(),
+                &db,
+                RunOpts {
+                    pre_only: true,
+                    ..Default::default()
+                }
+            ),
+            Outcome::PreReady
+        );
+    }
+
+    #[test]
+    fn reapproval_retains_removed_symbol_snapshot_but_validates_new_claims() {
+        let (root, spec, db) = preflight_fixture();
+        fs::write(
+            root.path().join("src.py"),
+            "def old_api(value):\n    return value\n\ndef keep():\n    return 1\n",
+        )
+        .unwrap();
+        git(root.path(), &["add", "src.py"]);
+        git(root.path(), &["commit", "-qm", "indexed baseline"]);
+        let body = fs::read_to_string(&spec).unwrap();
+        let original = format!("---\ntouches:\n  - file: src.py\n    symbols: [old_api, keep]\nbreaking_changes:\n  removed_symbols:\n    - name: old_api\n      file: src.py\n---\n{body}\n## Pre-edit symbol snapshot\n- `old_api` — 0 callers\n");
+        fs::write(&spec, &original).unwrap();
+        let mut store = Store::open(&db).unwrap();
+        Indexer::new(root.path())
+            .index_all(&mut store, false)
+            .unwrap();
+        drop(store);
+        assert_eq!(
+            run(
+                &spec,
+                root.path(),
+                &db,
+                RunOpts {
+                    pre_only: true,
+                    ..Default::default()
+                }
+            ),
+            Outcome::PreReady
+        );
+        let state_path = state_file_path(root.path(), &spec);
+        let first = load_state(&state_path).unwrap().unwrap();
+        fs::write(
+            root.path().join("src.py"),
+            "def keep(extra=None):\n    return 2\n",
+        )
+        .unwrap();
+        fs::write(&spec, format!("{original}\nClarified wording.\n")).unwrap();
+        assert_eq!(
+            run(
+                &spec,
+                root.path(),
+                &db,
+                RunOpts {
+                    pre_only: true,
+                    ..Default::default()
+                }
+            ),
+            Outcome::PreReady
+        );
+        let revised = load_state(&state_path).unwrap().unwrap();
+        assert_eq!(first.baseline_ref, revised.baseline_ref);
+        fs::write(
+            &spec,
+            original.replace("[old_api, keep]", "[old_api, keep, missing_new_api]"),
+        )
+        .unwrap();
+        assert_eq!(
+            run(
+                &spec,
+                root.path(),
+                &db,
+                RunOpts {
+                    pre_only: true,
+                    ..Default::default()
+                }
+            ),
+            Outcome::PreFailed
         );
     }
 
@@ -5446,6 +5797,8 @@ python3 -m py_compile src/lib.py
         let mut approved = load_state(&state_path).unwrap().unwrap();
         approved.held_snapshot_sha256 = Some("old-held".into());
         approved.history_snapshot_sha256 = Some("old-history".into());
+        approved.invocation_required = true;
+        let approved_body = fs::read_to_string(&spec).unwrap();
         save_state_in_repository(root.path(), &state_path, &approved).unwrap();
         fs::write(&spec, body).unwrap();
         // This body passes non-strict pre-flight, but retries retain --strict.
@@ -5465,9 +5818,26 @@ python3 -m py_compile src/lib.py
         assert_eq!(failed.baseline_ref, approved.baseline_ref);
         assert_eq!(failed.iteration, 2);
         assert!(failed.strict && !failed.allow_no_index);
+        assert!(failed.invocation_required);
         assert_eq!(failed.status, "held");
         assert_eq!(failed.next_step.as_deref(), Some("run_preflight"));
         assert!(failed.held_snapshot_sha256.is_none() && failed.history_snapshot_sha256.is_none());
+        fs::write(&spec, approved_body).unwrap();
+        assert_eq!(
+            run(
+                &spec,
+                root.path(),
+                &db,
+                RunOpts {
+                    pre_only: true,
+                    ..Default::default()
+                }
+            ),
+            Outcome::PreReady
+        );
+        let recovered = load_state(&state_path).unwrap().unwrap();
+        assert!(recovered.invocation_required && recovered.strict);
+        assert_eq!(recovered.iteration, 3);
     }
 
     #[test]

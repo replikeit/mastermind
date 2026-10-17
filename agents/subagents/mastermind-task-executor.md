@@ -114,6 +114,9 @@ task-critical evidence explicitly. Each receiving role retrieves its own slice.
    receipt. Re-run checks after final source/dependency changes. Legacy
    report-only commands keep their normal tool-result contract. Never invent
    an invocation delivery record for an external handoff.
+   Keep task-specific check scripts under `<task>/verify/`; declare other ignored
+   check files in `verify[].run.inputs` with repository-relative paths. Changes
+   to these inputs require fresh recorded checks.
 8. Write `<task>/executor-report.md` with the prose evidence and canonical
    schema-v1 tail from `mastermind-structured-report-contract`.
 

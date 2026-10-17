@@ -25,6 +25,8 @@ use std::sync::{Arc, OnceLock};
 use std::time::{Duration, Instant};
 
 const SCHEMA_VERSION: &str = "9";
+const PRODUCTION_CLASSIFICATION_META_KEY: &str = "production_classification_version";
+const PRODUCTION_CLASSIFICATION_VERSION: &str = "production-paths-v2";
 pub const CONCEPT_NORMALIZATION_META_KEY: &str = "concept_normalization_version";
 pub const CONCEPT_NORMALIZATION_VERSION: &str = "mmcg-concepts-v5";
 pub const CONCEPT_DOCUMENTATION_SUPPORTED_LANGUAGES: &str = "javascript,python,rust,tsx,typescript";
@@ -468,7 +470,9 @@ pub(crate) fn is_production_path(path: &str) -> bool {
     let lower = name.to_ascii_lowercase();
     !(lower.starts_with("test_")
         || lower.contains("_test.")
+        || lower.contains("_tests.")
         || lower.contains(".test.")
+        || lower.contains(".tests.")
         || lower.contains(".spec.")
         || name
             .rsplit_once('.')
@@ -3277,15 +3281,29 @@ impl Store {
             PRAGMA foreign_keys = ON;
             PRAGMA busy_timeout = 5000;
             PRAGMA cache_size = -65536;
-            PRAGMA query_only = ON;
             "#,
         )?;
-        Ok(Self::from_connection(
+        let store = Self::from_connection(
             conn,
             db_path,
             Some(snapshot_dir),
             Some(source_snapshot_state),
-        ))
+        );
+        // Normalize only the private copy before sealing it for queries.
+        store.with_work_budget(
+            WorkBudget {
+                deadline: Some(
+                    snapshot_budget
+                        .deadline
+                        .saturating_duration_since(Instant::now()),
+                ),
+                op_ticks: None,
+            },
+            || store.ensure_production_classification(),
+        )?;
+        store.ensure_source_snapshot_current()?;
+        store.conn.execute_batch("PRAGMA query_only = ON;")?;
+        Ok(store)
     }
 
     /// Clone the exact connection snapshot into a private writable database.
@@ -4146,7 +4164,130 @@ impl Store {
             params![SCHEMA_VERSION],
         )?;
         self.ensure_concept_schema()?;
+        self.with_work_budget(self.default_work_budget(), || {
+            self.ensure_production_classification()
+        })?;
         Ok(())
+    }
+
+    /// Update a derived path classification without reparsing or replacing graph rows.
+    /// Read-only callers apply this only to their private SQLite copy.
+    fn ensure_production_classification(&self) -> SqlResult<()> {
+        let tables: i64 = self.conn.query_row(
+            "SELECT count(*) FROM sqlite_master WHERE type='table' AND name IN ('meta','files','symbols')",
+            [], |row| row.get(0),
+        )?;
+        if tables != 3 {
+            return Ok(());
+        }
+        for (table, required) in [
+            ("files", ["path", "production"]),
+            ("symbols", ["file_path", "production"]),
+        ] {
+            let mut statement = self.conn.prepare(&format!("PRAGMA table_info({table})"))?;
+            let mut rows = statement.query([])?;
+            let mut found = 0;
+            while let Some(row) = rows.next()? {
+                if self.work_interrupted() {
+                    return Err(Self::interrupted_error());
+                }
+                let column: String = row.get(1)?;
+                if required.contains(&column.as_str()) {
+                    found += 1;
+                }
+            }
+            if found != required.len() {
+                return Ok(());
+            }
+        }
+        let transaction = self.conn.unchecked_transaction()?;
+        let mut repaired = false;
+        for (name, event) in [
+            ("production_files_ai", "AFTER INSERT ON files"),
+            (
+                "production_files_au",
+                "AFTER UPDATE OF path,production ON files",
+            ),
+            ("production_symbols_ai", "AFTER INSERT ON symbols"),
+            (
+                "production_symbols_au",
+                "AFTER UPDATE OF file_path,production ON symbols",
+            ),
+        ] {
+            let ddl = format!(
+                "CREATE TRIGGER {name} {event} BEGIN
+                 INSERT INTO meta(key,value) VALUES ('{PRODUCTION_CLASSIFICATION_META_KEY}','dirty')
+                 ON CONFLICT(key) DO UPDATE SET value=excluded.value WHERE meta.value<>excluded.value;
+                 END;"
+            );
+            let existing = schema_object_sql(&transaction, "trigger", name)?;
+            if existing
+                .as_deref()
+                .map(|sql| normalized_schema_sql(sql.trim_end_matches(';')))
+                != Some(normalized_schema_sql(ddl.trim_end_matches(';')))
+            {
+                transaction.execute_batch(&format!("DROP TRIGGER IF EXISTS {name};"))?;
+                transaction.execute_batch(&ddl)?;
+                repaired = true;
+            }
+        }
+        // Older runtimes retain these triggers, so their writes revoke the stamp.
+        // Reinstalling a missing guard also requires recalculating existing flags.
+        let version: Option<String> = transaction
+            .query_row(
+                "SELECT value FROM meta WHERE key=?1",
+                [PRODUCTION_CLASSIFICATION_META_KEY],
+                |row| row.get(0),
+            )
+            .optional()?;
+        if !repaired && version.as_deref() == Some(PRODUCTION_CLASSIFICATION_VERSION) {
+            return transaction.commit();
+        }
+        let concept_version: Option<String> = transaction
+            .query_row(
+                "SELECT value FROM meta WHERE key=?1",
+                [CONCEPT_NORMALIZATION_META_KEY],
+                |row| row.get(0),
+            )
+            .optional()?;
+        {
+            let mut paths = transaction
+                .prepare("SELECT path FROM files UNION SELECT file_path FROM symbols ORDER BY 1")?;
+            let mut rows = paths.query([])?;
+            let mut files = transaction.prepare_cached(
+                "UPDATE files SET production=?2 WHERE path=?1 AND production<>?2",
+            )?;
+            let mut symbols = transaction.prepare_cached(
+                "UPDATE symbols SET production=?2 WHERE file_path=?1 AND production<>?2",
+            )?;
+            while let Some(row) = rows.next()? {
+                if self.work_interrupted() {
+                    return Err(Self::interrupted_error());
+                }
+                let path: String = row.get(0)?;
+                let production = is_production_path(&path);
+                files.execute(params![path, production])?;
+                symbols.execute(params![path, production])?;
+            }
+        }
+        // Symbol UPDATE triggers mark concepts dirty. Path flags do not alter
+        // their text, so preserve the exact prior state, never upgrade it.
+        if let Some(version) = concept_version {
+            transaction.execute(
+                "INSERT INTO meta(key,value) VALUES(?1,?2) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+                params![CONCEPT_NORMALIZATION_META_KEY, version],
+            )?;
+        } else {
+            transaction.execute(
+                "DELETE FROM meta WHERE key=?1",
+                [CONCEPT_NORMALIZATION_META_KEY],
+            )?;
+        }
+        transaction.execute(
+            "INSERT INTO meta(key,value) VALUES(?1,?2) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+            params![PRODUCTION_CLASSIFICATION_META_KEY, PRODUCTION_CLASSIFICATION_VERSION],
+        )?;
+        transaction.commit()
     }
 
     fn concept_schema_objects_current_on(connection: &Connection) -> SqlResult<bool> {
@@ -9049,6 +9190,275 @@ mod tests {
         let started = Instant::now();
         assert!(Store::open(&path).is_err());
         assert!(started.elapsed() < Duration::from_secs(1));
+    }
+
+    #[test]
+    fn production_classification_upgrades_private_and_managed_indexes_without_replacing_graph_rows()
+    {
+        for concept_version in [
+            None,
+            Some("dirty"),
+            Some("mmcg-concepts-v3"),
+            Some(CONCEPT_NORMALIZATION_VERSION),
+        ] {
+            let root = tempfile::tempdir().unwrap();
+            let path = root.path().join(".mastermind/mmcg.db");
+            let canonical_root = root.path().canonicalize().unwrap();
+            let before_edge;
+            let before_rows;
+            let before_concepts;
+            {
+                let store = Store::open(&path).unwrap();
+                store
+                    .set_meta("index_root", canonical_root.to_str().unwrap())
+                    .unwrap();
+                for file in [
+                    "src/service_tests.rs",
+                    "src/widget.tests.js",
+                    "src/service_tests_helper.rs",
+                    "src/contests.rs",
+                ] {
+                    store.upsert_file(file, 7, 1).unwrap();
+                    store
+                        .insert_symbol(
+                            file,
+                            "function",
+                            file,
+                            1,
+                            3,
+                            Some("existing signature"),
+                            None,
+                        )
+                        .unwrap();
+                }
+                let ids: Vec<i64> = store
+                    .conn
+                    .prepare("SELECT id FROM symbols ORDER BY id")
+                    .unwrap()
+                    .query_map([], |row| row.get(0))
+                    .unwrap()
+                    .collect::<SqlResult<_>>()
+                    .unwrap();
+                before_edge = (ids[2], ids[0]);
+                store
+                    .insert_edge(ids[2], Some(ids[0]), "src/service_tests.rs", "calls", 2)
+                    .unwrap();
+                store
+                    .conn
+                    .execute_batch(
+                        "UPDATE files SET production=1; UPDATE symbols SET production=1;",
+                    )
+                    .unwrap();
+                store
+                    .conn
+                    .execute(
+                        "DELETE FROM meta WHERE key=?1",
+                        [PRODUCTION_CLASSIFICATION_META_KEY],
+                    )
+                    .unwrap();
+                if let Some(version) = concept_version {
+                    store
+                        .set_meta(CONCEPT_NORMALIZATION_META_KEY, version)
+                        .unwrap();
+                } else {
+                    store
+                        .conn
+                        .execute(
+                            "DELETE FROM meta WHERE key=?1",
+                            [CONCEPT_NORMALIZATION_META_KEY],
+                        )
+                        .unwrap();
+                }
+                before_rows = store.conn.prepare("SELECT id,name,kind,file_path,line_start,line_end,signature,parent_id,language,decorators FROM symbols ORDER BY id").unwrap()
+                    .query_map([], |row| (0..10).map(|i| row.get::<_,SqlValue>(i)).collect::<SqlResult<Vec<_>>>()).unwrap().collect::<SqlResult<Vec<_>>>().unwrap();
+                before_concepts = store.conn.prepare("SELECT symbol_id,name_search,path_search,path_sort,signature_search,documentation_search FROM symbol_concepts ORDER BY symbol_id").unwrap()
+                    .query_map([], |row| (0..6).map(|i| row.get::<_,SqlValue>(i)).collect::<SqlResult<Vec<_>>>()).unwrap().collect::<SqlResult<Vec<_>>>().unwrap();
+            }
+            let before_bytes = directory_bytes(path.parent().unwrap());
+            for read_only in [true, false] {
+                let store = if read_only {
+                    Store::open_read_only(&path).unwrap()
+                } else {
+                    Store::open_for_serve(&path, Some(root.path())).unwrap()
+                };
+                assert_eq!(
+                    store.map_paths_filtered("", "root", 10, true).unwrap(),
+                    vec!["src/contests.rs", "src/service_tests_helper.rs"]
+                );
+                assert_eq!(
+                    store
+                        .map_paths_filtered("", "root", 10, false)
+                        .unwrap()
+                        .len(),
+                    4
+                );
+                assert_eq!(
+                    store
+                        .meta_value(CONCEPT_NORMALIZATION_META_KEY)
+                        .unwrap()
+                        .as_deref(),
+                    concept_version
+                );
+                assert_eq!(
+                    store
+                        .meta_value(PRODUCTION_CLASSIFICATION_META_KEY)
+                        .unwrap()
+                        .as_deref(),
+                    Some(PRODUCTION_CLASSIFICATION_VERSION)
+                );
+                let rows = store.conn.prepare("SELECT id,name,kind,file_path,line_start,line_end,signature,parent_id,language,decorators FROM symbols ORDER BY id").unwrap()
+                    .query_map([], |row| (0..10).map(|i| row.get::<_,SqlValue>(i)).collect::<SqlResult<Vec<_>>>()).unwrap().collect::<SqlResult<Vec<_>>>().unwrap();
+                let concepts = store.conn.prepare("SELECT symbol_id,name_search,path_search,path_sort,signature_search,documentation_search FROM symbol_concepts ORDER BY symbol_id").unwrap()
+                    .query_map([], |row| (0..6).map(|i| row.get::<_,SqlValue>(i)).collect::<SqlResult<Vec<_>>>()).unwrap().collect::<SqlResult<Vec<_>>>().unwrap();
+                assert_eq!(rows, before_rows);
+                assert_eq!(concepts, before_concepts);
+                assert_eq!(
+                    store
+                        .conn
+                        .query_row("SELECT from_id,to_id FROM edges", [], |row| Ok((
+                            row.get::<_, i64>(0)?,
+                            row.get::<_, i64>(1)?
+                        )))
+                        .unwrap(),
+                    before_edge
+                );
+                if read_only {
+                    assert!(store.set_meta("forbidden_write", "no").is_err());
+                    store.ensure_source_snapshot_current().unwrap();
+                    drop(store);
+                    assert_eq!(directory_bytes(path.parent().unwrap()), before_bytes);
+                } else {
+                    drop(store);
+                    let persisted =
+                        Connection::open_with_flags(&path, OpenFlags::SQLITE_OPEN_READ_ONLY)
+                            .unwrap();
+                    assert_eq!(
+                        persisted
+                            .query_row("SELECT count(*) FROM files WHERE production=0", [], |row| {
+                                row.get::<_, i64>(0)
+                            })
+                            .unwrap(),
+                        2
+                    );
+                    assert_eq!(
+                        persisted
+                            .query_row(
+                                "SELECT value FROM meta WHERE key=?1",
+                                [PRODUCTION_CLASSIFICATION_META_KEY],
+                                |row| row.get::<_, String>(0)
+                            )
+                            .unwrap(),
+                        PRODUCTION_CLASSIFICATION_VERSION
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn production_classification_repairs_writes_from_older_runtimes() {
+        for mutation in [
+            "INSERT INTO files(path,indexed_at,symbol_count,production) VALUES('src/later_tests.rs',1,1,1)",
+            "UPDATE files SET production=1 WHERE path='src/service_tests.rs'",
+            "INSERT INTO symbols(name,kind,file_path,line_start,line_end,production) VALUES('later','function','src/later_tests.rs',1,2,1)",
+            "UPDATE symbols SET production=1 WHERE file_path='src/service_tests.rs'",
+            "DROP TRIGGER production_files_au; UPDATE files SET production=1 WHERE path='src/service_tests.rs'",
+        ] {
+            let root = tempfile::tempdir().unwrap();
+            let path = root.path().join("index.db");
+            {
+                let store = Store::open(&path).unwrap();
+                for file in ["src/service_tests.rs", "src/live.rs"] {
+                    store.upsert_file(file, 1, 1).unwrap();
+                    store.insert_symbol("entry", "function", file, 1, 2, None, None).unwrap();
+                }
+                store.ensure_production_classification().unwrap();
+            }
+            {
+                // Raw SQL models an older writer that does not know the new marker.
+                let old = Connection::open(&path).unwrap();
+                old.execute_batch(mutation).unwrap();
+            }
+            for read_only in [true, false] {
+                let store = if read_only { Store::open_read_only(&path).unwrap() }
+                    else { Store::open(&path).unwrap() };
+                assert_eq!(store.map_paths_filtered("", "root", 10, true).unwrap(), vec!["src/live.rs"], "{mutation}");
+                let production_symbols: Vec<String> = store.conn.prepare(
+                    "SELECT DISTINCT file_path FROM symbols WHERE production=1 ORDER BY file_path"
+                ).unwrap().query_map([], |row| row.get(0)).unwrap().collect::<SqlResult<_>>().unwrap();
+                assert_eq!(production_symbols, vec!["src/live.rs"], "{mutation}");
+            }
+        }
+    }
+
+    #[test]
+    fn production_classification_failures_preserve_original_flags() {
+        let root = tempfile::tempdir().unwrap();
+        let path = root.path().join("index.db");
+        let store = Store::open(&path).unwrap();
+        for index in 0..200 {
+            store
+                .upsert_file(&format!("src/{index:03}_tests.rs"), 1, 0)
+                .unwrap();
+        }
+        store
+            .conn
+            .execute_batch("UPDATE files SET production=1;")
+            .unwrap();
+        store
+            .set_meta(PRODUCTION_CLASSIFICATION_META_KEY, "old")
+            .unwrap();
+        let result = store.with_work_budget(
+            WorkBudget {
+                deadline: None,
+                op_ticks: Some(1),
+            },
+            || store.ensure_production_classification(),
+        );
+        assert!(result.is_err());
+        assert_eq!(
+            store
+                .meta_value(PRODUCTION_CLASSIFICATION_META_KEY)
+                .unwrap()
+                .as_deref(),
+            Some("old")
+        );
+        assert_eq!(
+            store
+                .map_paths_filtered("", "root", 201, true)
+                .unwrap()
+                .len(),
+            200
+        );
+        store
+            .conn
+            .execute_batch(
+                "CREATE TRIGGER reject_partial_classification AFTER UPDATE OF production ON files
+             WHEN (SELECT count(*) FROM files WHERE production=0) >= 2
+             BEGIN SELECT RAISE(ABORT, 'fixture classification failure'); END;",
+            )
+            .unwrap();
+        let error = store.ensure_production_classification().unwrap_err();
+        assert!(
+            error.to_string().contains("fixture classification failure"),
+            "{error}"
+        );
+        assert_eq!(
+            store
+                .conn
+                .query_row("SELECT count(*) FROM files WHERE production=1", [], |row| {
+                    row.get::<_, i64>(0)
+                })
+                .unwrap(),
+            200
+        );
+        assert_eq!(
+            store
+                .meta_value(PRODUCTION_CLASSIFICATION_META_KEY)
+                .unwrap()
+                .as_deref(),
+            Some("old")
+        );
     }
 
     #[test]
