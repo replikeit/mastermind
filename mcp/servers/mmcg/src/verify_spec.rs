@@ -343,10 +343,10 @@ pub fn strict_check(spec: &ParsedSpec) -> Vec<Finding> {
                     out.push(Finding::StrictViolation {
                         reason: "a `touches` entry has an empty `file`".into(),
                     });
-                } else if t.symbols.is_empty() {
+                } else if t.scope == spec::TouchScope::Symbols && t.symbols.is_empty() {
                     out.push(Finding::StrictViolation {
                         reason: format!(
-                            "touch `{}` names no `symbols` — list the symbols it changes",
+                            "touch `{}` names no `symbols` — list the symbols it changes or declare `scope: file` with a reason",
                             t.file
                         ),
                     });
@@ -1353,6 +1353,32 @@ verify:
             "well-scoped frontmatter spec should pass strict, got {:?}",
             strict_check(&s)
         );
+    }
+
+    #[test]
+    fn strict_check_requires_explicit_file_scope_for_symbol_free_touches() {
+        for file in [
+            "README.md",
+            "pipeline.yaml",
+            "analysis.ipynb",
+            "tests/test_api.py",
+        ] {
+            let body = format!(
+                "---\ntouches:\n  - file: {file}\n    scope: file\n    reason: Add file-level coverage without changing an existing symbol\nverify:\n  - cmd: git diff --check\n---\n## Goals\nUpdate the declared file.\n"
+            );
+            let parsed = spec::parse_str("spec.md", &body);
+            assert!(parsed.frontmatter_error.is_none(), "{file}");
+            assert!(strict_check(&parsed).is_empty(), "{file}");
+
+            let implicit = body.replace("    scope: file\n", "").replace(
+                "    reason: Add file-level coverage without changing an existing symbol\n",
+                "",
+            );
+            let parsed = spec::parse_str("spec.md", &implicit);
+            assert!(strict_check(&parsed).iter().any(|finding| matches!(
+                finding, Finding::StrictViolation { reason } if reason.contains("names no `symbols`")
+            )), "implicit scope must remain strict for {file}");
+        }
     }
 
     #[test]

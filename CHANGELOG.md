@@ -7,8 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.4.0] - 2026-10-21
+
+### Added
+
+- Source-bound concept review through CLI and MCP, with operation witnesses,
+  explicit request constraints and separate lexical candidates.
+- Explicit `scope: file` with a reason for existing-file changes that do not
+  use symbol snapshots. File admission and postflight checks remain required.
+
 ### Fixed
 
+- Evaluate dependency-cycle risk for declared task files without materializing
+  unrelated graph components. Preserve external cycle paths and reject incomplete
+  searches instead of reporting zero risk.
+- Keep CLI command construction within the Windows stack budget and report
+  guard-runner preparation failures with specific reasons.
 - Bind task verification kits and declared ignored inputs to observed check receipts.
 - Preserve initial local work across task retries and audit only subsequent changes.
 - Reapprove revised specs after implementation while retaining validated preconditions
@@ -222,7 +236,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Give each Mastermind native hook an event-specific label in the client review
   screen. Re-running hook setup updates previous labels without duplicate hooks.
 
-[Unreleased]: https://github.com/xcrft/mastermind/compare/npm-v3.3.1...HEAD
+[Unreleased]: https://github.com/xcrft/mastermind/compare/npm-v3.4.0...HEAD
+[3.4.0]: https://github.com/xcrft/mastermind/releases/tag/npm-v3.4.0
 [3.3.1]: https://github.com/xcrft/mastermind/releases/tag/npm-v3.3.1
 [3.3.0]: https://github.com/xcrft/mastermind/releases/tag/npm-v3.3.0
 [3.2.4]: https://github.com/xcrft/mastermind/releases/tag/npm-v3.2.4

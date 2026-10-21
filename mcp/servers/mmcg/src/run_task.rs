@@ -5,7 +5,7 @@
 //! 1. `verify_spec` — pre-flight: missing symbols/files, snapshot drift,
 //!    FIND-block staleness, VERIFY-command resolvability.
 //! 2. **Risk report** — blast-radius totals, dependency-cycle membership of
-//!    mentioned files, top centrality of snapshot symbols.
+//!    declared task files, top centrality of snapshot symbols.
 //! 3. Executor — hand-off by default; `--exec` records a bounded native invocation.
 //! 4. `audit_spec` — post-flight drift: scope creep, snapshot drift, silent
 //!    removals, missing planned tests.
@@ -25,7 +25,7 @@ use crate::store::Store;
 use crate::verify_spec;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
-use std::collections::{BTreeMap, BTreeSet, HashSet};
+use std::collections::{BTreeMap, BTreeSet};
 use std::hash::{DefaultHasher, Hash, Hasher};
 use std::path::{Path, PathBuf};
 
@@ -261,6 +261,7 @@ pub struct RiskReport {
     pub snapshot_symbols: u32,
     pub total_snapshot_callers: u32,
     pub worst_callers: Option<WorstSymbol>,
+    /// Authoritative task file scope, with normalized legacy mentions as fallback.
     pub mentioned_files: u32,
     pub files_in_cycles: Vec<String>,
     pub top_central_mentioned: Vec<CentralEntry>,
@@ -1754,6 +1755,17 @@ fn extract_h1_title(body: &str) -> Option<String> {
 /// Compute the risk report from a parsed spec + the live index. Pure: no I/O
 /// beyond store queries. Failed or incomplete queries cannot establish zero risk.
 pub fn compute_risk_report(spec: &ParsedSpec, store: &Store) -> Result<RiskReport, String> {
+    if spec.frontmatter_error.is_some() {
+        return Err("task file scope is unavailable: invalid frontmatter".into());
+    }
+    let task_files: Vec<String> = crate::declared_files::paths(spec)
+        .map(|file| {
+            crate::declared_files::normalize(file)
+                .map_err(|reason| format!("task file scope is unavailable: {reason}"))
+        })
+        .collect::<Result<BTreeSet<_>, _>>()?
+        .into_iter()
+        .collect();
     let mut total_callers: u32 = 0;
     let mut worst: Option<WorstSymbol> = None;
     let mut central: Vec<CentralEntry> = Vec::new();
@@ -1787,32 +1799,21 @@ pub fn compute_risk_report(spec: &ParsedSpec, store: &Store) -> Result<RiskRepor
     central.sort_by_key(|e| std::cmp::Reverse(e.in_degree));
     central.truncate(3);
 
-    // Cycle membership: walk all SCCs of size ≥ 2 in any language; collect
-    // mentioned files appearing inside.
-    let mentioned: HashSet<&str> = spec.mentioned_files.iter().map(String::as_str).collect();
-    let (cycles, cycles_truncated) = store
-        .dependency_cycles(None, 2)
+    let (files_in_cycles, cycles_truncated) = store
+        .dependency_cycle_members(&task_files)
         .map_err(|error| format!("dependency-cycle risk is unavailable: {error}"))?;
     if cycles_truncated {
         return Err(
-            "dependency-cycle risk is unknown: the indexed dependency graph exceeds the query limit"
+            "dependency-cycle risk is unknown: the task dependency search exceeds its work or memory limit"
                 .into(),
         );
-    }
-    let mut files_in_cycles: Vec<String> = Vec::new();
-    for cycle in cycles {
-        for f in cycle {
-            if mentioned.contains(f.as_str()) && !files_in_cycles.iter().any(|x| x == &f) {
-                files_in_cycles.push(f);
-            }
-        }
     }
 
     Ok(RiskReport {
         snapshot_symbols: spec.pre_edit_snapshot.len() as u32,
         total_snapshot_callers: total_callers,
         worst_callers: worst,
-        mentioned_files: spec.mentioned_files.len() as u32,
+        mentioned_files: task_files.len() as u32,
         files_in_cycles,
         top_central_mentioned: central,
     })
@@ -1832,7 +1833,7 @@ pub fn render_risk_report(r: &RiskReport) -> String {
             w.callers, w.name
         ));
     }
-    out.push_str(&format!("  Mentioned files: {}\n", r.mentioned_files));
+    out.push_str(&format!("  Task files: {}\n", r.mentioned_files));
     if r.files_in_cycles.is_empty() {
         out.push_str("  Files in dependency cycles: 0\n");
     } else {
@@ -4357,6 +4358,7 @@ verifications: []\n\
             )
             .unwrap();
             let mut parsed = spec::parse_str("spec.md", "# Risk\n");
+            parsed.mentioned_files = vec!["src.py".into()];
             if with_snapshot {
                 parsed.pre_edit_snapshot.push(spec::SymbolClaim {
                     name: "target".into(),
@@ -4382,7 +4384,7 @@ verifications: []\n\
     }
 
     #[test]
-    fn capped_dependency_graph_cannot_report_no_cycles() {
+    fn oversized_global_graph_does_not_hide_task_cycle_membership() {
         let root = tempfile::tempdir().unwrap();
         let db = root.path().join("idx.db");
         let store = Store::open(&db).unwrap();
@@ -4399,9 +4401,66 @@ verifications: []\n\
         let mut parsed = spec::parse_str("spec.md", "# Risk\n");
         parsed.mentioned_files = vec!["src_1.py".into()];
         assert!(store.dependency_cycles(None, 2).unwrap().1);
+        let risk = compute_risk_report(&parsed, &store).unwrap();
+        assert_eq!(risk.files_in_cycles, vec!["src_1.py"]);
+        assert_eq!(risk.mentioned_files, 1);
+    }
+
+    #[test]
+    fn risk_cycles_use_normalized_declared_files_and_external_dependencies() {
+        let root = tempfile::tempdir().unwrap();
+        let db = root.path().join("idx.db");
+        let store = Store::open(&db).unwrap();
+        let raw = rusqlite::Connection::open(&db).unwrap();
+        raw.execute_batch(
+            "INSERT INTO symbols(id,name,kind,file_path,line_start,line_end,language) VALUES
+             (1,'A','class','src/a.py',1,2,'python'),
+             (2,'Bridge','class','external/bridge.py',1,2,'python'),
+             (3,'Noise','class','noise.py',1,2,'python'),
+             (4,'NoiseBridge','class','external/noise.py',1,2,'python');
+             INSERT INTO edges(from_id,to_name,kind,line) VALUES
+             (1,'Bridge','imports',1),(2,'A','imports',1),
+             (3,'NoiseBridge','imports',1),(4,'Noise','imports',1);",
+        )
+        .unwrap();
+        let parsed = spec::parse_str(
+            "spec.md",
+            "---\ntouches:\n  - file: ./src/a.py\ncreates: [src/new.py]\nexpected_docs: [src/a.py]\n---\n# Risk\n`noise.py` and `POST /recover` are background references.\n",
+        );
+        assert!(parsed.mentioned_files.contains(&"noise.py".into()));
+        let risk = compute_risk_report(&parsed, &store).unwrap();
+        assert_eq!(risk.mentioned_files, 2);
+        assert_eq!(risk.files_in_cycles, vec!["src/a.py"]);
+    }
+
+    #[test]
+    fn risk_file_scope_rejects_invalid_contracts() {
+        let root = tempfile::tempdir().unwrap();
+        let store = Store::open(root.path().join("idx.db")).unwrap();
+        for body in [
+            "---\ntouches: invalid\n---\n# Risk\n",
+            "---\ntouches:\n  - file: ../outside.py\n---\n# Risk\n",
+        ] {
+            let parsed = spec::parse_str("spec.md", body);
+            assert!(compute_risk_report(&parsed, &store)
+                .unwrap_err()
+                .contains("task file scope is unavailable"));
+        }
+    }
+
+    #[test]
+    fn risk_query_budget_exhaustion_cannot_report_zero_cycles() {
+        let root = tempfile::tempdir().unwrap();
+        let store = Store::open(root.path().join("idx.db")).unwrap();
+        store.set_default_work_budget(crate::store::WorkBudget {
+            deadline: None,
+            op_ticks: Some(0),
+        });
+        let mut parsed = spec::parse_str("spec.md", "# Risk\n");
+        parsed.mentioned_files = vec!["src.py".into()];
         assert!(compute_risk_report(&parsed, &store)
             .unwrap_err()
-            .contains("unknown"));
+            .contains("dependency-cycle risk"));
     }
 
     #[test]
@@ -5940,6 +5999,8 @@ python3 -m py_compile src/lib.py
     #[test]
     fn preflight_does_not_approve_failed_cycle_query() {
         let (root, spec, db) = preflight_fixture();
+        let body = fs::read_to_string(&spec).unwrap();
+        fs::write(&spec, format!("{body}\nCycle risk includes `b.py`.\n")).unwrap();
         fs::write(
             root.path().join("a.py"),
             "from b import B\n\ndef A():\n    return 1\n",
@@ -5960,7 +6021,10 @@ python3 -m py_compile src/lib.py
             [],
         )
         .unwrap();
-        assert!(store.dependency_cycles(None, 2).is_err());
+        let parsed = spec::parse_file(&spec).unwrap();
+        assert!(compute_risk_report(&parsed, &store)
+            .unwrap_err()
+            .contains("dependency-cycle risk is unavailable"));
         drop(raw);
         drop(store);
         assert_eq!(

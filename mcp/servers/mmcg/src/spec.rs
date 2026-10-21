@@ -166,10 +166,23 @@ impl Frontmatter {
 #[serde(deny_unknown_fields)]
 pub struct TouchEntry {
     pub file: String,
+    /// File scope is an explicit alternative to symbol snapshots, never inferred.
+    #[serde(default)]
+    pub scope: TouchScope,
+    #[serde(default)]
+    pub reason: Option<String>,
     #[serde(default)]
     pub language: Option<String>,
     #[serde(default)]
     pub symbols: Vec<SymbolSpec>,
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TouchScope {
+    #[default]
+    Symbols,
+    File,
 }
 
 /// Polymorphic symbol — a bare name string (`- foo`) or a detailed object
@@ -481,7 +494,17 @@ fn extract_frontmatter(body: &str) -> (Option<Frontmatter>, Option<String>, &str
                 && fm
                     .risk
                     .as_deref()
-                    .is_none_or(|risk| matches!(risk, "low" | "medium" | "high")) =>
+                    .is_none_or(|risk| matches!(risk, "low" | "medium" | "high"))
+                && fm.touches.iter().all(|touch| match touch.scope {
+                    TouchScope::Symbols => touch.reason.is_none(),
+                    TouchScope::File => {
+                        touch.symbols.is_empty()
+                            && touch
+                                .reason
+                                .as_deref()
+                                .is_some_and(|reason| !reason.trim().is_empty())
+                    }
+                }) =>
         {
             (Some(fm), None, rest)
         }
@@ -1416,6 +1439,15 @@ touches:
             "risk: 7",
             "touchess: []",
             "touches:\n  - file: 7",
+            "touches:\n  - file: README.md\n    scope: whole_file\n    reason: Update documentation",
+            "touches:\n  - file: README.md\n    scope: file",
+            "touches:\n  - file: README.md\n    scope: file\n    reason: '  '",
+            "touches:\n  - file: README.md\n    scope: file\n    reason: 42",
+            "touches:\n  - file: README.md\n    scope: null",
+            "touches:\n  - file: README.md\n    scope: true",
+            "touches:\n  - file: src/x.rs\n    scope: file\n    reason: Change file\n    symbols: [target]",
+            "touches:\n  - file: src/x.rs\n    scope: symbols\n    reason: Change file\n    symbols: [target]",
+            "touches:\n  - file: src/x.rs\n    reason: Change file\n    symbols: [target]",
             "touches:\n  - file: src/x.rs\n    language: false",
             "touches:\n  - file: src/x.rs\n    language: null",
             "touches:\n  - file: src/x.rs\n    symbols:\n      - name: false",

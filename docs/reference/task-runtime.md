@@ -31,6 +31,35 @@ local attribution, not authenticated authorship. Release draft statistics use
 the original commit for the selected task files and separately list files
 changed from the initial worktree.
 
+## Dependency-cycle risk
+
+Preflight checks cycle membership for normalized `touches`, `creates` and
+`expected_docs` paths. Without declared file scope, it uses legacy file mentions.
+Malformed frontmatter or invalid paths fail the risk check. Body references do
+not expand an explicitly declared scope.
+
+For each task file, the search follows indexed imports in both directions until
+it finds a cycle witness or exhausts one direction. Paths may leave the task's
+files and return. Unrelated components do not need to fit the global cycle-query
+limit. An unindexed new file has no indexed import edges.
+
+| Boundary | Contract |
+|---|---|
+| Shared search work | 50,000 neighbor visits, including C++ include resolution work |
+| Retained paths | 50,001 unique paths and 8 MiB of UTF-8 path bytes |
+| Query budget | At most 10 seconds and 250,000 SQLite progress ticks, subject to a tighter caller budget |
+| Incomplete search | Discards partial membership and fails preflight as unknown risk |
+| SQL failure or cancellation | Fails preflight without approving an empty risk report |
+
+The result describes syntactic indexed imports. It does not establish runtime
+cycles or source freshness. C++ suffix resolution can include multiple candidate
+headers when include roots are unavailable. The global dependency-cycle query
+retains its separate 50,000-pair whole-graph limit.
+
+If the task search is incomplete, inspect the declared paths and their indexed
+dependencies before retrying. Keep the complete task scope. Repair an unreadable
+or stale index through the normal indexing flow, then rerun preflight.
+
 ## Revise an approved task
 
 After changing an approved spec, explicitly approve the revised contract:

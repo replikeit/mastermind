@@ -71,6 +71,20 @@ baseline file cannot be relabeled as a creation. Mirror every required Final Ver
 command in `verify[].cmd`, including its arguments. Legacy `VERIFY:` command
 lines are also machine-checked; labels and ordinary shell fences are not.
 
+Strict mode requires symbols for each existing file by default. For a deliberate
+file-level change, such as Markdown, YAML, a notebook, or adding tests to an
+existing file, declare the scope and why a symbol snapshot does not apply:
+
+```yaml
+touches:
+  - file: tests/test_api.py
+    scope: file
+    reason: Add new tests without changing existing test functions
+```
+
+Omit `symbols` for file scope. File admission, postflight, verification, index
+requirements and removal checks remain in force.
+
 The planner must replace the generated `acceptance` placeholders and map every
 criterion to relevant `verify[].run.id` checks before preflight. Each command
 label must match its displayed argv. All checks listed for a criterion are

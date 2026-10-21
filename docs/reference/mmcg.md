@@ -1791,6 +1791,19 @@ Changed-test evidence uses the current declaration line and never rematches a
 removed test to a surviving same-name declaration. Graph propagation retains its
 existing name/type-based precision limits.
 
+### Touch scope
+
+`touches[].scope` accepts `symbols` (the default) or `file`. Strict preflight
+requires nonempty `symbols` for symbol scope. File scope requires a nonblank
+`reason` and no symbols. A reason on symbol scope is invalid. Scope is never
+inferred from a file extension. Use file scope for deliberate file-level work
+such as documentation, configuration, notebooks, or adding tests to an existing
+file. New files belong in `creates`.
+
+File scope retains file admission, exact postflight path checks, verification,
+index requirements and removal checks. Unsupported scope values and conflicting
+scope declarations invalidate the frontmatter in every workflow mode.
+
 ### Spec snapshots and removals
 
 Spec snapshot names retain lexical qualification, such as B.run or B::run.

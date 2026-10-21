@@ -2618,6 +2618,39 @@ breaking_changes:
     }
 
     #[test]
+    fn explicit_file_scope_keeps_postflight_path_checks() {
+        let dir = init_repo("explicit_file_scope");
+        write(&dir, "README.md", "Before\n");
+        write(&dir, "src/lib.py", "def helper(): pass\n");
+        git(&dir, &["add", "-A"]);
+        git(&dir, &["commit", "-q", "-m", "baseline"]);
+        write(&dir, "README.md", "After\n");
+
+        let mut store = Store::open(dir.join("idx.db")).unwrap();
+        Indexer::new(&dir).index_all(&mut store, false).unwrap();
+        let parsed = spec::parse_str("spec.md", "---\nmode: lite\ntouches:\n  - file: README.md\n    scope: file\n    reason: Update setup instructions\n---\n## Goals\nUpdate setup instructions.\n");
+        assert!(parsed.frontmatter_error.is_none());
+        let report = run(&parsed, &store, &dir, "HEAD").unwrap();
+        assert_eq!(report.verdict, Verdict::Held, "{:?}", report.findings);
+
+        write(&dir, "undeclared.yaml", "enabled: true\n");
+        let report = run(&parsed, &store, &dir, "HEAD").unwrap();
+        assert!(report.findings.iter().any(|finding| matches!(
+            finding, Finding::UnexpectedFile { file } if file == "undeclared.yaml"
+        )));
+        assert_ne!(report.verdict, Verdict::Held);
+
+        fs::remove_file(dir.join("undeclared.yaml")).unwrap();
+        fs::remove_file(dir.join("README.md")).unwrap();
+        let report = run(&parsed, &store, &dir, "HEAD").unwrap();
+        assert!(report.findings.iter().any(|finding| matches!(
+            finding, Finding::DeclaredFileUnavailable { file: Some(file), .. } if file == "README.md"
+        )));
+        assert_ne!(report.verdict, Verdict::Held);
+        fs::remove_dir_all(&dir).unwrap();
+    }
+
+    #[test]
     fn audits_complete_but_uncommitted_work() {
         // Regression: post-flight runs before the commit step, so HEAD is still
         // the baseline. With a `<baseline>..HEAD` file scope the diff was empty
