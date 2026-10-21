@@ -2647,6 +2647,7 @@ breaking_changes:
             finding, Finding::DeclaredFileUnavailable { file: Some(file), .. } if file == "README.md"
         )));
         assert_ne!(report.verdict, Verdict::Held);
+        drop(store);
         fs::remove_dir_all(&dir).unwrap();
     }
 
