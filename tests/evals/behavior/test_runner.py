@@ -1,4 +1,4 @@
-from contextlib import redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout
 from copy import deepcopy
 from pathlib import Path
 from types import SimpleNamespace
@@ -729,7 +729,7 @@ action: passthrough
         self.assertEqual(prompt_only["tool_policy"]["builtins"], [])
         self.assertEqual(prompt_only["tool_policy"]["expected_stream"], [])
 
-    def test_harness_identity_includes_bounded_process_transport(self):
+    def test_harness_identity_includes_bounded_process_transport_and_paths(self):
         definitions = {
             "runner.py": {"sha256": "1" * 64, "git_mode": "100755"},
             "process.py": {
@@ -737,6 +737,7 @@ action: passthrough
                 "git_mode": "100644",
             },
             "evidence.py": {"sha256": "3" * 64, "git_mode": "100644"},
+            "paths.py": {"sha256": "5" * 64, "git_mode": "100644"},
         }
         seen = []
 
@@ -754,11 +755,14 @@ action: passthrough
                 "git_mode": "100644",
             }
             after = runner.evaluation_harness_definition()["sha256"]
+            definitions["paths.py"]["sha256"] = "6" * 64
+            after_paths = runner.evaluation_harness_definition()["sha256"]
 
         self.assertEqual(
-            first_sources, ["runner.py", "process.py", "evidence.py"]
+            first_sources, ["runner.py", "process.py", "evidence.py", "paths.py"]
         )
         self.assertNotEqual(before, after)
+        self.assertNotEqual(after, after_paths)
 
     def test_runtime_identity_hashing_is_nonblocking_and_bounded(self):
         with tempfile.TemporaryDirectory() as target:
@@ -3144,6 +3148,52 @@ class CriticGraderTests(unittest.TestCase):
 
 
 class PromptIsolationTests(unittest.TestCase):
+    def test_ablation_main_runs_registered_auditor_case_with_frozen_inputs(self):
+        case_id = "a-001-false-test-claim-broken"
+        registered = runner.load_case_records(
+            runner.SUITES["auditor"]["cases"], suite_name="auditor"
+        )
+        case = next(record for record in registered if record["id"] == case_id)
+        output = io.StringIO()
+        errors = io.StringIO()
+        snapshots = []
+
+        def fake_runtime(model, actual_case, **runtime):
+            self.assertEqual(model, "opus")
+            self.assertEqual(actual_case, case)
+            frozen_root = runtime["fixtures_dir"]
+            self.assertNotEqual(frozen_root, runner.FIXTURES_DIR)
+            _, _, baseline, after = runner.fixture_case_roots(
+                actual_case, fixtures_dir=frozen_root
+            )
+            self.assertTrue(baseline.is_dir())
+            self.assertTrue(after.is_dir())
+            snapshots.append(frozen_root)
+            return ablation.ConditionOutcome(True, (RESOLVED_MODEL,))
+
+        with (
+            patch.object(ablation.sys, "argv", ["ablation", "--case", case_id]),
+            patch.object(
+                ablation.shutil, "which",
+                side_effect=lambda name: {
+                    "claude": runner.sys.executable, "git": runner.sys.executable,
+                }.get(name),
+            ),
+            patch.object(runner, "claude_cli_version", return_value="test-cli"),
+            patch.object(runner, "fixture_runtime_definition", return_value={}),
+            patch.object(runner, "git_revision", return_value="test-revision"),
+            patch.object(ablation, "run_vanilla", side_effect=fake_runtime) as run,
+            redirect_stdout(output),
+            redirect_stderr(errors),
+        ):
+            status = ablation.main()
+
+        self.assertEqual(status, 0, errors.getvalue())
+        run.assert_called_once()
+        self.assertIn(f"[{case_id}] vanilla", output.getvalue())
+        self.assertTrue(snapshots)
+        self.assertTrue(all(not path.exists() for path in snapshots))
+
     def test_vanilla_comparison_preserves_uncommitted_fixture_state(self):
         for staged in ([], ["src/staged.py"]):
             case = {

@@ -19,6 +19,8 @@ main developer interface:
 - subagent model/tool/turn contracts and MCP grants.
 - public tool documentation, schemas and report ownership.
 - skill adapters and their evaluation cases.
+- behavior fixture source trees for embedded answer clues, with an error if
+  the fixture inventory is missing or has no source files. Fixture READMEs are excluded.
 - Action pins, required-check routing and publication workflow structure.
 - npm versions, platform packages and README badges.
 
@@ -46,7 +48,7 @@ Run workflow contracts and process ownership checks from the repository root:
 python3 -m unittest discover -s tests -t .
 ```
 
-`tests/scripts/` covers release and audit workflow contracts. `tests/evals/`
+`tests/validation/` covers release and audit workflow contracts. `tests/evals/`
 covers benchmark process supervision. Run `just eval-harness` for these checks,
 document snapshots and the complete deterministic eval harness suite.
 

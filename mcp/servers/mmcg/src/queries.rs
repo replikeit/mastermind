@@ -2165,6 +2165,11 @@ pub(crate) fn concept_verified(
     concept_verified_with_tests(store, query, top, false, expected_data_version, freshness)
 }
 
+#[cfg(test)]
+thread_local! {
+    pub(crate) static CONCEPT_TEST_CALLS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
 pub(crate) fn concept_verified_with_tests(
     store: &Store,
     query: &str,
@@ -2173,6 +2178,8 @@ pub(crate) fn concept_verified_with_tests(
     expected_data_version: u64,
     freshness: ConceptFreshness,
 ) -> Result<ConceptResponse, ConceptError> {
+    #[cfg(test)]
+    CONCEPT_TEST_CALLS.with(|calls| calls.set(calls.get() + 1));
     let query_terms =
         crate::store::distinct_concept_query_terms(&validate_concept_request(query, top)?)
             .map_err(|_| ConceptError::Internal)?;
@@ -4244,6 +4251,24 @@ pub fn validate_brief_request(since: &str, budget_tokens: u32) -> Result<(), Bri
     Ok(())
 }
 
+#[derive(Debug)]
+pub(crate) enum BriefFailure {
+    HistoryStale,
+    Query(BriefError),
+}
+
+impl From<BriefError> for BriefFailure {
+    fn from(error: BriefError) -> Self {
+        Self::Query(error)
+    }
+}
+
+impl From<ChangeImpactError> for BriefFailure {
+    fn from(error: ChangeImpactError) -> Self {
+        Self::Query(error.into())
+    }
+}
+
 /// Build one deterministic, revision-bound context packet. The caller supplies
 /// the exact MCP result-envelope sizer so admission accounts for protocol
 /// escaping and duplication without coupling the query layer to MCP framing.
@@ -4255,6 +4280,28 @@ pub fn brief(
     budget_tokens: u32,
     envelope_sizer: &BriefEnvelopeSizer<'_>,
 ) -> Result<BriefPacket, BriefError> {
+    brief_detailed(
+        store,
+        requested_root,
+        since,
+        role,
+        budget_tokens,
+        envelope_sizer,
+    )
+    .map_err(|error| match error {
+        BriefFailure::HistoryStale => BriefError::IndexStale,
+        BriefFailure::Query(error) => error,
+    })
+}
+
+pub(crate) fn brief_detailed(
+    store: &Store,
+    requested_root: &Path,
+    since: &str,
+    role: BriefRole,
+    budget_tokens: u32,
+    envelope_sizer: &BriefEnvelopeSizer<'_>,
+) -> Result<BriefPacket, BriefFailure> {
     validate_brief_request(since, budget_tokens)?;
     let requested_root = requested_root
         .canonicalize()
@@ -4268,9 +4315,9 @@ pub fn brief(
         .clone()
         .ok_or(BriefError::SnapshotChanged)?;
     match checked.history_freshness {
-        crate::indexer::ProjectHistoryFreshness::Stale => return Err(BriefError::IndexStale),
+        crate::indexer::ProjectHistoryFreshness::Stale => return Err(BriefFailure::HistoryStale),
         crate::indexer::ProjectHistoryFreshness::SnapshotChanged => {
-            return Err(BriefError::SnapshotChanged)
+            return Err(BriefError::SnapshotChanged.into())
         }
         crate::indexer::ProjectHistoryFreshness::Fresh
         | crate::indexer::ProjectHistoryFreshness::Incomplete => {}
@@ -4286,8 +4333,8 @@ pub fn brief(
         let response = history(store, &query, None, BRIEF_HISTORY_LIMIT as u32)
             .map_err(|_| BriefError::IndexStale)?;
         match response.freshness {
-            "stale" => return Err(BriefError::IndexStale),
-            "snapshot_changed" => return Err(BriefError::SnapshotChanged),
+            "stale" => return Err(BriefFailure::HistoryStale),
+            "snapshot_changed" => return Err(BriefError::SnapshotChanged.into()),
             _ => {}
         }
         history_source_limit = brief_history_source_limit(
@@ -4549,7 +4596,7 @@ pub fn brief(
         },
         precision_notes,
     };
-    apply_brief_budget(packet, envelope_sizer)
+    apply_brief_budget(packet, envelope_sizer).map_err(Into::into)
 }
 
 pub fn dependency_cycles(

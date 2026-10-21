@@ -85,12 +85,28 @@ pub(super) fn pending_model(
     if binding["response_digest"] != super::hash(&Value::String(response.text.trim().into())) {
         return Ok(None);
     }
-    transcript_model(
+    let result = transcript_model(
         &serde_json::json!({"session_id":binding["session_id"],"cwd":binding["cwd"],
             "transcript_path":binding["transcript_path"],"prompt_id":binding["prompt_id"],
             "last_assistant_message":response.text}),
         Path::new(&input.project_root),
-    )
+    );
+    match result {
+        Err(error)
+            if error
+                .downcast_ref::<std::io::Error>()
+                .is_some_and(|error| error.kind() == std::io::ErrorKind::NotFound)
+                || error
+                    .downcast_ref::<crate::bounded_fs::BoundedReadError>()
+                    .is_some_and(|error| {
+                        matches!(error, crate::bounded_fs::BoundedReadError::Io(error)
+                    if error.kind() == std::io::ErrorKind::NotFound)
+                    }) =>
+        {
+            Ok(None)
+        }
+        result => result,
+    }
 }
 
 /// Claude versions that omit `model` in hooks still record the actual model in

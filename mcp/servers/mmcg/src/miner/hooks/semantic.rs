@@ -719,10 +719,7 @@ pub(super) fn run_processor_with_env(
     let child = command
         .spawn()
         .map_err(|_| "semantic processor could not be started")?;
-    let mut owned = OwnedProcess {
-        child,
-        terminated: false,
-    };
+    let mut owned = crate::miner::process::OwnedProcess::new(child);
     let stdin = owned
         .child
         .stdin
@@ -847,37 +844,6 @@ fn read_pipe<R: std::io::Read + Send + 'static>(
         let _ = sender.send(result);
     });
     receiver
-}
-
-#[cfg(unix)]
-struct OwnedProcess {
-    child: std::process::Child,
-    terminated: bool,
-}
-
-#[cfg(unix)]
-impl OwnedProcess {
-    fn terminate(&mut self) {
-        if self.terminated {
-            return;
-        }
-        self.terminated = true;
-        let process_group = self.child.id() as libc::pid_t;
-        // SAFETY: Command::process_group(0) created a dedicated group for this
-        // invocation. A missing group means its last process already exited.
-        unsafe {
-            let _ = libc::kill(-process_group, libc::SIGKILL);
-        }
-        let _ = self.child.kill();
-        let _ = self.child.wait();
-    }
-}
-
-#[cfg(unix)]
-impl Drop for OwnedProcess {
-    fn drop(&mut self) {
-        self.terminate();
-    }
 }
 
 #[cfg(test)]

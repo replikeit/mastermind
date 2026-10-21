@@ -206,6 +206,9 @@ pub fn drain_local_for_task(root: &Path) {
         let mut db = Journal::open(true)?;
         for client in ["claude", "codex"] {
             if let Some(grant) = db.grant(client, root)? {
+                if task_mining::drain(&mut db, &grant).is_err() {
+                    eprintln!("Mastermind: local task finalizer remains pending");
+                }
                 local::drain(&mut db, &grant)?;
             }
         }
@@ -461,6 +464,9 @@ pub fn receive(client_id: &str, root: &Path) -> Result<(), Error> {
         if kind != "Stop" {
             task_mining::on_source_update(&mut db, &grant, episode);
         }
+    }
+    if task_mining::drain(&mut db, &grant).is_err() {
+        eprintln!("Mastermind: local task finalizer remains pending");
     }
     if local::drain(&mut db, &grant).is_err() {
         eprintln!("Mastermind: local candidate retry remains pending");
@@ -747,7 +753,9 @@ pub fn show(episode: &str) -> Result<(), Error> {
 }
 
 pub fn mine_local(root: &Path, limit: usize, after: &str) -> Result<(), Error> {
-    print(&local::mine(root, limit, after)?)
+    let root = root.canonicalize()?;
+    drain_local_for_task(&root);
+    print(&local::mine(&root, limit, after)?)
 }
 
 pub fn archive(root: &Path, limit: usize) -> Result<(), Error> {

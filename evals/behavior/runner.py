@@ -44,6 +44,7 @@ import tempfile
 import uuid
 
 from .evidence import answer_lines, check_citations
+from .paths import FIXTURES_RELATIVE_PATH
 from evals.shared.process import run_bounded
 
 
@@ -55,7 +56,7 @@ except ImportError:
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 EVALS_DIR = REPO_ROOT / "evals"
-FIXTURES_DIR = EVALS_DIR / "behavior/fixtures"
+FIXTURES_DIR = REPO_ROOT / FIXTURES_RELATIVE_PATH
 LEGACY_CONSOLE_BASELINE = EVALS_DIR / "baselines" / "critic-opus-pre-lean.json"
 REPORT_KIND = "mastermind-eval-report"
 REPORT_SCHEMA_VERSION = 1
@@ -2075,6 +2076,7 @@ def evaluation_harness_definition() -> dict[str, str]:
             Path(__file__).resolve(),
             EVALS_DIR / "shared/process.py",
             EVALS_DIR / "behavior/evidence.py",
+            EVALS_DIR / "behavior/paths.py",
         )
     ]
     environment = {

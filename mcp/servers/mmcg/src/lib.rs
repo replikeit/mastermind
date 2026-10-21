@@ -44,6 +44,7 @@ pub mod onboarding;
 pub mod policy;
 mod project_claims;
 pub mod queries;
+pub mod query_service;
 pub mod repo_map;
 pub mod review_invocation;
 pub mod review_package;

@@ -941,8 +941,12 @@ fn open_locked_regular_file(
     if wait {
         file.lock().map_err(BoundedReadError::Io)?;
     } else {
-        file.try_lock()
-            .map_err(|error| BoundedReadError::Io(std::io::Error::other(error.to_string())))?;
+        file.try_lock().map_err(|error| {
+            BoundedReadError::Io(match error {
+                std::fs::TryLockError::WouldBlock => std::io::ErrorKind::WouldBlock.into(),
+                std::fs::TryLockError::Error(error) => error,
+            })
+        })?;
     }
     let verification = (|| {
         root.verify()?;
@@ -2204,6 +2208,10 @@ mod tests {
         assert!(!path.exists());
         let owner = try_locked_regular_file_with_capability(&root, &path).unwrap();
         let before = std::fs::metadata(&path).unwrap();
+        assert!(matches!(
+            try_locked_regular_file_with_capability(&root, &path),
+            Err(BoundedReadError::Io(error)) if error.kind() == std::io::ErrorKind::WouldBlock
+        ));
         assert!(
             try_locked_existing_regular_file_with_capability(&root, &path)
                 .unwrap()

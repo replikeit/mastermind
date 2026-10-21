@@ -86,6 +86,7 @@ See the [context contract](reference/persona-context.md).
 | Native capture | Original events, identities, gaps and recorded profile/refiner influence | A user channel does not prove human authorship |
 | Refiner | Original-bound intake, typed route and revision | An advisory is not execution or new permission |
 | Task binding | Current session/intake/spec relation with compare-and-swap | Stale or conflicting revisions cannot replace the current relation |
+| Task mining finalization | Journal attempt, owner and pending reason through source binding, sealing and optional Git refresh | A private process lock serializes workers. Missing source or failed refresh remains pending until a bounded retry or a later ordinary task boundary |
 | Mining | Local extraction and current-agent proposals, or optional separate worker attempts | Drafts and checkpoints do not activate habits |
 | Candidate review | Decision on exact evidence | Dependent observations cannot increase independent support |
 | Context delivery | Selected sources, audience grant and offered byte digests | Model use and benefit remain unknown |

@@ -205,6 +205,11 @@ fn mmcg_entry(mmcg_binary: &Path) -> Result<Value, &'static str> {
     mmcg_entry_for_platform(mmcg_binary, NpmLauncherPlatform::current())
 }
 
+fn current_mmcg_entry() -> Result<Value, &'static str> {
+    let binary = std::env::current_exe().map_err(|_| "current_executable_unavailable")?;
+    mmcg_entry(&binary)
+}
+
 /// Use the same installed launcher for hooks and MCP. npm package replacement
 /// then reaches existing hooks instead of leaving them pinned to an old binary.
 pub(crate) fn hook_entry(mmcg_binary: &Path) -> Result<Vec<String>, &'static str> {
@@ -549,7 +554,10 @@ pub fn remove_claude(target: &Target, write: bool) -> Outcome {
         remove: true,
         force: write,
     };
-    run_json(&request, target, &json!({}))
+    match current_mmcg_entry() {
+        Ok(entry) => run_json(&request, target, &entry),
+        Err(class) => finish_error(&request, &target.label, "remove", &json!({}), class),
+    }
 }
 
 /// Register mmcg at Claude Code's **user scope** via the official `claude mcp
@@ -576,18 +584,19 @@ pub fn add_claude_user(mmcg_binary: &Path, opts: Opts) -> Outcome {
 /// Remove mmcg from Claude Code's user scope via `claude mcp remove`. Safe by
 /// default: prints the command, exits unless `write`.
 pub fn remove_claude_user(write: bool) -> Outcome {
-    run_native(
-        &Request {
-            client: Client::Claude,
-            scope: Scope::User,
-            root: std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".")),
-            config: None,
-            write,
-            remove: true,
-            force: write,
-        },
-        &json!({}),
-    )
+    let request = Request {
+        client: Client::Claude,
+        scope: Scope::User,
+        root: std::env::current_dir().unwrap_or_else(|_| PathBuf::from(".")),
+        config: None,
+        write,
+        remove: true,
+        force: write,
+    };
+    match current_mmcg_entry() {
+        Ok(entry) => run_native(&request, &entry),
+        Err(class) => finish_error(&request, "native", "remove", &json!({}), class),
+    }
 }
 
 fn validate_request(request: &Request) -> Result<(), &'static str> {

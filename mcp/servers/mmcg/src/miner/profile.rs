@@ -20,6 +20,7 @@
 //!   manual and interpreted blocks. `--force` rebuilds the store from this repo
 //!   alone. Re-mining is user-invoked — there is no silent online update.
 
+use super::process::OwnedProcess;
 use super::range;
 use super::stats::{bump, cget, dominant, gate, support, Confidence, MIN_COMMITS};
 use super::store::{self, Counts};
@@ -2288,14 +2289,17 @@ fn run_claude_capture_with_timeout(
         // orphaned helper behind when capture reaches its bound.
         command.process_group(0);
     }
-    let mut child = command.spawn().map_err(|e| {
+    let child = command.spawn().map_err(|e| {
         format!("spawn claude: {e} — is the Claude Code CLI installed and on PATH?")
     })?;
-    let stdout = child
+    let mut owned = OwnedProcess::new(child);
+    let stdout = owned
+        .child
         .stdout
         .take()
         .ok_or_else(|| "capture claude stdout failed".to_string())?;
-    let stderr = child
+    let stderr = owned
+        .child
         .stderr
         .take()
         .ok_or_else(|| "capture claude stderr failed".to_string())?;
@@ -2303,31 +2307,28 @@ fn run_claude_capture_with_timeout(
     let stderr = read_bounded_pipe(stderr, DEEP_OUTPUT_LIMIT);
     let started = Instant::now();
     let status = loop {
-        match child.try_wait() {
+        match owned.child.try_wait() {
             Ok(Some(status)) => break status,
             Ok(None) if started.elapsed() < timeout => {
                 std::thread::sleep(PROCESS_POLL_INTERVAL);
             }
             Ok(None) => {
-                terminate_claude_process_tree(&mut child);
                 return Err(format!(
                     "claude timed out after {} seconds",
                     timeout.as_secs()
                 ));
             }
             Err(error) => {
-                terminate_claude_process_tree(&mut child);
                 return Err(format!("wait for claude: {error}"));
             }
         }
     };
+    // On Unix, descendants belong to capture even when they redirected both pipes.
+    owned.terminate();
     let mut stdout_result = stdout.recv_timeout(DEEP_PIPE_DRAIN_GRACE).ok();
     let mut stderr_result = stderr.recv_timeout(DEEP_PIPE_DRAIN_GRACE).ok();
     if stdout_result.is_none() || stderr_result.is_none() {
-        // A normally exited CLI should close both pipes. If it does not, an
-        // inherited descriptor belongs to a descendant, which must not turn a
-        // valid synthesis into a long false timeout or survive this request.
-        terminate_claude_process_tree(&mut child);
+        // Allow pipe readers to observe the terminated group's closed descriptors.
         if stdout_result.is_none() {
             stdout_result = stdout.recv_timeout(DEEP_PIPE_CLEANUP_GRACE).ok();
         }
@@ -2359,20 +2360,6 @@ fn run_claude_capture_with_timeout(
         ));
     }
     String::from_utf8(stdout).map_err(|_| "claude output was not valid UTF-8".into())
-}
-
-fn terminate_claude_process_tree(child: &mut std::process::Child) {
-    #[cfg(unix)]
-    {
-        let process_group = child.id() as libc::pid_t;
-        // SAFETY: the command starts a dedicated process group before exec.
-        // A failed kill only means that it was already gone.
-        unsafe {
-            let _ = libc::kill(-process_group, libc::SIGKILL);
-        }
-    }
-    let _ = child.kill();
-    let _ = child.wait();
 }
 
 fn read_bounded_pipe<R: Read + Send + 'static>(
@@ -4782,6 +4769,68 @@ diff --git a/app/bar.ts b/app/bar.ts
             .unwrap();
         assert_eq!(output.0.len(), 33);
         assert!(output.1);
+    }
+
+    #[test]
+    #[cfg(unix)]
+    fn completed_deep_capture_cleans_descendant_with_closed_pipes() {
+        use std::os::unix::fs::PermissionsExt;
+
+        let root = tempfile::tempdir().unwrap();
+        let script = root.path().join("claude");
+        std::fs::write(
+            &script,
+            "#!/bin/sh\n\
+             (touch ready\n\
+              while [ ! -e release ]; do [ -e ready ] || exit 1; sleep 0.01; done\n\
+              touch survived) >/dev/null 2>&1 &\n\
+             echo $! > descendant.pid\n\
+             while [ ! -e ready ]; do sleep 0.01; done\n\
+             printf 'bounded\\n'\n",
+        )
+        .unwrap();
+        std::fs::set_permissions(&script, std::fs::Permissions::from_mode(0o700)).unwrap();
+
+        let output =
+            run_claude_capture_with_timeout(&script, root.path(), "prompt", Duration::from_secs(5))
+                .unwrap();
+        let pid: i32 = std::fs::read_to_string(root.path().join("descendant.pid"))
+            .unwrap()
+            .trim()
+            .parse()
+            .unwrap();
+        // Only a descendant that outlives capture can observe this release.
+        std::fs::write(root.path().join("release"), "").unwrap();
+        let deadline = Instant::now() + Duration::from_secs(5);
+        let stopped = loop {
+            let status = Command::new("ps")
+                .args(["-o", "stat=", "-p", &pid.to_string()])
+                .output()
+                .unwrap();
+            if !status.status.success()
+                || String::from_utf8_lossy(&status.stdout)
+                    .trim()
+                    .starts_with('Z')
+            {
+                break true;
+            }
+            if Instant::now() >= deadline {
+                break false;
+            }
+            std::thread::sleep(PROCESS_POLL_INTERVAL);
+        };
+        if !stopped {
+            // SAFETY: this is the fixture's live child, retained for failed-test cleanup.
+            unsafe {
+                libc::kill(pid, libc::SIGKILL);
+            }
+        }
+        assert_eq!(output, "bounded\n");
+        assert!(stopped, "capture left its descendant running");
+        assert!(
+            !root.path().join("survived").exists(),
+            "descendant ran after capture returned"
+        );
     }
 
     #[test]

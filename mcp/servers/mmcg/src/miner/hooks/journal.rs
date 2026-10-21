@@ -18,6 +18,7 @@ mod intake;
 mod local;
 pub(in crate::miner) mod task;
 mod task_mining;
+pub(super) use task_mining::FinalizerState;
 
 const MAX_BYTES: u64 = 64 * 1024 * 1024;
 const MAX_EPISODE_BYTES: usize = 512 * 1024;
@@ -67,6 +68,10 @@ const SCHEMA: &str = "PRAGMA synchronous=FULL; PRAGMA journal_mode=DELETE;
                     next_attempt INTEGER NOT NULL DEFAULT 0);
                 CREATE TABLE IF NOT EXISTS hook_task_mining (
                     id TEXT PRIMARY KEY, episode TEXT NOT NULL UNIQUE, data TEXT NOT NULL);
+                CREATE TABLE IF NOT EXISTS hook_task_finalization (
+                    episode TEXT PRIMARY KEY, owner TEXT, lease_until INTEGER NOT NULL DEFAULT 0,
+                    attempts INTEGER NOT NULL DEFAULT 0, completed INTEGER NOT NULL DEFAULT 0,
+                    reason TEXT);
                 CREATE TABLE IF NOT EXISTS hook_archive_file (digest TEXT PRIMARY KEY, episode TEXT NOT NULL);
                 CREATE INDEX IF NOT EXISTS hook_archive_episode ON hook_archive_file(episode);
                 CREATE TABLE IF NOT EXISTS hook_archive_delete (digest TEXT PRIMARY KEY);";
@@ -286,9 +291,9 @@ impl Journal {
         }
         conn.busy_timeout(Duration::from_millis(500))?;
         if write {
-            conn.execute_batch(SCHEMA)?;
             let page_size: i64 = conn.query_row("PRAGMA page_size", [], |r| r.get(0))?;
             conn.pragma_update(None, "max_page_count", MAX_BYTES as i64 / page_size)?;
+            conn.execute_batch(SCHEMA)?;
             archive::drain_deletes(&conn)?;
         }
         Ok(Self { conn })
@@ -1390,6 +1395,7 @@ impl Journal {
         tx.execute("DELETE FROM hook_analysis_receipt WHERE episode=?1", [id])?;
         tx.execute("DELETE FROM hook_intake WHERE episode=?1", [id])?;
         tx.execute("DELETE FROM hook_task_mining WHERE episode IN (SELECT id FROM hook_episode WHERE session=?1) OR episode=?2", params![forgotten.session, id])?;
+        tx.execute("DELETE FROM hook_task_finalization WHERE episode=?1 OR episode NOT IN (SELECT episode FROM hook_task_mining)", [id])?;
         tx.execute("DELETE FROM hook_local_queue WHERE episode=?1", [id])?;
         tx.commit()?;
         archive::drain_deletes(&self.conn)?;
@@ -1891,6 +1897,58 @@ mod tests {
         let conn = Connection::open_in_memory().unwrap();
         conn.execute_batch(SCHEMA).unwrap();
         Journal { conn }
+    }
+
+    #[test]
+    fn schema_growth_cannot_exceed_the_journal_byte_limit() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("events.db");
+        let db = Journal::open_target(&path, true).unwrap();
+        db.conn
+            .execute_batch(
+                "DROP TABLE hook_task_finalization; VACUUM; CREATE TABLE pressure(payload BLOB);",
+            )
+            .unwrap();
+        db.conn
+            .execute(
+                "INSERT INTO pressure VALUES(zeroblob(?1))",
+                [(MAX_BYTES - 256 * 1024) as i64],
+            )
+            .unwrap();
+        let mut full = false;
+        for _ in 0..128 {
+            match db
+                .conn
+                .execute("INSERT INTO pressure VALUES(zeroblob(3500))", [])
+            {
+                Ok(_) => {}
+                Err(rusqlite::Error::SqliteFailure(error, _))
+                    if error.code == rusqlite::ErrorCode::DiskFull =>
+                {
+                    full = true;
+                    break;
+                }
+                Err(error) => panic!("unexpected pressure fixture failure: {error}"),
+            }
+        }
+        assert!(full);
+        let records: i64 = db
+            .conn
+            .query_row("SELECT count(*) FROM pressure", [], |row| row.get(0))
+            .unwrap();
+        drop(db);
+        assert_eq!(std::fs::metadata(&path).unwrap().len(), MAX_BYTES);
+        assert!(Journal::open_target(&path, true).is_err());
+        assert_eq!(std::fs::metadata(&path).unwrap().len(), MAX_BYTES);
+        let reopened = Journal::open_target(&path, false).unwrap();
+        assert_eq!(
+            reopened
+                .conn
+                .query_row("SELECT count(*) FROM pressure", [], |row| row
+                    .get::<_, i64>(0))
+                .unwrap(),
+            records
+        );
     }
 
     fn deliver(db: &mut Journal, root: &Path, event: Value) -> Value {

@@ -1650,6 +1650,14 @@ tracked deletion is fresh only when the path is absent from both the worktree
 and the index and remains absent through the check. Non-regular and non-UTF-8
 tracked paths make the inventory incomplete. These and other failed or
 unavailable refreshes return `index_stale`.
+Concept queries, review preparation/completion and brief queries share one
+freshness owner across CLI and MCP. Each managed operation makes at most one
+refresh attempt under its original deadline. Review completion reconstructs the
+packet after admission and rejects changed source bindings. The stale payload
+retains its existing code and coverage fields. For these operations,
+`stale_reason` identifies `structural`, `concept` or `history` drift. History-only
+failures also include `history_freshness: stale`, even when `stale_files` is zero.
+
 
 Indexed source keys use one lossless repository-relative encoding. Native path
 components are joined with `/`. A non-UTF-8 component or a literal backslash in

@@ -1,5 +1,11 @@
 use super::*;
 
+pub(in crate::miner::hooks) enum FinalizerState {
+    Waiting(&'static str),
+    Pending(&'static str),
+    Completed(Option<&'static str>),
+}
+
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Offer {
@@ -320,9 +326,130 @@ impl Journal {
             json!({"status":offer.status,"ticket_id":offer.id,"source_event_id":offer.event_id,
             "client":offer.client,"capture_generation":offer.generation,"publication":"none",
             "continuation_requested":offer.continuation.is_some(),"reason":offer.reason,
-            "candidate_count":offer.candidate_count,
+            "candidate_count":offer.candidate_count,"finalization":self.task_finalization(episode)?,
             "result":if offer.status == "completed" { offer.candidate_count.map(|count| if count == 0 {"no_signal"} else {"candidates"}) } else {None}}),
         )
+    }
+
+    pub fn queue_task_finalizer(&self, episode: &str) -> Result<(), Error> {
+        self.conn.execute(
+            "INSERT INTO hook_task_finalization(episode,reason)
+            SELECT episode,'awaiting_finalizer' FROM hook_task_mining
+            WHERE episode=?1 AND json_extract(data,'$.status')='submitted'
+            ON CONFLICT(episode) DO NOTHING",
+            [episode],
+        )?;
+        Ok(())
+    }
+
+    pub fn claim_task_finalizer(
+        &self,
+        episode: &str,
+        owner: &str,
+        now: i64,
+    ) -> Result<bool, Error> {
+        Ok(self.conn.execute(
+            "INSERT INTO hook_task_finalization(episode,owner,lease_until,attempts)
+            SELECT t.episode,?2,?3+10,1 FROM hook_task_mining t
+            JOIN hook_episode e ON e.id=t.episode
+            JOIN hook_grant g ON g.client=json_extract(e.data,'$.client')
+                AND g.project_root=json_extract(e.data,'$.project_root')
+                AND g.generation=json_extract(e.data,'$.generation')
+            WHERE t.episode=?1 AND (json_extract(t.data,'$.status')='submitted'
+                OR (json_extract(t.data,'$.status')='completed' AND EXISTS(
+                    SELECT 1 FROM hook_task_finalization f WHERE f.episode=t.episode AND f.completed=0)))
+                AND json_extract(e.data,'$.closed') AND g.enabled=1 AND g.pending=0 AND g.gap=''
+            ON CONFLICT(episode) DO UPDATE SET owner=excluded.owner,
+                lease_until=excluded.lease_until,attempts=min(hook_task_finalization.attempts+1,2147483647),reason=NULL
+            WHERE hook_task_finalization.completed=0 AND hook_task_finalization.lease_until<=?3",
+            params![episode,owner,now],
+        )? == 1)
+    }
+
+    pub fn owns_task_finalizer(&self, episode: &str, owner: &str, now: i64) -> Result<bool, Error> {
+        Ok(self.conn.query_row(
+            "SELECT EXISTS(SELECT 1 FROM hook_task_finalization WHERE episode=?1
+                AND owner=?2 AND lease_until>?3 AND completed=0)",
+            params![episode, owner, now],
+            |row| row.get(0),
+        )?)
+    }
+
+    pub fn renew_task_finalizer(&self, episode: &str, owner: &str, now: i64) -> Result<(), Error> {
+        if self.conn.execute(
+            "UPDATE hook_task_finalization SET lease_until=?3+10
+            WHERE episode=?1 AND owner=?2 AND completed=0",
+            params![episode, owner, now],
+        )? != 1
+        {
+            return Err("task finalizer ownership changed".into());
+        }
+        Ok(())
+    }
+
+    pub fn record_task_finalizer(
+        &self,
+        episode: &str,
+        owner: &str,
+        state: FinalizerState,
+    ) -> Result<(), Error> {
+        let (reason, completed, release) = match state {
+            FinalizerState::Waiting(reason) => (Some(reason), false, false),
+            FinalizerState::Pending(reason) => (Some(reason), false, true),
+            FinalizerState::Completed(reason) => (reason, true, true),
+        };
+        if self.conn.execute(
+            "UPDATE hook_task_finalization SET reason=?3,completed=?4,
+                owner=CASE WHEN ?5 THEN NULL ELSE owner END,
+                lease_until=CASE WHEN ?5 THEN 0 ELSE lease_until END
+            WHERE episode=?1 AND owner=?2 AND completed=0",
+            params![episode, owner, reason, completed, release],
+        )? != 1
+        {
+            return Err("task finalizer ownership changed".into());
+        }
+        Ok(())
+    }
+
+    pub fn pending_task_finalizers(&self, grant: &Grant) -> Result<Vec<String>, Error> {
+        if !grant.enabled || grant.pending != 0 || !grant.gap.is_empty() {
+            return Ok(vec![]);
+        }
+        let mut statement = self.conn.prepare(
+            "SELECT t.episode FROM hook_task_mining t JOIN hook_episode e ON e.id=t.episode
+            LEFT JOIN hook_task_finalization f ON f.episode=t.episode
+            WHERE (json_extract(t.data,'$.status')='submitted'
+                OR (json_extract(t.data,'$.status')='completed' AND f.completed=0))
+                AND json_extract(e.data,'$.closed')
+                AND json_extract(e.data,'$.client')=?1
+                AND json_extract(e.data,'$.project_root')=?2
+                AND json_extract(e.data,'$.generation')=?3
+                AND coalesce(f.completed,0)=0 AND coalesce(f.lease_until,0)<=unixepoch()
+            ORDER BY coalesce(f.attempts,0),t.episode LIMIT 4",
+        )?;
+        let rows = statement.query_map(
+            params![grant.client, grant.project_root, grant.generation],
+            |row| row.get(0),
+        )?;
+        Ok(rows.collect::<Result<Vec<_>, _>>()?)
+    }
+
+    fn task_finalization(&self, episode: &str) -> Result<Option<Value>, Error> {
+        let exists:bool=self.conn.query_row(
+            "SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type='table' AND name='hook_task_finalization')",
+            [], |row|row.get(0))?;
+        if !exists {
+            return Ok(None);
+        }
+        Ok(self.conn.query_row(
+            "SELECT attempts,reason,completed,owner IS NOT NULL AND lease_until>unixepoch()
+            FROM hook_task_finalization WHERE episode=?1", [episode], |row| {
+                let completed:bool=row.get(2)?;
+                let running:bool=row.get(3)?;
+                Ok(json!({"schema_version":1,"attempts":row.get::<_,i64>(0)?,
+                    "reason":row.get::<_,Option<String>>(1)?,
+                    "status":if completed {"completed"} else if running {"running"} else {"pending"}}))
+            }).optional()?)
     }
 
     pub fn offer_task_mining(
@@ -472,5 +599,60 @@ impl Journal {
         Ok(
             json!({"status":"completed","drafts":stored.len(),"publication":"none","separate_model_invocations":0}),
         )
+    }
+}
+
+#[cfg(test)]
+mod finalizer_tests {
+    use super::*;
+
+    #[test]
+    fn finalizer_claims_fence_stale_owners_and_revoked_capture() {
+        let directory = tempfile::tempdir().unwrap();
+        let db = Journal::open_target(&directory.path().join("journal.db"), true).unwrap();
+        let root = directory.path().to_string_lossy();
+        db.conn.execute("INSERT INTO hook_grant(client,project_root,generation,enabled) VALUES('claude',?1,1,1)", [&root]).unwrap();
+        db.conn
+            .execute(
+                "INSERT INTO hook_episode(id,session,data) VALUES('episode','session',?1)",
+                [
+                    json!({"client":"claude","project_root":root,"generation":1,"closed":true})
+                        .to_string(),
+                ],
+            )
+            .unwrap();
+        db.conn.execute("INSERT INTO hook_task_mining(id,episode,data) VALUES('ticket','episode','{\"status\":\"submitted\"}')", []).unwrap();
+        db.queue_task_finalizer("episode").unwrap();
+        assert!(db.claim_task_finalizer("episode", "first", 100).unwrap());
+        assert!(!db
+            .claim_task_finalizer("episode", "duplicate", 100)
+            .unwrap());
+        assert!(db.claim_task_finalizer("episode", "recovery", 111).unwrap());
+        assert!(db
+            .record_task_finalizer("episode", "first", FinalizerState::Completed(None))
+            .is_err());
+        db.record_task_finalizer(
+            "episode",
+            "recovery",
+            FinalizerState::Pending("transcript_pending"),
+        )
+        .unwrap();
+        db.conn
+            .execute("UPDATE hook_grant SET enabled=0", [])
+            .unwrap();
+        assert!(!db.claim_task_finalizer("episode", "revoked", 112).unwrap());
+        db.conn
+            .execute("UPDATE hook_grant SET enabled=1,generation=2", [])
+            .unwrap();
+        assert!(!db
+            .claim_task_finalizer("episode", "new_generation", 112)
+            .unwrap());
+        db.conn
+            .execute("UPDATE hook_grant SET generation=1", [])
+            .unwrap();
+        assert!(db.claim_task_finalizer("episode", "last", 112).unwrap());
+        db.record_task_finalizer("episode", "last", FinalizerState::Completed(None))
+            .unwrap();
+        assert!(!db.claim_task_finalizer("episode", "replayed", 200).unwrap());
     }
 }

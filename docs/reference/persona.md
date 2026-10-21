@@ -53,6 +53,11 @@ mmcg miner profile . --deep
 | `--deep` | Explicit `claude -p`, bounded I/O, 180 seconds. Output remains a local candidate, excluded from the active profile |
 | `--force` | Replaces the whole profile including preserved prose |
 
+On Unix, deep capture terminates its private process group on every exit path,
+including successful capture with redirected descendant pipes. Windows terminates
+the direct child only. Descendants may survive, so the timeout does not bound
+their lifetime.
+
 The [mining contract](persona-mining-contract.md) defines commit support, Wilson
 tiers, duplicate reconciliation and replay checks.
 
@@ -182,9 +187,10 @@ client's normal allowance.
 | Empty report | Completed analysis receipt with client/model binding and result `no_signal`, without a draft |
 | Unavailable tool or incomplete capture | Finishes normally, retaining a skip reason when a ticket was offered. Missing events cannot be reconstructed |
 | Late paired result after `Stop` | Retries local sealing when capture becomes complete. Later source changes cannot automatically rebind a completed draft |
-| Delayed Claude model | Local finalizer can wait up to 4 seconds for transcript binding, outside the native hook deadline |
-| Finalizer | Local admission, sealing and authored Git refresh. No model call |
-| Inspection | `hooks show` exposes `task_mining`, its result/skip reason, analyses and draft IDs. `hooks status` counts reports for retained active episodes in this capture generation, including empty results, skipped analysis and old unreported closed or inactive tickets. Read full content with `hooks draft` |
+| Delayed Claude model | Local finalizer waits up to 4 seconds for transcript binding outside the native hook deadline. Missing transcript files remain pending. Mismatched or malformed records never supply a model |
+| Finalizer | Submitted work is durably recorded before synchronous sealing. A journal owner token and one private filesystem lock serialize detached binding and optional authored Git refresh. Completion is recorded after refresh succeeds or profile access is absent. No model call |
+| Recovery | Pending binding, interrupted workers and failed refresh are retried by ordinary native events, native executor context, reviewed completion or `hooks mine-local`. Each pass selects at most four pending episodes. A failed refresh waits for another boundary, without starting an idle worker or a retry chain |
+| Inspection | `hooks show` exposes `task_mining`, its result/skip reason, finalization status/attempts/reason, analyses and draft IDs. `hooks status` counts reports for retained active episodes in this capture generation, including empty results, skipped analysis and old unreported closed or inactive tickets. Read full content with `hooks draft` |
 | Mode change | Explicit `init --mining task` stops the managed miner. Repeated init preserves saved choices |
 
 An offered instruction does not prove agent adherence, interpretation quality

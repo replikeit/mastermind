@@ -114,6 +114,7 @@ enum HandlerError {
         extractor_contract_current: bool,
         concept_contract_current: bool,
         refresh_attempted: bool,
+        stale_reason: Option<&'static str>,
     },
     RefreshLimit {
         dimension: &'static str,
@@ -1297,8 +1298,10 @@ fn handle_tools_call_inner(
     // both indexing and the retried query.
     let stale_index = if store.interrupt_source().is_none()
         && tool_requires_fresh_index(tool_name)
-        && tool_name != "mmcg_concept"
-    {
+        && !matches!(
+            tool_name,
+            "mmcg_concept" | "mmcg_concept_prepare" | "mmcg_concept_finish" | "mmcg_brief"
+        ) {
         match handled.as_ref() {
             Some(Err(HandlerError::IndexStale {
                 stale_files,
@@ -1306,6 +1309,7 @@ fn handle_tools_call_inner(
                 freshness_error,
                 extractor_contract_current,
                 concept_contract_current,
+                refresh_attempted: false,
                 ..
             })) => Some((
                 *stale_files,
@@ -1370,6 +1374,7 @@ fn handle_tools_call_inner(
                 extractor_contract_current,
                 concept_contract_current,
                 refresh_attempted,
+                stale_reason,
             } => tool_result(
                 version,
                 index_stale_payload(
@@ -1379,6 +1384,7 @@ fn handle_tools_call_inner(
                     extractor_contract_current,
                     concept_contract_current,
                     refresh_attempted || refresh_completed,
+                    stale_reason,
                 ),
                 true,
             ),
@@ -1423,13 +1429,14 @@ fn index_stale_payload(
     extractor_contract_current: bool,
     concept_contract_current: bool,
     refresh_attempted: bool,
+    stale_reason: Option<&'static str>,
 ) -> Value {
     let guidance = if refresh_attempted {
         "automatic refresh did not produce a fresh index; run `mastermind index .` and inspect indexing errors"
     } else {
         "automatic refresh is unavailable for this index; run `mastermind index .` before using structural mmcg tools"
     };
-    json!({
+    let mut payload = json!({
         "code": "index_stale",
         "freshness_basis": "path_and_mtime",
         "stale_files": stale_files,
@@ -1439,7 +1446,14 @@ fn index_stale_payload(
         "concept_contract_current": concept_contract_current,
         "refresh_attempted": refresh_attempted,
         "guidance": guidance
-    })
+    });
+    if let Some(reason) = stale_reason {
+        payload["stale_reason"] = json!(reason);
+        if reason == "history" {
+            payload["history_freshness"] = json!("stale");
+        }
+    }
+    payload
 }
 
 fn index_stale_error(
@@ -1486,6 +1500,7 @@ fn index_stale_error_with_coverage(
         extractor_contract_current,
         concept_contract_current,
         refresh_attempted,
+        stale_reason: None,
     }
 }
 
@@ -1506,89 +1521,7 @@ fn schema_incompatible_payload() -> Value {
 }
 
 fn safe_index_status(store: &Store) -> Result<queries::StatusResponse, HandlerError> {
-    let db_path = queries::database_path_identity(store);
-    let db_path_error = db_path.is_none().then_some("non_utf8_path");
-    let symbol_count = store
-        .symbol_count()
-        .map_err(|error| HandlerError::internal("symbol_count_query", error))?;
-    let file_count = store
-        .file_count()
-        .map_err(|error| HandlerError::internal("file_count_query", error))?;
-    let extractor_contract_current = store
-        .extractor_contract_current()
-        .map_err(|error| HandlerError::internal("extractor_contract_query", error))?;
-    let concept_contract_current = store
-        .concept_contract_current()
-        .map_err(|error| HandlerError::internal("concept_contract_query", error))?;
-    let index_root = store
-        .meta_value("index_root")
-        .map_err(|error| HandlerError::internal("index_root_query", error))?
-        .map(PathBuf::from);
-    let (stale_files, stale_files_truncated, freshness_error) = match index_root {
-        Some(index_root) => match index_root.canonicalize() {
-            Err(_) => (1, false, Some("index_root_unavailable")),
-            Ok(root)
-                if store
-                    .serve_root()
-                    .is_some_and(|authorized| authorized != root.as_path()) =>
-            {
-                (1, false, Some("index_root_mismatch"))
-            }
-            Ok(root) => {
-                let interrupted = || store.work_interrupted();
-                match crate::workflow_status::stale_paths_controlled(
-                    store,
-                    &root,
-                    queries::STATUS_STALE_FILE_PROBE_LIMIT,
-                    crate::indexer::AUTO_REFRESH_SOURCE_CANDIDATE_LIMIT,
-                    crate::indexer::AUTO_REFRESH_SOURCE_AGGREGATE_BYTES,
-                    crate::bounded_fs::ReadControl {
-                        deadline: store.request_deadline(),
-                        interrupted: Some(&interrupted),
-                    },
-                ) {
-                    Ok(paths) => match store.source_snapshot_unchanged() {
-                        Ok(true) => (
-                            paths.len().min(queries::STATUS_STALE_FILE_LIMIT),
-                            paths.len() > queries::STATUS_STALE_FILE_LIMIT,
-                            None,
-                        ),
-                        Ok(false) => return Err(HandlerError::SnapshotChanged),
-                        Err(error) => {
-                            return Err(HandlerError::internal("freshness_snapshot_query", error))
-                        }
-                    },
-                    Err(crate::indexer::IndexError::LimitExceeded { dimension, cap }) => {
-                        return Err(HandlerError::RefreshLimit { dimension, cap })
-                    }
-                    Err(crate::indexer::IndexError::SnapshotChanged) => {
-                        return Err(HandlerError::SnapshotChanged)
-                    }
-                    Err(crate::indexer::IndexError::Cancelled)
-                    | Err(crate::indexer::IndexError::DeadlineExceeded) => {
-                        return Err(HandlerError::internal(
-                            "freshness_interrupted",
-                            "request interrupted",
-                        ))
-                    }
-                    Err(_) => (1, false, Some("freshness_scan_failed")),
-                }
-            }
-        },
-        None => (1, false, Some("index_root_missing")),
-    };
-    Ok(queries::StatusResponse {
-        db_path,
-        db_path_error,
-        symbol_count,
-        file_count,
-        freshness_basis: "path_and_mtime",
-        stale_files,
-        stale_files_truncated,
-        freshness_error,
-        extractor_contract_current,
-        concept_contract_current,
-    })
+    crate::query_service::index_status(store).map_err(|error| map_query_error(store, error))
 }
 
 fn ensure_fresh_index(store: &Store) -> Result<(), HandlerError> {
@@ -1608,12 +1541,6 @@ fn ensure_schema_compatible(store: &Store) -> Result<(), HandlerError> {
     }
 }
 
-/// Derive refresh authority from the canonical managed database location, not
-/// from mutable index metadata that could redirect automatic filesystem reads.
-fn managed_auto_refresh_root(store: &Store) -> Option<PathBuf> {
-    store.managed_root().map(std::path::Path::to_path_buf)
-}
-
 fn refresh_stale_index(
     store: &mut Store,
     stale_files: usize,
@@ -1622,46 +1549,26 @@ fn refresh_stale_index(
     extractor_contract_current: bool,
     concept_contract_current: bool,
 ) -> Result<(), HandlerError> {
-    let Some(root) = managed_auto_refresh_root(store) else {
-        return Err(index_stale_error_with_coverage(
-            stale_files,
-            stale_files_truncated,
-            freshness_error,
-            extractor_contract_current,
-            concept_contract_current,
-            false,
-        ));
-    };
-
-    let refresh = crate::indexer::Indexer::new(root).index_all_with_limits(
+    crate::query_service::refresh(
         store,
-        false,
-        crate::indexer::IndexLimits::AUTO_REFRESH,
-    );
-    match refresh {
-        Ok(stats) if stats.files_failed == 0 => {}
-        Err(crate::indexer::IndexError::LimitExceeded { dimension, cap }) => {
-            return Err(HandlerError::RefreshLimit { dimension, cap });
-        }
-        Err(crate::indexer::IndexError::Cancelled)
-        | Err(crate::indexer::IndexError::DeadlineExceeded) => {
-            return Err(HandlerError::internal(
-                "refresh_interrupted",
-                "request interrupted",
-            ));
-        }
-        _ => {
-            return Err(index_stale_error_with_coverage(
+        crate::query_service::StaleIndex {
+            status: queries::StatusResponse {
+                db_path: queries::database_path_identity(store),
+                db_path_error: None,
+                symbol_count: 0,
+                file_count: 0,
+                freshness_basis: "path_and_mtime",
                 stale_files,
                 stale_files_truncated,
                 freshness_error,
                 extractor_contract_current,
                 concept_contract_current,
-                true,
-            ));
-        }
-    }
-    Ok(())
+            },
+            reason: crate::query_service::StaleReason::Structural,
+            refresh_attempted: false,
+        },
+    )
+    .map_err(|error| map_query_error(store, error))
 }
 
 /// Structured `work_limit_exceeded` tool error — mirrors the `change_impact`
@@ -3440,23 +3347,15 @@ pub fn brief_current_envelope_bytes(
     brief_envelope_bytes_for_version(ProtocolVersion::Current, packet)
 }
 
-fn brief_current_attempt(
-    store: &Store,
+/// Build a brief with the current MCP envelope and shared refresh policy.
+pub fn build_brief_current(
+    store: &mut Store,
     root: &std::path::Path,
     since: &str,
     role: queries::BriefRole,
     budget_tokens: u32,
 ) -> Result<queries::BriefPacket, queries::BriefError> {
-    match store.schema_current() {
-        Ok(true) => {}
-        Ok(false) => return Err(queries::BriefError::SchemaIncompatible),
-        Err(_) => return Err(queries::BriefError::IndexStale),
-    }
-    let status = safe_index_status(store).map_err(|_| queries::BriefError::IndexStale)?;
-    if status.stale_files > 0 || !status.extractor_contract_current {
-        return Err(queries::BriefError::IndexStale);
-    }
-    queries::brief(
+    crate::query_service::build_brief_current(
         store,
         root,
         since,
@@ -3466,176 +3365,31 @@ fn brief_current_attempt(
     )
 }
 
-/// Build a CLI brief with the same one-refresh/one-retry policy as MCP. Only a
-/// Store opened with managed repository authority can refresh; custom indexes
-/// remain read-only and fail closed.
-pub fn build_brief_current(
-    store: &mut Store,
-    root: &std::path::Path,
-    since: &str,
-    role: queries::BriefRole,
-    budget_tokens: u32,
-) -> Result<queries::BriefPacket, queries::BriefError> {
-    queries::validate_brief_request(since, budget_tokens)?;
-    let root = root
-        .canonicalize()
-        .map_err(|_| queries::BriefError::RootMismatch)?;
-    let indexed_root = store
-        .meta_value("index_root")
-        .map_err(|_| queries::BriefError::IndexStale)?
-        .map(std::path::PathBuf::from)
-        .ok_or(queries::BriefError::IndexStale)?
-        .canonicalize()
-        .map_err(|_| queries::BriefError::RootMismatch)?;
-    if root != indexed_root {
-        return Err(queries::BriefError::RootMismatch);
-    }
-    let interrupted = || store.work_interrupted();
-    crate::diff::validate_commit_ref_controlled(
-        &root,
-        since,
-        store.request_deadline(),
-        Some(&interrupted),
-    )
-    .map_err(|error| match error {
-        crate::diff::WorkingTreeDiffError::InvalidRef
-        | crate::diff::WorkingTreeDiffError::GitUnavailable => queries::BriefError::InvalidRef,
-        crate::diff::WorkingTreeDiffError::SnapshotChanged => queries::BriefError::SnapshotChanged,
-        crate::diff::WorkingTreeDiffError::GitTimeout
-        | crate::diff::WorkingTreeDiffError::GitOutputLimit => {
-            queries::BriefError::WorkLimitExceeded
-        }
-        crate::diff::WorkingTreeDiffError::IndexStale => queries::BriefError::IndexStale,
-    })?;
-    match brief_current_attempt(store, &root, since, role, budget_tokens) {
-        Err(queries::BriefError::IndexStale) => {}
-        result => return result,
-    }
-    let status = safe_index_status(store).unwrap_or(queries::StatusResponse {
-        db_path: queries::database_path_identity(store),
-        db_path_error: store
-            .db_path()
-            .to_str()
-            .is_none()
-            .then_some("non_utf8_path"),
-        symbol_count: 0,
-        file_count: 0,
-        freshness_basis: "path_and_mtime",
-        stale_files: 1,
-        stale_files_truncated: false,
-        freshness_error: Some("freshness_check_failed"),
-        extractor_contract_current: true,
-        concept_contract_current: false,
-    });
-    refresh_stale_index(
-        store,
-        status.stale_files,
-        status.stale_files_truncated,
-        status.freshness_error,
-        status.extractor_contract_current,
-        status.concept_contract_current,
-    )
-    .map_err(|error| match error {
-        HandlerError::SchemaIncompatible => queries::BriefError::SchemaIncompatible,
-        HandlerError::SnapshotChanged => queries::BriefError::SnapshotChanged,
-        HandlerError::WorkLimitExceeded | HandlerError::RefreshLimit { .. } => {
-            queries::BriefError::WorkLimitExceeded
-        }
-        _ => queries::BriefError::IndexStale,
-    })?;
-    brief_current_attempt(store, &root, since, role, budget_tokens)
-}
+pub use crate::query_service::{
+    build_concept_current, build_concept_current_with_tests, build_concept_review_current,
+    build_concept_review_current_with_contract, build_concept_review_current_with_hints,
+    finish_concept_review_current,
+};
 
-fn concept_current_attempt(
-    store: &Store,
-    query: &str,
-    top: u32,
-    include_tests: bool,
-) -> Result<queries::ConceptResponse, queries::ConceptError> {
-    let expected_data_version = store
-        .data_version()
-        .map_err(|_| queries::ConceptError::SnapshotChanged)?;
-    match store.schema_current() {
-        Ok(true) => {}
-        Ok(false) => return Err(queries::ConceptError::SchemaIncompatible),
-        Err(_) => return Err(queries::ConceptError::IndexStale),
-    }
-    let status = safe_index_status(store).map_err(|error| match error {
-        HandlerError::SnapshotChanged => queries::ConceptError::SnapshotChanged,
-        HandlerError::WorkLimitExceeded | HandlerError::RefreshLimit { .. } => {
-            queries::ConceptError::WorkLimitExceeded
+fn map_query_error(store: &Store, error: crate::query_service::Error) -> HandlerError {
+    use crate::query_service::Error;
+    match error {
+        Error::Stale(stale) => {
+            let mut error = index_stale_error_from_status(&stale.status, stale.refresh_attempted);
+            if let HandlerError::IndexStale { stale_reason, .. } = &mut error {
+                *stale_reason = Some(stale.reason.as_str());
+            }
+            error
         }
-        _ => queries::ConceptError::IndexStale,
-    })?;
-    if status.stale_files > 0 || !status.extractor_contract_current {
-        return Err(queries::ConceptError::IndexStale);
+        Error::SchemaIncompatible => HandlerError::SchemaIncompatible,
+        Error::SnapshotChanged => HandlerError::SnapshotChanged,
+        Error::WorkLimitExceeded => HandlerError::WorkLimitExceeded,
+        Error::RefreshLimit { dimension, cap } => HandlerError::RefreshLimit { dimension, cap },
+        Error::Internal { class } => HandlerError::Internal { class },
+        Error::Brief(error) => map_brief_error(store, error),
+        Error::Concept(error) => map_concept_error(store, error),
+        Error::Review(error) => map_concept_review_error(store, error),
     }
-    if !status.concept_contract_current {
-        return Err(queries::ConceptError::IndexStale);
-    }
-    queries::concept_verified_with_tests(
-        store,
-        query,
-        top,
-        include_tests,
-        expected_data_version,
-        queries::ConceptFreshness {
-            status: "fresh".to_string(),
-            extractor_contract: crate::indexer::EXTRACTOR_CONTRACT_VERSION.to_string(),
-            normalization_contract: crate::store::CONCEPT_NORMALIZATION_VERSION.to_string(),
-        },
-    )
-}
-
-/// Build concept candidates through the same structural/concept freshness and
-/// one-refresh/one-retry boundary for both MCP and the standalone CLI.
-pub fn build_concept_current(
-    store: &mut Store,
-    query: &str,
-    top: u32,
-) -> Result<queries::ConceptResponse, queries::ConceptError> {
-    build_concept_current_with_tests(store, query, top, false)
-}
-
-/// Apply explicit test scope through the shared freshness and refresh boundary.
-pub fn build_concept_current_with_tests(
-    store: &mut Store,
-    query: &str,
-    top: u32,
-    include_tests: bool,
-) -> Result<queries::ConceptResponse, queries::ConceptError> {
-    queries::validate_concept_request(query, top)?;
-    match concept_current_attempt(store, query, top, include_tests) {
-        Err(queries::ConceptError::IndexStale) => {}
-        result => return result,
-    }
-    let status = safe_index_status(store).map_err(|error| match error {
-        HandlerError::SnapshotChanged => queries::ConceptError::SnapshotChanged,
-        HandlerError::WorkLimitExceeded | HandlerError::RefreshLimit { .. } => {
-            queries::ConceptError::WorkLimitExceeded
-        }
-        _ => queries::ConceptError::IndexStale,
-    })?;
-    refresh_stale_index(
-        store,
-        status.stale_files,
-        status.stale_files_truncated,
-        status.freshness_error,
-        status.extractor_contract_current,
-        status.concept_contract_current,
-    )
-    .map_err(|error| match error {
-        HandlerError::SchemaIncompatible => queries::ConceptError::SchemaIncompatible,
-        HandlerError::SnapshotChanged => queries::ConceptError::SnapshotChanged,
-        HandlerError::WorkLimitExceeded | HandlerError::RefreshLimit { .. } => {
-            queries::ConceptError::WorkLimitExceeded
-        }
-        HandlerError::Internal { .. } if store.interrupt_source().is_some() => {
-            queries::ConceptError::WorkLimitExceeded
-        }
-        _ => queries::ConceptError::IndexStale,
-    })?;
-    concept_current_attempt(store, query, top, include_tests)
 }
 
 fn map_brief_error(store: &Store, error: queries::BriefError) -> HandlerError {
@@ -3714,36 +3468,18 @@ fn brief_arguments(
         },
         error => error,
     })?;
-    let interrupted = || store.work_interrupted();
-    crate::diff::validate_commit_ref_controlled(
-        &root,
-        &since,
-        store.request_deadline(),
-        Some(&interrupted),
-    )
-    .map_err(|error| match error {
-        crate::diff::WorkingTreeDiffError::InvalidRef
-        | crate::diff::WorkingTreeDiffError::GitUnavailable => HandlerError::StructuredInvalid {
-            code: "invalid_ref",
-        },
-        crate::diff::WorkingTreeDiffError::SnapshotChanged => HandlerError::SnapshotChanged,
-        crate::diff::WorkingTreeDiffError::GitTimeout
-        | crate::diff::WorkingTreeDiffError::GitOutputLimit => HandlerError::WorkLimitExceeded,
-        crate::diff::WorkingTreeDiffError::IndexStale => index_stale_error(1, true, false),
-    })?;
     Ok((role, since, root, budget_tokens))
 }
 
 fn run_brief_for_version(
-    store: &Store,
+    store: &mut Store,
     args: &Value,
     version: ProtocolVersion,
 ) -> Result<queries::BriefPacket, HandlerError> {
     let (role, since, root, budget_tokens) = brief_arguments(store, args)?;
-    ensure_fresh_index(store)?;
     let sizer = |packet: &queries::BriefPacket| brief_envelope_bytes_for_version(version, packet);
-    queries::brief(store, &root, &since, role, budget_tokens, &sizer)
-        .map_err(|error| map_brief_error(store, error))
+    crate::query_service::brief_current(store, &root, &since, role, budget_tokens, &sizer)
+        .map_err(|error| map_query_error(store, error))
 }
 
 fn handle_brief_for_version(
@@ -3815,88 +3551,10 @@ fn handle_concept(store: &mut Store, args: &Value) -> Result<Value, HandlerError
             code: "invalid_arguments",
         })?,
     };
-    let response = build_concept_current_with_tests(store, query, top, include_tests)
-        .map_err(|error| map_concept_error(store, error))?;
+    let response = crate::query_service::concept_current(store, query, top, include_tests)
+        .map_err(|error| map_query_error(store, error))?;
     serde_json::to_value(response)
         .map_err(|error| HandlerError::internal("serialize_concept", error))
-}
-
-pub fn build_concept_review_current(
-    store: &mut Store,
-    query: &str,
-    top: u32,
-    include_tests: bool,
-) -> Result<crate::concept_review::ReviewPacket, String> {
-    build_concept_review_current_with_hints(store, query, top, include_tests, &[])
-}
-
-pub fn build_concept_review_current_with_hints(
-    store: &mut Store,
-    query: &str,
-    top: u32,
-    include_tests: bool,
-    hints: &[String],
-) -> Result<crate::concept_review::ReviewPacket, String> {
-    build_concept_review_current_with_contract(store, query, top, include_tests, hints, None)
-}
-
-pub fn build_concept_review_current_with_contract(
-    store: &mut Store,
-    query: &str,
-    top: u32,
-    include_tests: bool,
-    hints: &[String],
-    request_contract: Option<&crate::concept_review::RequestContract>,
-) -> Result<crate::concept_review::ReviewPacket, String> {
-    crate::concept_review::validate_request(query, top, hints)?;
-    if let Some(contract) = request_contract {
-        crate::concept_review::validate_request_contract(query, contract)?;
-    }
-    build_concept_current_with_tests(store, query, top, include_tests)
-        .map_err(|error| error.code().to_string())?;
-    let root = store
-        .serve_root()
-        .ok_or("concept_review_root_unavailable")?
-        .to_path_buf();
-    let packet = crate::concept_review::prepare_with_contract(
-        store,
-        &root,
-        query,
-        top,
-        include_tests,
-        hints,
-        request_contract,
-    )?;
-    ensure_concept_review_still_current(store)?;
-    Ok(packet)
-}
-
-pub fn finish_concept_review_current(
-    store: &mut Store,
-    packet: &crate::concept_review::ReviewPacket,
-    assessment: &crate::concept_review::Assessment,
-) -> Result<crate::concept_review::ReviewResult, String> {
-    concept_current_attempt(store, &packet.query, packet.top, packet.include_tests)
-        .map_err(|error| error.code().to_string())?;
-    let root = store
-        .serve_root()
-        .ok_or("concept_review_root_unavailable")?
-        .to_path_buf();
-    let result = crate::concept_review::finish(store, &root, packet, assessment)?;
-    ensure_concept_review_still_current(store)?;
-    Ok(result)
-}
-
-fn ensure_concept_review_still_current(store: &Store) -> Result<(), String> {
-    let status = safe_index_status(store).map_err(|_| "concept_review_freshness_unavailable")?;
-    if status.stale_files > 0
-        || status.freshness_error.is_some()
-        || !status.extractor_contract_current
-        || !status.concept_contract_current
-    {
-        return Err("concept_review_source_changed".into());
-    }
-    Ok(())
 }
 
 fn handle_concept_prepare(store: &mut Store, args: &Value) -> Result<Value, HandlerError> {
@@ -3935,7 +3593,7 @@ fn handle_concept_prepare(store: &mut Store, args: &Value) -> Result<Value, Hand
         .map_err(|_| HandlerError::StructuredInvalid {
             code: "concept_review_request_contract_invalid",
         })?;
-    let packet = build_concept_review_current_with_contract(
+    let packet = crate::query_service::review_current(
         store,
         query,
         top,
@@ -3943,7 +3601,7 @@ fn handle_concept_prepare(store: &mut Store, args: &Value) -> Result<Value, Hand
         &hints,
         contract.as_ref(),
     )
-    .map_err(|error| map_concept_review_error(store, error))?;
+    .map_err(|error| map_query_error(store, error))?;
     serde_json::to_value(packet)
         .map_err(|error| HandlerError::internal("serialize_concept_review", error))
 }
@@ -3965,8 +3623,8 @@ fn handle_concept_finish(store: &mut Store, args: &Value) -> Result<Value, Handl
     .map_err(|_| HandlerError::StructuredInvalid {
         code: "invalid_concept_review_assessment",
     })?;
-    let result = finish_concept_review_current(store, &packet, &assessment)
-        .map_err(|error| map_concept_review_error(store, error))?;
+    let result = crate::query_service::review_finish_current(store, &packet, &assessment)
+        .map_err(|error| map_query_error(store, error))?;
     serde_json::to_value(result)
         .map_err(|error| HandlerError::internal("serialize_concept_review", error))
 }
@@ -5884,6 +5542,86 @@ mod tests {
     }
 
     #[test]
+    fn query_refresh_failure_is_attempted_once_per_request() {
+        for tool in ["mmcg_concept_prepare", "mmcg_brief"] {
+            let (root, mut store) = impact_fixture(tool);
+            let connection = rusqlite::Connection::open(store.db_path()).unwrap();
+            connection
+                .execute_batch(
+                    "CREATE TRIGGER reject_file_refresh BEFORE INSERT ON files
+                 BEGIN SELECT RAISE(FAIL, 'refresh failure'); END;",
+                )
+                .unwrap();
+            drop(connection);
+            std::fs::write(root.join("src/new.py"), "def new_value():\n    return 3\n").unwrap();
+            crate::query_service::REFRESH_TEST_CALLS.with(|calls| calls.set(0));
+            let arguments = if tool == "mmcg_brief" {
+                json!({ "role": "planner", "since": "HEAD", "budget_tokens": 8000 })
+            } else {
+                json!({ "query": "value" })
+            };
+            let result = handle_tools_call(
+                ProtocolVersion::Current,
+                &mut store,
+                &json!({ "name": tool, "arguments": arguments }),
+            )
+            .unwrap();
+            assert_eq!(result["isError"], true, "{tool}");
+            assert_eq!(result["structuredContent"]["code"], "index_stale", "{tool}");
+            assert_eq!(
+                result["structuredContent"]["stale_reason"], "structural",
+                "{tool}"
+            );
+            assert_eq!(
+                result["structuredContent"]["refresh_attempted"], true,
+                "{tool}"
+            );
+            assert_eq!(
+                crate::query_service::REFRESH_TEST_CALLS.with(|calls| calls.get()),
+                1,
+                "{tool}"
+            );
+            assert!(safe_index_status(&store).unwrap().stale_files > 0);
+            std::fs::remove_dir_all(root).unwrap();
+        }
+    }
+
+    #[test]
+    fn concept_review_searches_only_the_source_bound_pool() {
+        let (root, mut store) = impact_fixture("review-query-count");
+        queries::CONCEPT_TEST_CALLS.with(|calls| calls.set(0));
+        let packet = build_concept_review_current(&mut store, "value", 10, false).unwrap();
+        assert_eq!(queries::CONCEPT_TEST_CALLS.with(|calls| calls.get()), 1);
+        queries::CONCEPT_TEST_CALLS.with(|calls| calls.set(0));
+        let result =
+            finish_concept_review_current(&mut store, &packet, &packet.assessment_template)
+                .unwrap();
+        assert_eq!(queries::CONCEPT_TEST_CALLS.with(|calls| calls.get()), 1);
+        assert_eq!(result.packet_sha256, packet.packet_sha256);
+        assert_eq!(result.unknown_count as usize, packet.candidates.len());
+        std::fs::write(root.join("src/app.py"), "def value():\n    return 999\n").unwrap();
+        crate::query_service::REFRESH_TEST_CALLS.with(|calls| calls.set(0));
+        queries::CONCEPT_TEST_CALLS.with(|calls| calls.set(0));
+        let stale = handle_tools_call(
+            ProtocolVersion::Current,
+            &mut store,
+            &json!({
+                "name": "mmcg_concept_finish",
+                "arguments": { "packet": packet, "assessment": packet.assessment_template }
+            }),
+        )
+        .unwrap();
+        assert_eq!(stale["isError"], true);
+        assert_eq!(stale["structuredContent"]["code"], "snapshot_changed");
+        assert_eq!(
+            crate::query_service::REFRESH_TEST_CALLS.with(|calls| calls.get()),
+            1
+        );
+        assert_eq!(queries::CONCEPT_TEST_CALLS.with(|calls| calls.get()), 1);
+        std::fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
     fn concept_cli_builder_and_mcp_share_one_fresh_payload() {
         let (root, mut store) = impact_fixture("concept-shared");
         std::fs::write(
@@ -5957,7 +5695,7 @@ mod tests {
                 kind: crate::concept_review::ConstraintKind::Scope,
             }],
         };
-        let packet = build_concept_review_current_with_contract(
+        let packet = crate::query_service::review_current(
             &mut store,
             "reject cross origin",
             1,
@@ -6185,6 +5923,7 @@ mod tests {
         .unwrap();
         assert_eq!(refused["isError"], true);
         assert_eq!(unwrap_content(&refused)["code"], "index_stale");
+        assert_eq!(unwrap_content(&refused)["stale_reason"], "concept");
         assert_eq!(std::fs::read(&db).unwrap(), before);
         drop(custom);
 
@@ -6730,6 +6469,7 @@ mod tests {
                 .unwrap(),
             crate::indexer::ProjectHistoryFreshness::Stale
         );
+        crate::query_service::REFRESH_TEST_CALLS.with(|calls| calls.set(0));
         let result = handle_tools_call(
             ProtocolVersion::Current,
             &mut store,
@@ -6745,6 +6485,10 @@ mod tests {
         )
         .unwrap();
         assert_eq!(result["isError"], false);
+        assert_eq!(
+            crate::query_service::REFRESH_TEST_CALLS.with(|calls| calls.get()),
+            1
+        );
         let payload = unwrap_content(&result);
         assert_eq!(payload["freshness"]["history"]["status"], "fresh");
         assert!(payload["citations"]["items"]
@@ -6776,7 +6520,7 @@ mod tests {
                     "role": "executor",
                     "since": "HEAD",
                     "root": root.to_string_lossy(),
-                    "budget_tokens": 2000
+                    "budget_tokens": 256
                 }
             }),
         )
@@ -6784,6 +6528,14 @@ mod tests {
         let payload = unwrap_content(&result);
         assert_eq!(payload["code"], "index_stale");
         assert_eq!(payload["refresh_attempted"], false);
+        assert_eq!(payload["stale_reason"], "history");
+        assert_eq!(payload["history_freshness"], "stale");
+        assert!(serde_json::to_vec(&result).unwrap().len() <= 256 * 4);
+        assert_eq!(
+            build_brief_current(&mut store, &root, "HEAD", queries::BriefRole::Executor, 256)
+                .unwrap_err(),
+            queries::BriefError::IndexStale
+        );
         assert_eq!(
             store.meta_value("project_history_inventory_token").unwrap(),
             inventory_before
@@ -8259,7 +8011,10 @@ mod checks {
 
     #[test]
     fn every_structural_handler_enforces_freshness_before_query() {
-        let (root, mut store) = impact_fixture("handler-freshness-invariant");
+        let (root, store) = impact_fixture("handler-freshness-invariant");
+        let db = store.db_path().to_path_buf();
+        drop(store);
+        let mut store = Store::open_for_serve(&db, None).unwrap();
         std::fs::write(
             root.join("src/unindexed.py"),
             "def unindexed():\n    return 1\n",
@@ -8301,18 +8056,6 @@ mod checks {
                 name => panic!("missing valid-argument fixture for structural tool {name}"),
             };
             let result = (tool.handler)(&mut store, &arguments);
-            if tool.name == "mmcg_concept_prepare" {
-                let packet = result.expect("source preparation uses the refreshed managed index");
-                assert_eq!(packet["query"], "value");
-                assert!(store.file_mtime("src/unindexed.py").unwrap().is_some());
-                continue;
-            }
-            if tool.name == "mmcg_concept" {
-                let response = result.expect("concept owns its one managed refresh");
-                assert_eq!(response["freshness"]["status"], "fresh");
-                assert!(store.file_mtime("src/unindexed.py").unwrap().is_some());
-                continue;
-            }
             let error = result.unwrap_err();
             assert!(
                 matches!(error, HandlerError::IndexStale { .. }),
@@ -8321,6 +8064,7 @@ mod checks {
             );
         }
 
+        assert!(store.file_mtime("src/unindexed.py").unwrap().is_none());
         std::fs::remove_dir_all(root).ok();
     }
 

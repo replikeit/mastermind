@@ -15,6 +15,11 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterator
 
+if __package__ in {None, ""}:
+    sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from evals.behavior.paths import FIXTURES_RELATIVE_PATH
+
 try:
     import yaml
 except ImportError:
@@ -1189,9 +1194,10 @@ def validate_eval_fixture_clues() -> list[Issue]:
     excluded (they are the correct place for scenario explanations).
     """
     issues: list[Issue] = []
-    fixtures_dir = REPO_ROOT / "evals" / "fixtures"
+    fixtures_dir = REPO_ROOT / FIXTURES_RELATIVE_PATH
     if not fixtures_dir.is_dir():
-        return issues
+        return [Issue(fixtures_dir, "error", "eval fixture inventory is missing")]
+    scanned_files = 0
     for fixture_dir in sorted(fixtures_dir.iterdir()):
         if not fixture_dir.is_dir():
             continue
@@ -1204,8 +1210,10 @@ def validate_eval_fixture_clues() -> list[Issue]:
                     continue
                 try:
                     text = src_file.read_text(encoding="utf-8", errors="ignore")
-                except OSError:
+                except OSError as error:
+                    issues.append(Issue(src_file, "error", f"cannot read eval fixture: {error}"))
                     continue
+                scanned_files += 1
                 text_lower = text.lower()
                 for clue in BANNED_FIXTURE_CLUES:
                     if clue.lower() in text_lower:
@@ -1215,6 +1223,10 @@ def validate_eval_fixture_clues() -> list[Issue]:
                             f"eval fixture contains banned clue {clue!r} — move explanation to the fixture README.md",
                         ))
                         break
+    if not scanned_files:
+        issues.append(Issue(
+            fixtures_dir, "error", "eval fixture inventory has no baseline/changes source files",
+        ))
     return issues
 
 

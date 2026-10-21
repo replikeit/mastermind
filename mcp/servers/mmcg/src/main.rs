@@ -2351,12 +2351,13 @@ fn run_cli_inner(
             let response = if expired {
                 Err(mmcg::queries::BriefError::WorkLimitExceeded)
             } else {
-                mmcg::mcp::build_brief_current(
+                mmcg::query_service::build_brief_current(
                     &mut store,
                     &root,
                     &since,
                     role.into(),
                     budget_tokens,
+                    &mmcg::mcp::brief_current_envelope_bytes,
                 )
             };
             let interrupted = store.take_interrupt_source();
@@ -2424,7 +2425,12 @@ fn run_cli_inner(
             let response = if expired {
                 Err(mmcg::queries::ConceptError::WorkLimitExceeded)
             } else {
-                mmcg::mcp::build_concept_current_with_tests(&mut store, &query, top, include_tests)
+                mmcg::query_service::build_concept_current_with_tests(
+                    &mut store,
+                    &query,
+                    top,
+                    include_tests,
+                )
             };
             let interrupted = store.take_interrupt_source();
             store.pop_work_budget();
@@ -2468,7 +2474,7 @@ fn run_cli_inner(
                     include_tests,
                     hints,
                     ..
-                }) => mmcg::mcp::build_concept_review_current_with_contract(
+                }) => mmcg::query_service::build_concept_review_current_with_contract(
                     &mut store,
                     &query,
                     top,
@@ -2483,11 +2489,15 @@ fn run_cli_inner(
                 ConceptReviewCmd::Finish(ConceptReviewFinishArgs { packet, assessment }) => {
                     let packet = read_concept_review_json(&packet)?;
                     let assessment = read_concept_review_json(&assessment)?;
-                    mmcg::mcp::finish_concept_review_current(&mut store, &packet, &assessment)
-                        .and_then(|result| {
-                            serde_json::to_value(result)
-                                .map_err(|_| "concept_review_serialization_failed".into())
-                        })
+                    mmcg::query_service::finish_concept_review_current(
+                        &mut store,
+                        &packet,
+                        &assessment,
+                    )
+                    .and_then(|result| {
+                        serde_json::to_value(result)
+                            .map_err(|_| "concept_review_serialization_failed".into())
+                    })
                 }
             };
             let interrupted = store.take_interrupt_source();

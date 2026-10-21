@@ -28,6 +28,7 @@ pub mod curation;
 pub mod feedback;
 pub mod habit;
 pub mod hooks;
+mod process;
 pub mod profile;
 mod range;
 mod stats;

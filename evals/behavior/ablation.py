@@ -299,7 +299,7 @@ def main() -> int:
         print("error: cannot identify repository HEAD.", file=sys.stderr)
         return 2
 
-    cases_file = runner.EVALS_DIR / "auditor.jsonl"
+    cases_file = runner.SUITES["auditor"]["cases"]
     try:
         cases = runner.load_case_records(cases_file, suite_name="auditor")
     except (OSError, ValueError) as error:

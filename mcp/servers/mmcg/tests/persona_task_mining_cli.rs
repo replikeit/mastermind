@@ -176,6 +176,45 @@ impl Fixture {
     fn no_inference(&self) {
         assert!(!self.home.join("provider-calls").exists());
     }
+
+    fn journal(&self) -> rusqlite::Connection {
+        rusqlite::Connection::open(self.home.join(".mastermind/persona-events.db")).unwrap()
+    }
+
+    fn hold_finalizer(&self) -> fs::File {
+        let lock = fs::OpenOptions::new()
+            .create(true)
+            .truncate(false)
+            .read(true)
+            .write(true)
+            .open(self.home.join(".mastermind/task-finalizer.lock"))
+            .unwrap();
+        lock.lock().unwrap();
+        lock
+    }
+
+    fn allow_profile(&self) {
+        let mut settings = mmcg::onboarding::load(&self.root).unwrap().unwrap();
+        settings.profile_access = true;
+        mmcg::onboarding::Session::begin(&self.root)
+            .unwrap()
+            .save(&settings)
+            .unwrap();
+        let granted = self
+            .command(&["miner", "access", "grant", "--client", self.client])
+            .output()
+            .unwrap();
+        assert!(granted.status.success(), "{granted:?}");
+        let configured = self.success(&[
+            "miner",
+            "hooks",
+            "setup",
+            "--client",
+            self.client,
+            "--write",
+        ]);
+        assert_eq!(configured["capture_grant"]["profile_client"], self.client);
+    }
 }
 
 fn failed(response: &Value) -> bool {
@@ -249,6 +288,236 @@ fn the_local_finalizer_waits_for_claudes_actual_model_without_calling_it() {
         assert!(std::time::Instant::now() < deadline, "{shown}");
         std::thread::sleep(std::time::Duration::from_millis(100));
     }
+    f.no_inference();
+}
+
+fn wait_for_episode(f: &Fixture, ready: impl Fn(&Value) -> bool) -> Value {
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(8);
+    loop {
+        let shown = f.episode();
+        if ready(&shown) {
+            return shown;
+        }
+        assert!(std::time::Instant::now() < deadline, "{shown}");
+        std::thread::sleep(std::time::Duration::from_millis(20));
+    }
+}
+
+fn write_native_transcript(f: &Fixture, path: &std::path::Path) {
+    fs::create_dir_all(path.parent().unwrap()).unwrap();
+    let user = json!({"type":"user","sessionId":"task-session","cwd":f.root,"promptId":"one","message":{"role":"user","content":PROMPT}});
+    let assistant = json!({"type":"assistant","sessionId":"task-session","cwd":f.root,"message":{"role":"assistant","model":"claude-task-model","content":[{"type":"text","text":"Reviewed the change."}]}});
+    fs::write(path, format!("{user}\n{assistant}\n")).unwrap();
+}
+
+fn pending_transcript(f: &Fixture) -> PathBuf {
+    let slug = f
+        .root
+        .to_string_lossy()
+        .replace(|ch: char| !ch.is_ascii_alphanumeric(), "-");
+    f.home
+        .join(".claude/projects")
+        .join(slug)
+        .join("task-session.jsonl")
+}
+
+#[test]
+fn the_finalizer_retries_a_missing_transcript_without_another_tool_event() {
+    let f = Fixture::for_client("claude");
+    let ticket = f.offer("one", PROMPT);
+    assert!(!failed(&f.submit(&ticket, f.candidates(PROMPT), "claude")));
+    let transcript = pending_transcript(&f);
+    f.event("Stop", "one", json!({"last_assistant_message":"Reviewed the change.","prompt_id":"one","transcript_path":transcript}));
+    let waiting = wait_for_episode(&f, |shown| {
+        shown["task_mining"]["finalization"]["reason"] == "transcript_pending"
+    });
+    assert_eq!(waiting["task_mining"]["finalization"]["status"], "running");
+    write_native_transcript(&f, &transcript);
+    let completed = wait_for_episode(&f, |shown| {
+        shown["task_mining"]["finalization"]["status"] == "completed"
+    });
+    assert_eq!(completed["task_mining"]["finalization"]["attempts"], 1);
+    let analyses: Vec<_> = completed["analyses"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|row| row["processor"]["engine"] == "current_task_agent")
+        .collect();
+    assert_eq!(analyses.len(), 1);
+    assert_eq!(analyses[0]["current"], true);
+    assert_eq!(analyses[0]["processor"]["model"], "claude-task-model");
+    f.no_inference();
+}
+
+#[test]
+fn expired_transcript_wait_is_visible_and_resumes_at_a_local_task_boundary() {
+    let f = Fixture::for_client("claude");
+    let ticket = f.offer("one", PROMPT);
+    assert!(!failed(&f.submit(&ticket, f.candidates(PROMPT), "claude")));
+    let transcript = pending_transcript(&f);
+    f.event("Stop", "one", json!({"last_assistant_message":"Reviewed the change.","prompt_id":"one","transcript_path":transcript}));
+    let pending = wait_for_episode(&f, |shown| {
+        shown["task_mining"]["finalization"]["status"] == "pending"
+    });
+    assert_eq!(
+        pending["task_mining"]["finalization"]["reason"],
+        "transcript_pending"
+    );
+    assert_eq!(pending["task_mining"]["status"], "submitted");
+    write_native_transcript(&f, &transcript);
+    f.success(&["miner", "hooks", "mine-local"]);
+    let completed = wait_for_episode(&f, |shown| {
+        shown["task_mining"]["finalization"]["status"] == "completed"
+    });
+    assert_eq!(completed["task_mining"]["finalization"]["attempts"], 2);
+    let receipt = &completed["task_mining"]["finalization"];
+    f.success(&["miner", "hooks", "mine-local"]);
+    assert_eq!(&f.episode()["task_mining"]["finalization"], receipt);
+    f.no_inference();
+}
+
+#[test]
+fn a_failed_profile_refresh_waits_for_an_external_retry_boundary() {
+    let f = Fixture::new();
+    f.allow_profile();
+    let ticket = f.offer("one", PROMPT);
+    assert!(!failed(&f.submit(&ticket, json!([]), "codex")));
+    let lock = f.hold_finalizer();
+    f.event("Stop", "one", json!({"last_assistant_message":"Reviewed."}));
+    let id = f.episode()["episode"]["id"].as_str().unwrap().to_owned();
+    let db = f.journal();
+    // Record and block unexpected reclaims so a regression cannot spawn an
+    // unbounded chain of detached workers during this test.
+    db.execute_batch(
+        "CREATE TABLE retry_budget(max_attempt INTEGER); INSERT INTO retry_budget VALUES(1);
+         CREATE TABLE unexpected_retry(attempt INTEGER);
+         CREATE TRIGGER observe_automatic_retry BEFORE UPDATE ON hook_task_finalization
+         WHEN NEW.attempts>OLD.attempts AND NEW.attempts>(SELECT max_attempt FROM retry_budget)
+         BEGIN INSERT INTO unexpected_retry VALUES(NEW.attempts); SELECT RAISE(IGNORE); END;",
+    )
+    .unwrap();
+    drop(lock);
+    for attempt in 1..=2 {
+        db.execute("UPDATE retry_budget SET max_attempt=?1", [attempt])
+            .unwrap();
+        let output = f
+            .command(&["miner", "hooks", "finish-task", "--episode", &id])
+            .output()
+            .unwrap();
+        assert!(output.status.success(), "{output:?}");
+        let shown = f.episode();
+        assert_eq!(shown["task_mining"]["status"], "completed");
+        assert_eq!(shown["task_mining"]["finalization"]["status"], "pending");
+        assert_eq!(
+            shown["task_mining"]["finalization"]["reason"],
+            "profile_refresh_failed"
+        );
+        assert_eq!(shown["task_mining"]["finalization"]["attempts"], attempt);
+        let unexpected: i64 = db
+            .query_row("SELECT count(*) FROM unexpected_retry", [], |row| {
+                row.get(0)
+            })
+            .unwrap();
+        assert_eq!(
+            unexpected, 0,
+            "refresh retried without an external boundary"
+        );
+    }
+    f.no_inference();
+}
+
+#[test]
+fn a_busy_finalizer_preserves_sealed_recovery_and_local_extraction() {
+    let f = Fixture::new();
+    f.allow_profile();
+    let ticket = f.offer("one", PROMPT);
+    assert!(!failed(&f.submit(&ticket, json!([]), "codex")));
+    let lock = f.hold_finalizer();
+    f.journal()
+        .execute_batch(
+            "CREATE TRIGGER require_recovery_before_sealing BEFORE UPDATE ON hook_task_mining
+         WHEN json_extract(NEW.data,'$.status')='completed' AND NOT EXISTS(
+             SELECT 1 FROM hook_task_finalization WHERE episode=NEW.episode)
+         BEGIN SELECT RAISE(ABORT,'sealing requires durable finalizer recovery'); END;",
+        )
+        .unwrap();
+    f.event("Stop", "one", json!({"last_assistant_message":"Reviewed."}));
+    let sealed = f.episode();
+    assert_eq!(sealed["task_mining"]["status"], "completed");
+    assert_eq!(sealed["task_mining"]["finalization"]["status"], "pending");
+    assert_eq!(sealed["task_mining"]["finalization"]["attempts"], 0);
+    let local: Vec<_> = sealed["analyses"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|analysis| analysis["processor"]["engine"] == "local_explicit")
+        .collect();
+    assert_eq!(
+        local.len(),
+        1,
+        "ordinary local extraction must survive lock contention"
+    );
+    assert_eq!(local[0]["current"], true);
+    assert_eq!(sealed["drafts"].as_array().unwrap().len(), 1);
+    let mut settings = mmcg::onboarding::load(&f.root).unwrap().unwrap();
+    settings.profile_access = false;
+    mmcg::onboarding::Session::begin(&f.root)
+        .unwrap()
+        .save(&settings)
+        .unwrap();
+    drop(lock);
+    f.success(&["miner", "hooks", "mine-local"]);
+    let recovered = wait_for_episode(&f, |shown| {
+        shown["task_mining"]["finalization"]["status"] == "completed"
+    });
+    assert_eq!(recovered["task_mining"]["finalization"]["attempts"], 1);
+    assert_eq!(
+        recovered["task_mining"]["finalization"]["reason"],
+        "profile_access_unavailable"
+    );
+    assert_eq!(recovered["analyses"], sealed["analyses"]);
+    f.no_inference();
+}
+
+#[test]
+fn revoked_capture_cannot_resume_a_queued_transcript_binding() {
+    let f = Fixture::for_client("claude");
+    let ticket = f.offer("one", PROMPT);
+    assert!(!failed(&f.submit(&ticket, f.candidates(PROMPT), "claude")));
+    let transcript = pending_transcript(&f);
+    let lock = f.hold_finalizer();
+    f.event("Stop", "one", json!({"last_assistant_message":"Reviewed the change.","prompt_id":"one","transcript_path":transcript}));
+    let queued = f.episode();
+    assert_eq!(queued["task_mining"]["finalization"]["attempts"], 0);
+    write_native_transcript(&f, &transcript);
+    f.journal()
+        .execute(
+            "UPDATE hook_grant SET enabled=0,generation=generation+1",
+            [],
+        )
+        .unwrap();
+    drop(lock);
+    let output = f
+        .command(&[
+            "miner",
+            "hooks",
+            "finish-task",
+            "--episode",
+            queued["episode"]["id"].as_str().unwrap(),
+        ])
+        .output()
+        .unwrap();
+    assert!(output.status.success(), "{output:?}");
+    f.success(&["miner", "hooks", "mine-local"]);
+    let revoked = f.episode();
+    assert_eq!(
+        revoked["task_mining"]["finalization"],
+        queued["task_mining"]["finalization"]
+    );
+    assert_eq!(revoked["task_mining"]["status"], "submitted");
+    assert!(revoked["episode"]["model"].is_null());
+    assert!(revoked["analyses"].as_array().unwrap().is_empty());
+    assert!(revoked["drafts"].as_array().unwrap().is_empty());
     f.no_inference();
 }
 

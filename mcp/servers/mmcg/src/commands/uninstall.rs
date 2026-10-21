@@ -3,6 +3,8 @@
 use std::fs;
 use std::path::Path;
 
+use mmcg::setup::{self, Outcome};
+
 use crate::UninstallScope;
 
 /// Remove a Mastermind setup.
@@ -44,19 +46,27 @@ pub fn do_uninstall(
                 root.display()
             );
         }
-        mmcg::setup::remove_claude(&mmcg::setup::Target::project(root), force);
+        check_removal(setup::remove_claude(&setup::Target::project(root), force))?;
         // Other clients are intentionally removed through the explicit,
         // dry-run-first `mastermind setup <client> --remove` surface.
     }
 
     if do_global {
-        mmcg::setup::remove_claude_user(force);
+        check_removal(setup::remove_claude_user(force))?;
     }
 
     if !force {
         println!("\n(dry-run — pass --force to apply. CONTEXT.md / CLAUDE.md are never touched.)");
     }
     Ok(())
+}
+
+fn check_removal(outcome: Outcome) -> Result<(), &'static str> {
+    match outcome {
+        Outcome::Error => Err("Claude Code registration removal failed"),
+        Outcome::RefusedOverwrite => Err("Claude Code registration removal was refused"),
+        _ => Ok(()),
+    }
 }
 
 fn scope_label(s: UninstallScope) -> &'static str {
