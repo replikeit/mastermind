@@ -94,6 +94,11 @@ bytes. Postflight excludes unchanged prior work; editing, deleting, restoring,
 or changing the executable mode of those files remains part of the task diff.
 Retries keep this initial worktree rather than absorbing implementation into it.
 
+Keep one open task per checkout. Postflight audits every change made after the
+first approval, so another task's edits appear as `unexpected_file` findings
+and the verdict becomes Broken. They also make this task's check receipts stale.
+Close a task before approving the next one in the same checkout.
+
 ### 2. Implement and record checks
 
 Give the approved spec to an implementation client. The executor writes
@@ -221,6 +226,10 @@ The controller rechecks receipts, executables, audit, and review before
 the reviewed iteration, not deployment or future correctness.
 Use `--post-only` to audit current work again.
 
+Commit after `learned`. Check receipts bind HEAD and the Git index, so a commit
+or staged change during an open task makes them stale (`receipt_snapshot_changed`).
+The checks, postflight and review then have to run again.
+
 <a id="continue-from-review-feedback"></a>
 
 ## Continue from feedback
@@ -314,7 +323,7 @@ unresolved history and native failures stop even when that flag is enabled.
 |---|---:|---:|
 | Default process time | 1,800 s | 600 s |
 | Allowed process time | 1–7,200 s | 1–7,200 s |
-| Default turns | 40 | 20 |
+| Default turns | 40 | 30 |
 | Allowed turns | 1–100 | 1–100 |
 
 Sources: [CLI definitions](../mcp/servers/mmcg/src/main.rs) and
