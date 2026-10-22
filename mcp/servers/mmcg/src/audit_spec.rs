@@ -770,7 +770,10 @@ fn run_internal(
             deadline: Some(deadline),
             interrupted: Some(&interrupted),
         },
-        &worktree.baseline_oid,
+        crate::declared_files::DeletionBaseline {
+            oid: &worktree.baseline_oid,
+            preimages: task.as_ref().map(|task| &task.preimages),
+        },
         &worktree.files,
         |file| {
             deleted_files.contains(file)

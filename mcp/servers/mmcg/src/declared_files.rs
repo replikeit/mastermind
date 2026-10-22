@@ -4,7 +4,7 @@
 //! verification. Inspect filesystem metadata without reading file contents.
 
 use crate::bounded_fs::{self, BoundedReadError, ReadControl, RootCapability, StableFileIdentity};
-use crate::spec::ParsedSpec;
+use crate::spec::{ParsedSpec, TouchScope};
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
 
@@ -22,6 +22,7 @@ pub(crate) struct Issue {
 #[derive(Clone, Copy)]
 enum Role {
     Touch,
+    Delete,
     Create,
     Document,
     Mention,
@@ -34,7 +35,16 @@ fn declarations(spec: &ParsedSpec) -> impl Iterator<Item = (&str, Role)> {
         .flat_map(|fm| {
             fm.touches
                 .iter()
-                .map(|touch| (touch.file.as_str(), Role::Touch))
+                .map(|touch| {
+                    (
+                        touch.file.as_str(),
+                        if touch.scope == TouchScope::Delete {
+                            Role::Delete
+                        } else {
+                            Role::Touch
+                        },
+                    )
+                })
                 .chain(fm.creates.iter().map(|file| (file.as_str(), Role::Create)))
                 .chain(
                     fm.expected_docs
@@ -75,6 +85,7 @@ pub(crate) fn normalize(file: &str) -> Result<String, &'static str> {
 struct Target {
     display: String,
     touched: bool,
+    deleted: bool,
     created: bool,
     document: bool,
 }
@@ -84,6 +95,13 @@ struct Receipt {
     display: String,
     identity: Option<StableFileIdentity>,
     absence: Option<bounded_fs::AbsentPath>,
+    deleted: bool,
+}
+
+#[derive(Clone, Copy)]
+pub(crate) struct DeletionBaseline<'a> {
+    pub oid: &'a str,
+    pub preimages: Option<&'a BTreeMap<String, Option<Vec<u8>>>>,
 }
 
 struct Checker<'a> {
@@ -117,8 +135,12 @@ fn issue(file: &str, reason: &'static str) -> Issue {
 #[derive(Clone, Copy)]
 enum Phase<'a> {
     Preflight,
+    PreflightWithDeletions {
+        files: &'a [crate::diff::WorkingTreeChangedFile],
+        baseline: DeletionBaseline<'a>,
+    },
     Postflight {
-        baseline: &'a str,
+        baseline: DeletionBaseline<'a>,
         files: &'a [crate::diff::WorkingTreeChangedFile],
     },
 }
@@ -127,11 +149,28 @@ pub(crate) fn preflight(spec: &ParsedSpec, root: &Path, control: ReadControl<'_>
     check(spec, root, control, Phase::Preflight, |_| false)
 }
 
+/// The caller must authenticate changes against the retained initial task baseline.
+pub(crate) fn preflight_with_deletions(
+    spec: &ParsedSpec,
+    root: &Path,
+    control: ReadControl<'_>,
+    files: &[crate::diff::WorkingTreeChangedFile],
+    baseline: DeletionBaseline<'_>,
+) -> Vec<Issue> {
+    check(
+        spec,
+        root,
+        control,
+        Phase::PreflightWithDeletions { files, baseline },
+        |_| false,
+    )
+}
+
 pub(crate) fn postflight(
     spec: &ParsedSpec,
     root: &Path,
     control: ReadControl<'_>,
-    baseline: &str,
+    baseline: DeletionBaseline<'_>,
     files: &[crate::diff::WorkingTreeChangedFile],
     accepts_deletion: impl Fn(&str) -> bool,
 ) -> Vec<Issue> {
@@ -148,7 +187,7 @@ pub(crate) fn postflight(
 ///
 /// Normalize contained repository paths and reject conflicting file roles.
 /// Inspect regular-file metadata without reading file contents; postflight also
-/// checks creations against the baseline and changed-file inventory. Retain
+/// checks creations and deletions against the baseline and change inventory. Retain
 /// receipts for reinspection, charging work and cancellation limits throughout.
 fn check(
     spec: &ParsedSpec,
@@ -187,10 +226,12 @@ fn check(
                 let target = targets.entry(relative).or_insert_with(|| Target {
                     display: file.into(),
                     touched: false,
+                    deleted: false,
                     created: false,
                     document: false,
                 });
                 target.touched |= matches!(role, Role::Touch);
+                target.deleted |= matches!(role, Role::Delete);
                 target.created |= matches!(role, Role::Create);
                 target.document |= matches!(role, Role::Document);
             }
@@ -200,6 +241,9 @@ fn check(
     for (relative, target) in &targets {
         if target.created && target.touched {
             issues.push(issue(&target.display, "creation_touch_conflict"));
+        }
+        if target.deleted && (target.touched || target.created || target.document) {
+            issues.push(issue(&target.display, "deletion_role_conflict"));
         }
         // Every declaration names a regular file, so it cannot also be a
         // directory needed by another declared target.
@@ -225,11 +269,15 @@ fn check(
         work: MAX_WORK - count,
     };
     if let Phase::Postflight { baseline, files } = phase {
-        issues.extend(checker.creation_issues(&targets, baseline, files));
+        issues.extend(checker.creation_issues(&targets, baseline.oid, files));
     }
-    let (receipts, failed) =
-        checker.collect(targets, matches!(phase, Phase::Preflight), accepts_deletion);
+    let (receipts, failed) = checker.collect(targets, phase, accepts_deletion);
     issues.extend(failed);
+    if let Phase::PreflightWithDeletions { baseline, .. } | Phase::Postflight { baseline, .. } =
+        phase
+    {
+        issues.extend(checker.deletion_issues(&receipts, baseline));
+    }
     issues.extend(checker.finish(receipts));
     issues
 }
@@ -272,17 +320,37 @@ impl Checker<'_> {
     fn collect(
         &mut self,
         targets: BTreeMap<String, Target>,
-        allow_creates: bool,
+        phase: Phase<'_>,
         accepts_deletion: impl Fn(&str) -> bool,
     ) -> (Vec<Receipt>, Vec<Issue>) {
         let mut receipts = Vec::new();
         let mut issues = Vec::new();
+        let postflight = matches!(phase, Phase::Postflight { .. });
+        let files = match phase {
+            Phase::Preflight => &[][..],
+            Phase::PreflightWithDeletions { files, .. } | Phase::Postflight { files, .. } => files,
+        };
+        let deleted = files
+            .iter()
+            .filter(|file| file.status == "deleted")
+            .map(|file| file.path.as_str())
+            .collect::<BTreeSet<_>>();
         for (relative, target) in targets {
+            let deletion_proven = target.deleted && deleted.contains(relative.as_str());
+            if postflight && target.deleted && !deletion_proven {
+                issues.push(issue(&target.display, "deletion_not_deleted"));
+                continue;
+            }
             let mut absence = None;
             let identity = match self.inspect(&relative, None) {
+                Ok(_) if postflight && target.deleted => {
+                    issues.push(issue(&target.display, "deletion_target_present"));
+                    continue;
+                }
                 Ok(identity) => Some(identity),
                 Err("target_missing")
-                    if (allow_creates && target.created)
+                    if (!postflight && target.created)
+                        || deletion_proven
                         || (target.touched
                             && !target.document
                             && !target.created
@@ -310,6 +378,7 @@ impl Checker<'_> {
                 display: target.display,
                 identity,
                 absence,
+                deleted: target.deleted,
             });
         }
         (receipts, issues)
@@ -386,7 +455,7 @@ impl Checker<'_> {
             .filter_map(|(path, target)| {
                 let error = match &existing {
                     Err(reason) => Some(*reason),
-                    Ok(existing) if existing.contains(path.as_str()) => {
+                    Ok(existing) if existing.contains_key(path.as_str()) => {
                         Some("creation_exists_in_baseline")
                     }
                     Ok(_) if !additions.contains(path.as_str()) => Some("creation_not_added"),
@@ -397,15 +466,62 @@ impl Checker<'_> {
             .collect()
     }
 
+    fn deletion_issues(
+        &mut self,
+        receipts: &[Receipt],
+        baseline: DeletionBaseline<'_>,
+    ) -> Vec<Issue> {
+        let deleted = receipts
+            .iter()
+            .filter(|receipt| receipt.deleted && receipt.absence.is_some())
+            .collect::<Vec<_>>();
+        let preimage = |path: &str| baseline.preimages.and_then(|preimages| preimages.get(path));
+        let paths = deleted
+            .iter()
+            .filter(|receipt| preimage(&receipt.relative).is_none())
+            .map(|receipt| receipt.relative.as_str())
+            .collect::<Vec<_>>();
+        let entries = if paths.is_empty() {
+            Ok(BTreeMap::new())
+        } else {
+            self.baseline_entries(&paths, baseline.oid)
+                .map_err(|reason| {
+                    if reason == "creation_baseline_unavailable" {
+                        "deletion_baseline_unavailable"
+                    } else {
+                        reason
+                    }
+                })
+        };
+        deleted
+            .into_iter()
+            .filter_map(|receipt| {
+                let reason = match preimage(&receipt.relative) {
+                    Some(Some(_)) => None,
+                    Some(None) => Some("deletion_baseline_missing"),
+                    None => match &entries {
+                        Err(reason) => Some(*reason),
+                        Ok(entries) => match entries.get(&receipt.relative).map(String::as_str) {
+                            Some("100644" | "100755") => None,
+                            Some(_) => Some("deletion_baseline_nonregular"),
+                            None => Some("deletion_baseline_missing"),
+                        },
+                    },
+                };
+                reason.map(|reason| issue(&receipt.display, reason))
+            })
+            .collect()
+    }
+
     fn baseline_entries(
         &mut self,
         paths: &[&str],
         baseline: &str,
-    ) -> Result<BTreeSet<String>, &'static str> {
+    ) -> Result<BTreeMap<String, String>, &'static str> {
         if !crate::diff::is_full_git_oid(baseline) {
             return Err("creation_baseline_unavailable");
         }
-        let mut found = BTreeSet::new();
+        let mut found = BTreeMap::new();
         let mut offset = 0;
         while offset < paths.len() {
             let mut end = offset;
@@ -425,7 +541,6 @@ impl Checker<'_> {
                 "--literal-pathspecs",
                 "ls-tree",
                 "-z",
-                "--name-only",
                 "--full-tree",
                 baseline,
                 "--",
@@ -450,9 +565,19 @@ impl Checker<'_> {
                 .split(|byte| *byte == 0)
                 .filter(|entry| !entry.is_empty())
             {
-                let path =
+                let entry =
                     std::str::from_utf8(entry).map_err(|_| "creation_baseline_unavailable")?;
-                if !paths[offset..end].contains(&path) || !found.insert(path.to_string()) {
+                let (metadata, path) = entry
+                    .split_once('\t')
+                    .ok_or("creation_baseline_unavailable")?;
+                let mode = metadata
+                    .split(' ')
+                    .next()
+                    .ok_or("creation_baseline_unavailable")?;
+                if !matches!(mode, "100644" | "100755" | "120000" | "160000" | "040000")
+                    || !paths[offset..end].contains(&path)
+                    || found.insert(path.to_string(), mode.to_string()).is_some()
+                {
                     return Err("creation_baseline_unavailable");
                 }
             }
@@ -468,13 +593,18 @@ mod tests {
     use std::cell::Cell;
     use std::time::Instant;
 
+    const EMPTY_BASELINE: DeletionBaseline<'static> = DeletionBaseline {
+        oid: "",
+        preimages: None,
+    };
+
     fn check(
         spec: &ParsedSpec,
         root: &Path,
         control: ReadControl<'_>,
         accepts_deletion: impl Fn(&str) -> bool,
     ) -> Vec<Issue> {
-        postflight(spec, root, control, "", &[], accepts_deletion)
+        postflight(spec, root, control, EMPTY_BASELINE, &[], accepts_deletion)
     }
 
     fn spec(touches: &[&str], docs: &[&str]) -> ParsedSpec {
@@ -499,6 +629,7 @@ mod tests {
             Target {
                 display: file.into(),
                 touched: true,
+                deleted: false,
                 created: false,
                 document,
             },
@@ -510,6 +641,403 @@ mod tests {
         parsed.frontmatter.as_mut().unwrap().creates =
             creates.iter().map(|file| file.to_string()).collect();
         parsed
+    }
+
+    fn deletion_spec(file: &str) -> ParsedSpec {
+        let mut parsed = spec(&[file], &[]);
+        let touch = &mut parsed.frontmatter.as_mut().unwrap().touches[0];
+        touch.scope = TouchScope::Delete;
+        touch.reason = Some("Remove obsolete file".into());
+        parsed
+    }
+
+    #[test]
+    fn deletes_require_regular_initial_targets_and_proved_final_absence() {
+        let root = tempfile::tempdir().unwrap();
+        let preimages = BTreeMap::from([("assets/old.bin".into(), Some(vec![0xff, 0]))]);
+        let baseline = DeletionBaseline {
+            oid: "",
+            preimages: Some(&preimages),
+        };
+        let parsed = deletion_spec("./assets\\old.bin");
+        let files = [crate::diff::WorkingTreeChangedFile {
+            path: "assets/old.bin".into(),
+            status: "deleted".into(),
+        }];
+        assert_eq!(
+            preflight(&parsed, root.path(), ReadControl::default()),
+            [issue("./assets\\old.bin", "target_missing")]
+        );
+        assert!(preflight_with_deletions(
+            &parsed,
+            root.path(),
+            ReadControl::default(),
+            &files,
+            baseline
+        )
+        .is_empty());
+        assert!(postflight(
+            &parsed,
+            root.path(),
+            ReadControl::default(),
+            baseline,
+            &files,
+            |_| false
+        )
+        .is_empty());
+        for inventory in [
+            vec![],
+            vec![crate::diff::WorkingTreeChangedFile {
+                path: "assets/old.bin".into(),
+                status: "modified".into(),
+            }],
+            vec![crate::diff::WorkingTreeChangedFile {
+                path: "other.bin".into(),
+                status: "deleted".into(),
+            }],
+        ] {
+            assert_eq!(
+                preflight_with_deletions(
+                    &parsed,
+                    root.path(),
+                    ReadControl::default(),
+                    &inventory,
+                    baseline
+                ),
+                [issue("./assets\\old.bin", "target_missing")]
+            );
+            assert_eq!(
+                postflight(
+                    &parsed,
+                    root.path(),
+                    ReadControl::default(),
+                    baseline,
+                    &inventory,
+                    |_| true
+                ),
+                [issue("./assets\\old.bin", "deletion_not_deleted")]
+            );
+        }
+        std::fs::create_dir(root.path().join("assets")).unwrap();
+        std::fs::write(root.path().join("assets/old.bin"), [0xff, 0]).unwrap();
+        assert!(preflight(&parsed, root.path(), ReadControl::default()).is_empty());
+        assert!(preflight_with_deletions(
+            &parsed,
+            root.path(),
+            ReadControl::default(),
+            &files,
+            baseline
+        )
+        .is_empty());
+        assert_eq!(
+            postflight(
+                &parsed,
+                root.path(),
+                ReadControl::default(),
+                baseline,
+                &files,
+                |_| false
+            ),
+            [issue("./assets\\old.bin", "deletion_target_present")]
+        );
+        std::fs::remove_file(root.path().join("assets/old.bin")).unwrap();
+        std::fs::create_dir(root.path().join("assets/old.bin")).unwrap();
+        assert!(!preflight(&parsed, root.path(), ReadControl::default()).is_empty());
+        assert!(!preflight_with_deletions(
+            &parsed,
+            root.path(),
+            ReadControl::default(),
+            &files,
+            baseline
+        )
+        .is_empty());
+        assert!(!postflight(
+            &parsed,
+            root.path(),
+            ReadControl::default(),
+            baseline,
+            &files,
+            |_| true
+        )
+        .is_empty());
+    }
+
+    #[test]
+    fn deletes_prove_regular_baseline_entries_and_honor_initial_preimages() {
+        let root = tempfile::tempdir().unwrap();
+        let git = |args: &[&str]| {
+            let output = std::process::Command::new("git")
+                .current_dir(root.path())
+                .args(args)
+                .output()
+                .unwrap();
+            assert!(output.status.success(), "{output:?}");
+            String::from_utf8(output.stdout).unwrap().trim().to_string()
+        };
+        git(&["init", "-q", "--initial-branch=main"]);
+        git(&["config", "user.name", "Test"]);
+        git(&["config", "user.email", "test@example.com"]);
+        git(&["config", "commit.gpgsign", "false"]);
+        std::fs::write(root.path().join("regular"), "contents").unwrap();
+        git(&["add", "regular"]);
+        git(&["commit", "-qm", "regular baseline"]);
+        let commit = git(&["rev-parse", "HEAD"]);
+        let blob = git(&["rev-parse", "HEAD:regular"]);
+        for (mode, oid, file) in [
+            ("100755", blob.as_str(), "executable"),
+            ("120000", blob.as_str(), "link"),
+            ("160000", commit.as_str(), "module"),
+        ] {
+            git(&["update-index", "--add", "--cacheinfo", mode, oid, file]);
+        }
+        git(&["commit", "-qm", "typed baseline"]);
+        let oid = git(&["rev-parse", "HEAD"]);
+        std::fs::remove_file(root.path().join("regular")).unwrap();
+        let baseline = DeletionBaseline {
+            oid: &oid,
+            preimages: None,
+        };
+        for (file, expected) in [
+            ("regular", None),
+            ("executable", None),
+            ("link", Some("deletion_baseline_nonregular")),
+            ("module", Some("deletion_baseline_nonregular")),
+            ("missing", Some("deletion_baseline_missing")),
+        ] {
+            let parsed = deletion_spec(file);
+            let files = [crate::diff::WorkingTreeChangedFile {
+                path: file.into(),
+                status: "deleted".into(),
+            }];
+            for issues in [
+                preflight_with_deletions(
+                    &parsed,
+                    root.path(),
+                    ReadControl::default(),
+                    &files,
+                    baseline,
+                ),
+                postflight(
+                    &parsed,
+                    root.path(),
+                    ReadControl::default(),
+                    baseline,
+                    &files,
+                    |_| false,
+                ),
+            ] {
+                assert_eq!(
+                    issues,
+                    expected
+                        .into_iter()
+                        .map(|reason| issue(file, reason))
+                        .collect::<Vec<_>>(),
+                    "{file}"
+                );
+            }
+        }
+        for (file, preimage, expected) in [
+            ("link", Some(vec![]), None),
+            ("regular", None, Some("deletion_baseline_missing")),
+        ] {
+            let parsed = deletion_spec(file);
+            let files = [crate::diff::WorkingTreeChangedFile {
+                path: file.into(),
+                status: "deleted".into(),
+            }];
+            let preimages = BTreeMap::from([(file.to_string(), preimage)]);
+            let baseline = DeletionBaseline {
+                oid: &oid,
+                preimages: Some(&preimages),
+            };
+            assert_eq!(
+                postflight(
+                    &parsed,
+                    root.path(),
+                    ReadControl::default(),
+                    baseline,
+                    &files,
+                    |_| false
+                ),
+                expected
+                    .into_iter()
+                    .map(|reason| issue(file, reason))
+                    .collect::<Vec<_>>()
+            );
+        }
+        let parsed = deletion_spec("regular");
+        let files = [crate::diff::WorkingTreeChangedFile {
+            path: "regular".into(),
+            status: "deleted".into(),
+        }];
+        for oid in ["--bad".to_string(), "0".repeat(40)] {
+            assert_eq!(
+                postflight(
+                    &parsed,
+                    root.path(),
+                    ReadControl::default(),
+                    DeletionBaseline {
+                        oid: &oid,
+                        preimages: None
+                    },
+                    &files,
+                    |_| false
+                ),
+                [issue("regular", "deletion_baseline_unavailable")]
+            );
+        }
+        std::fs::write(root.path().join("regular"), "restored").unwrap();
+        assert!(preflight_with_deletions(
+            &parsed,
+            root.path(),
+            ReadControl::default(),
+            &files,
+            EMPTY_BASELINE
+        )
+        .is_empty());
+    }
+
+    #[test]
+    fn deletes_reject_normalized_role_conflicts_and_do_not_admit_missing_touches_or_docs() {
+        let root = tempfile::tempdir().unwrap();
+        let files = [crate::diff::WorkingTreeChangedFile {
+            path: "docs/old.md".into(),
+            status: "deleted".into(),
+        }];
+        for role in ["touch", "create", "document"] {
+            let mut parsed = deletion_spec("./docs\\old.md");
+            let fm = parsed.frontmatter.as_mut().unwrap();
+            match role {
+                "touch" => fm.touches.push(crate::spec::TouchEntry {
+                    file: "docs/old.md".into(),
+                    ..Default::default()
+                }),
+                "create" => fm.creates.push("docs/old.md".into()),
+                "document" => fm.expected_docs.push("docs/old.md".into()),
+                _ => unreachable!(),
+            }
+            for issues in [
+                preflight(&parsed, root.path(), ReadControl::default()),
+                preflight_with_deletions(
+                    &parsed,
+                    root.path(),
+                    ReadControl::default(),
+                    &files,
+                    EMPTY_BASELINE,
+                ),
+                postflight(
+                    &parsed,
+                    root.path(),
+                    ReadControl::default(),
+                    EMPTY_BASELINE,
+                    &files,
+                    |_| true,
+                ),
+            ] {
+                assert_eq!(
+                    issues,
+                    [issue("./docs\\old.md", "deletion_role_conflict")],
+                    "{role}"
+                );
+            }
+        }
+        for parsed in [spec(&["docs/old.md"], &[]), spec(&[], &["docs/old.md"])] {
+            assert_eq!(
+                preflight_with_deletions(
+                    &parsed,
+                    root.path(),
+                    ReadControl::default(),
+                    &files,
+                    EMPTY_BASELINE
+                ),
+                [issue("docs/old.md", "target_missing")]
+            );
+        }
+    }
+
+    #[test]
+    fn deletes_recheck_absence_receipts_on_retry_and_postflight() {
+        let root = tempfile::tempdir().unwrap();
+        let files = [crate::diff::WorkingTreeChangedFile {
+            path: "old.bin".into(),
+            status: "deleted".into(),
+        }];
+        for phase in [
+            Phase::PreflightWithDeletions {
+                files: &files,
+                baseline: EMPTY_BASELINE,
+            },
+            Phase::Postflight {
+                baseline: EMPTY_BASELINE,
+                files: &files,
+            },
+        ] {
+            let mut inspector = checker(root.path(), ReadControl::default());
+            let mut declared = targets("old.bin", false);
+            let target = declared.get_mut("old.bin").unwrap();
+            target.touched = false;
+            target.deleted = true;
+            let (receipts, issues) = inspector.collect(declared, phase, |_| false);
+            assert!(issues.is_empty(), "{issues:?}");
+            assert!(receipts[0].absence.is_some());
+            std::fs::write(root.path().join("old.bin"), "reappeared").unwrap();
+            assert_eq!(
+                inspector.finish(receipts),
+                [issue("old.bin", "target_changed")]
+            );
+            std::fs::remove_file(root.path().join("old.bin")).unwrap();
+        }
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn deletes_do_not_follow_symlinks_even_with_deletion_inventory_unix() {
+        use std::os::unix::fs::symlink;
+        let root = tempfile::tempdir().unwrap();
+        std::fs::create_dir(root.path().join("real")).unwrap();
+        std::fs::write(root.path().join("real/file"), "existing").unwrap();
+        symlink("real", root.path().join("linked")).unwrap();
+        symlink("missing", root.path().join("dangling")).unwrap();
+        for file in [
+            "linked",
+            "linked/file",
+            "linked/missing",
+            "dangling",
+            "dangling/missing",
+        ] {
+            let parsed = deletion_spec(file);
+            let files = [crate::diff::WorkingTreeChangedFile {
+                path: file.into(),
+                status: "deleted".into(),
+            }];
+            assert!(
+                !preflight(&parsed, root.path(), ReadControl::default()).is_empty(),
+                "{file}"
+            );
+            assert!(
+                !preflight_with_deletions(
+                    &parsed,
+                    root.path(),
+                    ReadControl::default(),
+                    &files,
+                    EMPTY_BASELINE
+                )
+                .is_empty(),
+                "{file}"
+            );
+            assert!(
+                !postflight(
+                    &parsed,
+                    root.path(),
+                    ReadControl::default(),
+                    EMPTY_BASELINE,
+                    &files,
+                    |_| true
+                )
+                .is_empty(),
+                "{file}"
+            );
+        }
     }
 
     #[test]
@@ -633,7 +1161,7 @@ mod tests {
             let target = declared.get_mut("new/file").unwrap();
             target.touched = false;
             target.created = true;
-            let (receipts, issues) = inspector.collect(declared, true, |_| false);
+            let (receipts, issues) = inspector.collect(declared, Phase::Preflight, |_| false);
             assert!(issues.is_empty(), "{issues:?}");
             assert!(receipts[0].absence.is_some());
             match mutation {
@@ -696,7 +1224,11 @@ mod tests {
         let paths = ["a.txt", "directory", "[ab].txt", "new/file", "module"];
         assert_eq!(
             inspector.baseline_entries(&paths, &baseline).unwrap(),
-            BTreeSet::from(["a.txt".into(), "directory".into(), "module".into()])
+            BTreeMap::from([
+                ("a.txt".into(), "100644".into()),
+                ("directory".into(), "040000".into()),
+                ("module".into(), "160000".into())
+            ])
         );
         let many = (0..130).map(|i| format!("new-{i}")).collect::<Vec<_>>();
         let paths = many.iter().map(String::as_str).collect::<Vec<_>>();
@@ -898,7 +1430,14 @@ mod tests {
                 std::fs::write(&path, b"before").unwrap();
             }
             let mut inspector = checker(root.path(), ReadControl::default());
-            let (receipts, issues) = inspector.collect(targets("file", false), false, |_| true);
+            let (receipts, issues) = inspector.collect(
+                targets("file", false),
+                Phase::Postflight {
+                    baseline: EMPTY_BASELINE,
+                    files: &[],
+                },
+                |_| true,
+            );
             assert!(issues.is_empty());
             assert_eq!(receipts.len(), 1);
             match mutation {
@@ -937,7 +1476,14 @@ mod tests {
         );
         let mut inspector = checker(root.path(), ReadControl::default());
         inspector.work = 3;
-        let (receipts, issues) = inspector.collect(targets("file", false), false, |_| false);
+        let (receipts, issues) = inspector.collect(
+            targets("file", false),
+            Phase::Postflight {
+                baseline: EMPTY_BASELINE,
+                files: &[],
+            },
+            |_| false,
+        );
         assert!(issues.is_empty());
         assert_eq!(
             inspector.finish(receipts),
@@ -952,7 +1498,14 @@ mod tests {
                 interrupted: Some(&callback),
             },
         );
-        let (receipts, issues) = inspector.collect(targets("file", false), false, |_| false);
+        let (receipts, issues) = inspector.collect(
+            targets("file", false),
+            Phase::Postflight {
+                baseline: EMPTY_BASELINE,
+                files: &[],
+            },
+            |_| false,
+        );
         assert!(issues.is_empty());
         interrupted.set(true);
         assert_eq!(inspector.finish(receipts), [issue("file", "interrupted")]);
@@ -998,7 +1551,14 @@ mod tests {
         }
         std::fs::set_permissions(&unreadable, std::fs::Permissions::from_mode(0o600)).unwrap();
         let mut inspector = checker(&root, ReadControl::default());
-        let (receipts, issues) = inspector.collect(targets("private", false), false, |_| false);
+        let (receipts, issues) = inspector.collect(
+            targets("private", false),
+            Phase::Postflight {
+                baseline: EMPTY_BASELINE,
+                files: &[],
+            },
+            |_| false,
+        );
         assert!(issues.is_empty());
         std::fs::rename(&root, directory.path().join("moved")).unwrap();
         symlink(&outside, &root).unwrap();

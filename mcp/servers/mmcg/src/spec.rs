@@ -166,7 +166,7 @@ impl Frontmatter {
 #[serde(deny_unknown_fields)]
 pub struct TouchEntry {
     pub file: String,
-    /// File scope is an explicit alternative to symbol snapshots, never inferred.
+    /// File and deletion scopes are explicit alternatives to symbol snapshots.
     #[serde(default)]
     pub scope: TouchScope,
     #[serde(default)]
@@ -183,6 +183,7 @@ pub enum TouchScope {
     #[default]
     Symbols,
     File,
+    Delete,
 }
 
 /// Polymorphic symbol — a bare name string (`- foo`) or a detailed object
@@ -497,7 +498,7 @@ fn extract_frontmatter(body: &str) -> (Option<Frontmatter>, Option<String>, &str
                     .is_none_or(|risk| matches!(risk, "low" | "medium" | "high"))
                 && fm.touches.iter().all(|touch| match touch.scope {
                     TouchScope::Symbols => touch.reason.is_none(),
-                    TouchScope::File => {
+                    TouchScope::File | TouchScope::Delete => {
                         touch.symbols.is_empty()
                             && touch
                                 .reason
@@ -1373,6 +1374,35 @@ touches:
             s.section_order.iter().any(|n| n.starts_with("Goals")),
             "diagnostics should retain sections on malformed frontmatter"
         );
+    }
+
+    #[test]
+    fn deletion_scope_requires_reason_and_no_symbol_snapshots() {
+        let body = "---\ntouches:\n  - file: assets/old.bin\n    scope: delete\n    reason: Remove unused asset\n---\n## Goals\nRemove asset.\n";
+        let parsed = parse_str("spec.md", body);
+        assert!(parsed.frontmatter_error.is_none());
+        let fm = parsed.frontmatter.unwrap();
+        assert!(fm.has_file_scope());
+        assert_eq!(fm.code_paths().collect::<Vec<_>>(), ["assets/old.bin"]);
+        assert_eq!(fm.touches[0].scope, TouchScope::Delete);
+        assert_eq!(
+            serde_json::to_value(&fm.touches[0]).unwrap()["scope"],
+            "delete"
+        );
+        for metadata in [
+            "",
+            "reason: '  '",
+            "reason: null",
+            "reason: 7",
+            "reason: Remove API\n    symbols: [old_api]",
+        ] {
+            let parsed = parse_str("spec.md", &format!("---\ntouches:\n  - file: old.bin\n    scope: delete\n    {metadata}\n---\n## Goals\nRemove asset.\n"));
+            assert_eq!(
+                parsed.frontmatter_error.as_deref(),
+                Some("frontmatter_invalid"),
+                "{metadata}"
+            );
+        }
     }
 
     #[test]

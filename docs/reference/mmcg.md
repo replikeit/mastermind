@@ -1801,12 +1801,12 @@ existing name/type-based precision limits.
 
 ### Touch scope
 
-`touches[].scope` accepts `symbols` (the default) or `file`. Strict preflight
-requires nonempty `symbols` for symbol scope. File scope requires a nonblank
+`touches[].scope` accepts `symbols` (the default), `file`, or `delete`. Strict preflight
+requires nonempty `symbols` for symbol scope. File and delete scope require a nonblank
 `reason` and no symbols. A reason on symbol scope is invalid. Scope is never
 inferred from a file extension. Use file scope for deliberate file-level work
 such as documentation, configuration, notebooks, or adding tests to an existing
-file. New files belong in `creates`.
+file. Use [delete scope](#deleted-files-and-moves) for removals. New files belong in `creates`.
 
 File scope retains file admission, exact postflight path checks, verification,
 index requirements and removal checks. Unsupported scope values and conflicting
@@ -1951,6 +1951,44 @@ The input spec hash binds creation versus existing-file roles without changing
 the envelope or executor-report schemas. This requires a runtime with `creates`
 support: older binaries ignore the field, and updating source does not update
 an installed runtime or global workflow package.
+
+### Deleted files and moves
+
+Declare a file removal with `scope: delete`, a nonblank reason and no `symbols`.
+For a move, also list the destination in `creates`:
+
+```yaml
+touches:
+  - file: src/old.test.ts
+    scope: delete
+    reason: Move the callback-only tests to their new path
+creates: [src/new.test.ts]
+```
+
+This works for files without indexed declarations, including callback-only tests,
+re-export barrels and assets. Postflight requires the source to be absent and
+the diff to prove its deletion from the task's initial inputs. The original
+source must be a regular file in the retained Git baseline or a captured initial
+regular-file preimage. A missing baseline entry, symlink, submodule or failed
+baseline read cannot prove a deletion. Staging a rename is optional.
+
+Delete scope does not acknowledge removed APIs. Every removed non-module
+declaration still needs `breaking_changes.removed_symbols` with a uniquely
+resolved identity. A deleted path cannot also be an ordinary touch, a creation
+or an `expected_docs` requirement, including normalized aliases.
+
+The first preflight and standalone `verify-spec` require the source to exist.
+After a move, amend the task's source touch to `scope: delete` and run
+`mastermind run-task <spec> --pre-only`. A task with captured initial inputs can
+reapprove a proven deletion while retaining its original baseline, including on
+an unchanged-spec retry. Other file, symbol and FIND preconditions still apply.
+Legacy tasks without captured initial inputs retain live preflight admission.
+Do not delete task state or reset the baseline to hide completed work. Rerun the
+declared verification commands after reapproval, then postflight and
+`review-task prepare`.
+
+Use a runtime supporting `scope: delete`. Older runtimes reject it as invalid
+frontmatter. The executor-report and persisted task-state schemas are unchanged.
 
 ### Literal FIND preconditions
 

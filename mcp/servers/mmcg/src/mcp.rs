@@ -5582,6 +5582,7 @@ mod tests {
                 "{tool}"
             );
             assert!(safe_index_status(&store).unwrap().stale_files > 0);
+            drop(store);
             std::fs::remove_dir_all(root).unwrap();
         }
     }
@@ -5618,6 +5619,7 @@ mod tests {
             1
         );
         assert_eq!(queries::CONCEPT_TEST_CALLS.with(|calls| calls.get()), 1);
+        drop(store);
         std::fs::remove_dir_all(root).unwrap();
     }
 

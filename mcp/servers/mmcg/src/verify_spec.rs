@@ -369,6 +369,23 @@ pub fn run(spec: &ParsedSpec, store: Option<&Store>, repo_root: &Path) -> Report
     run_internal(spec, store, repo_root, Phase::Preflight, None)
 }
 
+/// Retry file admission against the controller's retained task inputs.
+pub(crate) fn run_reapproval(
+    spec: &ParsedSpec,
+    store: Option<&Store>,
+    repo_root: &Path,
+    files: &[crate::diff::WorkingTreeChangedFile],
+    baseline: crate::declared_files::DeletionBaseline<'_>,
+) -> Report {
+    run_internal(
+        spec,
+        store,
+        repo_root,
+        Phase::Reapproval(files, baseline),
+        None,
+    )
+}
+
 /// Check completed work without reapplying literal pre-edit FIND conditions.
 /// The audit appends its shared declared-file findings after checking receipts.
 pub(crate) fn run_postflight(
@@ -380,8 +397,12 @@ pub(crate) fn run_postflight(
     run_internal(spec, store, repo_root, Phase::Postflight, removals)
 }
 
-enum Phase {
+enum Phase<'a> {
     Preflight,
+    Reapproval(
+        &'a [crate::diff::WorkingTreeChangedFile],
+        crate::declared_files::DeletionBaseline<'a>,
+    ),
     Postflight,
 }
 
@@ -389,7 +410,7 @@ fn run_internal(
     spec: &ParsedSpec,
     store: Option<&Store>,
     repo_root: &Path,
-    phase: Phase,
+    phase: Phase<'_>,
     removals: Option<&spec_removals::Plan>,
 ) -> Report {
     let deadline = Instant::now() + crate::diff::git_timeout();
@@ -457,17 +478,19 @@ fn run_internal(
     }
 
     // FIND describes pre-edit contents. Successful replacement may remove it.
-    if matches!(phase, Phase::Preflight) {
+    if !matches!(phase, Phase::Postflight) {
         let interrupted = || store.is_some_and(Store::work_interrupted);
         let control = crate::bounded_fs::ReadControl {
             deadline: Some(deadline),
             interrupted: Some(&interrupted),
         };
-        errors.extend(
-            crate::declared_files::preflight(spec, repo_root, control)
-                .iter()
-                .map(declared_file_finding),
-        );
+        let file_issues = match phase {
+            Phase::Reapproval(files, baseline) => crate::declared_files::preflight_with_deletions(
+                spec, repo_root, control, files, baseline,
+            ),
+            _ => crate::declared_files::preflight(spec, repo_root, control),
+        };
+        errors.extend(file_issues.iter().map(declared_file_finding));
         errors.extend(crate::find_checks::check(
             &spec.find_blocks,
             repo_root,

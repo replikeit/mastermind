@@ -85,6 +85,12 @@ touches:
 Omit `symbols` for file scope. File admission, postflight, verification, index
 requirements and removal checks remain in force.
 
+For file removals use `scope: delete` with a nonblank `reason` and no `symbols`.
+For moves, declare the source as a deletion and the destination in `creates`.
+Removed APIs still require `breaking_changes.removed_symbols`. Repeating
+`run-task --pre-only` can admit a proven deletion against retained initial
+inputs. Standalone `verify-spec` still checks current files.
+
 The planner must replace the generated `acceptance` placeholders and map every
 criterion to relevant `verify[].run.id` checks before preflight. Each command
 label must match its displayed argv. All checks listed for a criterion are

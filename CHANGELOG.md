@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.4.1] - 2026-10-22
+
+### Fixed
+
+- Declare file removals with `scope: delete`, including tests and re-export
+  barrels without indexed declarations. Repeated preflight accepts proven
+  deletions against the original task inputs. API removals and required docs
+  remain checked before Held and semantic review.
+- Retry task-mining finalization after missing transcripts, interrupted workers
+  or failed Git refreshes without overlapping finalizers.
+- Share query freshness checks across CLI and MCP, retain the original deadline
+  and reject changed review source bindings.
+- Clean up owned deep-capture process groups on Unix and report failed Claude
+  registration removal instead of claiming successful uninstall.
+
 ## [3.4.0] - 2026-10-21
 
 ### Added
@@ -236,7 +251,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Give each Mastermind native hook an event-specific label in the client review
   screen. Re-running hook setup updates previous labels without duplicate hooks.
 
-[Unreleased]: https://github.com/xcrft/mastermind/compare/npm-v3.4.0...HEAD
+[Unreleased]: https://github.com/xcrft/mastermind/compare/npm-v3.4.1...HEAD
+[3.4.1]: https://github.com/xcrft/mastermind/releases/tag/npm-v3.4.1
 [3.4.0]: https://github.com/xcrft/mastermind/releases/tag/npm-v3.4.0
 [3.3.1]: https://github.com/xcrft/mastermind/releases/tag/npm-v3.3.1
 [3.3.0]: https://github.com/xcrft/mastermind/releases/tag/npm-v3.3.0

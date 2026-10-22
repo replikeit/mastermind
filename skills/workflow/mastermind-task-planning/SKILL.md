@@ -150,33 +150,32 @@ generic engineering advice.
 
 Before showing the contract to the user:
 
-1. Existing files belong in `touches`; files to add belong in the top-level
-   `creates` list. Each target must be contained and regular, or safely absent
-   for `creates`. Regular drafts are allowed on repeated preflight. A created
-   path must be absent from the original Git baseline at postflight. List new
-   required docs in both `creates` and `expected_docs`. Do not declare the same
-   normalized path in `touches` and `creates`, or a file and its child path.
+1. Use `touches` for existing files and `creates` for additions. Removals use
+   `scope: delete`, a nonblank `reason` and no `symbols`. Moves declare both paths.
+   Removed APIs still need `breaking_changes.removed_symbols`. Targets must be
+   contained regular files. Creates may be safely absent or regular drafts, but
+   must be absent from the original Git baseline. New required docs belong in
+   both `creates` and `expected_docs`. Reject other conflicting roles, deletion
+   of required docs, and file/child declarations, including normalized aliases.
+   After a move, repeat controller preflight against retained initial inputs.
 2. Existing symbols and snapshot counts match the current index.
 3. Acceptance Criteria are independently observable.
 4. VERIFY commands are real, terminating, and scoped; the full gate appears
    once in Final Verification.
 5. The contract authorizes every intended file and no unrelated file.
 
-Run the read-only deterministic validator:
+Validate without writing lifecycle state:
 
 ```bash
 mastermind verify-spec <task>/spec.md
 ```
 
-`verify-spec` does not write lifecycle state. Fix failures before requesting
-approval. A verified contract should normally fit on one or two screens;
-strict contracts may be longer because their extra evidence is material.
+Fix failures before approval. Keep verified contracts to one or two screens.
+Strict contracts may need more space for evidence.
 
-Literal FIND blocks describe the current pre-edit file and require an explicit
-repository-relative File marker. An unavailable read is a preflight failure.
-After applying a replacement, use postflight to check the result; rerunning
-`verify-spec` still tests the old precondition. CHANGE TO coverage requires
-review of the resulting change and final verification evidence.
+FIND requires a repository-relative File marker and readable pre-edit contents.
+After replacement, use postflight. `verify-spec` still tests the old precondition.
+Review CHANGE TO against the diff and final verification evidence.
 
 ## Execution handoff
 

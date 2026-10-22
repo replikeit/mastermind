@@ -494,6 +494,53 @@ fn malformed_unchanged_baseline_cannot_certify_an_unqualified_removal() {
 }
 
 #[test]
+fn explicit_file_deletion_still_requires_api_acknowledgements_and_required_docs() {
+    let mut fixture = Fixture::new(&[
+        ("service.py", "def old_api(): pass\n"),
+        ("keep.py", "def keep(): return 1\n"),
+    ]);
+    let touches =
+        "  - file: service.py\n    scope: delete\n    reason: Remove the obsolete service\n";
+    let path = fixture.write_spec(touches, "    []\n", "");
+    assert!(fixture
+        .command(&[
+            "verify-spec",
+            path.to_str().unwrap(),
+            "--require-index",
+            "--json"
+        ])
+        .status
+        .success());
+    std::fs::remove_file(fixture.root().join("service.py")).unwrap();
+    Indexer::new(fixture.root())
+        .index_all(&mut fixture.store, false)
+        .unwrap();
+    let audit = fixture.audit(&path, false);
+    assert!(audit["findings"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(
+            |finding| finding["kind"] == "removed_symbol_not_acknowledged"
+                && finding["symbol"] == "old_api"
+        ));
+    let path = fixture.write_spec(touches, "    - {name: old_api, file: service.py}\n", "");
+    assert_eq!(fixture.audit(&path, true)["verdict"], "held");
+    let body = std::fs::read_to_string(&path).unwrap().replace(
+        "breaking_changes:\n",
+        "expected_docs: [./service.py]\nbreaking_changes:\n",
+    );
+    std::fs::write(&path, body).unwrap();
+    let audit = fixture.audit(&path, false);
+    assert!(audit["findings"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|finding| finding["kind"] == "declared_file_unavailable"
+            && finding["reason"] == "deletion_role_conflict"));
+}
+
+#[test]
 fn ci_accepts_acknowledged_file_deletion_without_weakening_preflight() {
     for file in ["service.py", "./service.py"] {
         let mut fixture = Fixture::new(&[

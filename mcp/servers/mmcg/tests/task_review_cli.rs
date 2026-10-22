@@ -257,6 +257,89 @@ fn positive(request: &Value) -> Value {
 }
 
 #[test]
+fn symbol_free_moves_reapprove_and_reach_held_review_with_the_original_baseline() {
+    for staged in [false, true] {
+        let fixture = Fixture::new();
+        let test_source = "describe('x', () => { it('y', () => {}); });\n";
+        let barrel_source = "export * from './keep';\n";
+        fixture.write("src/keep.ts", "export function keep() { return 1; }\n");
+        fixture.write("src/old.test.ts", test_source);
+        fixture.write("src/index.ts", barrel_source);
+        fixture.git(&["add", "src"]);
+        fixture.git(&["commit", "-qm", "Files without indexed declarations"]);
+        fixture.index();
+        let store = mmcg::store::Store::open(fixture.path(".mastermind/index.db")).unwrap();
+        for path in ["src/old.test.ts", "src/index.ts"] {
+            assert!(store
+                .symbols_in_file(path)
+                .unwrap()
+                .iter()
+                .all(|symbol| symbol.kind == "module"));
+        }
+        drop(store);
+        fixture.write(".mastermind/expected-test.ts", test_source);
+        fixture.write(".mastermind/expected-barrel.ts", barrel_source);
+        fixture.write(EXECUTABLE, "#!/bin/sh\nset -eu\ntest ! -e src/old.test.ts\ntest ! -e src/index.ts\n/usr/bin/cmp .mastermind/expected-test.ts src/new.test.ts\n/usr/bin/cmp .mastermind/expected-barrel.ts src/barrel.ts\n");
+        fixture.write(SPEC, "---\nmode: verified\n---\n# Move files without declarations\n\n## Goals\nMove the test and re-export barrel without changing their contents.\n\n## Scope\nReplace the two old paths with their new destinations.\n\n## Acceptance Criteria\nBoth new files have the original contents and both old paths are absent.\n\n## Tests Plan\nCompare the destination bytes and check source absence.\n\n## Final Verification\nRun the declared move check.\n");
+        fixture.edit_frontmatter(|metadata| {
+            metadata["touches"] = json!([
+                {"file":"src/old.test.ts", "scope":"file", "reason":"Move the callback-only test"},
+                {"file":"src/index.ts", "scope":"file", "reason":"Move the re-export barrel"}
+            ]);
+            metadata["creates"] = json!(["src/new.test.ts", "src/barrel.ts"]);
+            metadata["verify"] = json!([{"cmd":format!("./{EXECUTABLE} move"),
+                "run":{"id":"move", "argv":[format!("./{EXECUTABLE}"),"move"], "cwd":".", "timeout_secs":10}}]);
+            metadata["acceptance"] = json!([{"id":"moved", "statement":"Both files retain their contents at the new paths and the old paths are absent.", "checks":["move"]}]);
+        });
+        assert_success(&fixture.run(&["run-task", SPEC, "--pre-only"]));
+        let initial = fixture.state();
+        assert!(initial["initial_worktree"].is_object());
+        assert!(initial["baseline_ref"].is_string());
+        fs::rename(
+            fixture.path("src/old.test.ts"),
+            fixture.path("src/new.test.ts"),
+        )
+        .unwrap();
+        fs::rename(fixture.path("src/index.ts"), fixture.path("src/barrel.ts")).unwrap();
+        if staged {
+            fixture.git(&["add", "-A", "src"]);
+            let status = fixture.git(&["diff", "--cached", "--name-status", "-M"]);
+            assert!(String::from_utf8_lossy(&status.stdout).contains("R100"));
+        }
+        fixture.edit_frontmatter(|metadata| {
+            for touch in metadata["touches"].as_array_mut().unwrap() {
+                touch["scope"] = json!("delete");
+            }
+        });
+        // Exercise amendment recovery and then an unchanged-contract retry.
+        for _ in 0..2 {
+            assert_success(&fixture.run(&["run-task", SPEC, "--pre-only"]));
+            let state = fixture.state();
+            assert_eq!(state["baseline_ref"], initial["baseline_ref"]);
+            assert_eq!(state["initial_worktree"], initial["initial_worktree"]);
+        }
+        let standalone = fixture.run(&["verify-spec", SPEC, "--json"]);
+        assert!(!standalone.status.success());
+        assert!(parse(&standalone)["errors"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|error| error["kind"] == "missing_file"));
+        assert_success(&fixture.run(&["verification", "run", SPEC, "--id", "move", "--json"]));
+        fixture.write(REPORT, &json!({"schema_version":1,"spec":SPEC,"status":"complete","phases":[],
+            "files_modified":["src/old.test.ts","src/new.test.ts","src/index.ts","src/barrel.ts"],
+            "claims":[],"defects":[],"verifications":[{"cmd":format!("./{EXECUTABLE} move"),"result":"pass","observed":{"exit_code":0}}]}).to_string());
+        let post = fixture.run(&["run-task", SPEC, "--post-only"]);
+        assert_success(&post);
+        assert!(String::from_utf8_lossy(&post.stdout).contains("Held"));
+        assert_eq!(fixture.state()["status"], "history_review_required");
+        let request = fixture.request();
+        assert_eq!(request["draft"]["criteria"][0]["id"], "moved");
+        assert!(request["target"]["evidence"]["check:move"].is_object());
+    }
+}
+
+#[test]
 fn green_checks_and_history_markdown_do_not_supply_a_semantic_review() {
     let fixture = Fixture::held();
     fixture.finish_markdown();

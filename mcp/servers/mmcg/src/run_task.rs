@@ -2974,7 +2974,19 @@ fn run_pre(
     if validation.carried > 0 {
         println!("Reapproval retains {} historical precondition(s); new or changed conditions and current file declarations are checked below.", validation.carried);
     }
-    let mut verify = verify_spec::run(&validation.current, store.as_ref(), repo_root);
+    let mut verify = match approval_inputs.as_ref().filter(|_| previous.is_some()) {
+        Some(inputs) => verify_spec::run_reapproval(
+            &validation.current,
+            store.as_ref(),
+            repo_root,
+            &inputs.files,
+            crate::declared_files::DeletionBaseline {
+                oid: &head,
+                preimages: Some(&inputs.preimages),
+            },
+        ),
+        None => verify_spec::run(&validation.current, store.as_ref(), repo_root),
+    };
     if opts.strict {
         for f in verify_spec::strict_check(&parsed) {
             verify.push_error(f);
