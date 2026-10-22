@@ -264,12 +264,12 @@ command observations from reported results and semantic judgments.
 | `--force-iteration` | Override the general iteration limit and record the override as a lesson candidate. |
 | `--exec` | Start a new preflight iteration and one bound Claude invocation. |
 | `--guarded-exec` | With `--exec`, restrict supported native tools to the declared scope and exact verification commands, then reconcile observed calls. See [guarded execution](task-runtime.md#guarded-execution) for native fallback and process boundaries. |
-| `--exec-timeout N`, `--exec-max-turns N` | Executor limits: 1–7,200 seconds and 1–100 turns. Defaults 1,800 and 40. |
+| `--exec-timeout N`, `--exec-max-turns N` | Executor limits: 1–7,200 seconds and 1–100 turns. Defaults 1,800 and 40, or the project defaults set by `init --exec-timeout` and `init --exec-max-turns`. |
 | `--profile-client ID` | Include advice through an existing profile grant. Requires `--exec`. |
 | `--auto-repair` | With `--exec`, retry eligible fresh failed checks under the same structured contract and a finite 1–20 iteration budget. |
 | `--auto-review` | Run one semantic review after a held audit, or resume review of an existing pending held task without `--exec`. |
 | `--auto-follow-up` | With `--exec --auto-review`, allow one concrete negative-criterion repair, new checks and review within the shared iteration budget. |
-| `--review-timeout N`, `--review-max-turns N` | Independent reviewer limits: 1–7,200 seconds and 1–100 turns. Defaults 600 and 30, or the project default set by `init --review-max-turns`. |
+| `--review-timeout N`, `--review-max-turns N` | Independent reviewer limits: 1–7,200 seconds and 1–100 turns. Defaults 600 and 30, or the project defaults set by `init --review-timeout` and `init --review-max-turns`. |
 
 `--auto-repair` requires structured acceptance and observed checks. It rejects
 `--force-iteration`, `--pre-only` and `--post-only`. Scope drift, missing evidence
@@ -405,7 +405,8 @@ and habit review. See the authoritative [capture](persona.md#native-capture),
 ```bash
 mmcg init
 mmcg init --client codex --workflow off --mining capture
-mmcg init --review-max-turns 40
+mmcg init --review-max-turns 40 --review-timeout 900
+mmcg init --exec-max-turns 60 --exec-timeout 3600
 mmcg status --json
 mmcg doctor --json
 mmcg workflow audit --root . --json
@@ -419,7 +420,16 @@ mmcg setup generic --scope project --config ./mcp.json
 `init --review-max-turns N` (1–100) stores the reviewer turn default for
 `review-task run` and `run-task --auto-review` as `review_max_turns` in
 `.mastermind/setup.json`; the default 30 is not written, and an explicit flag
-wins. Commit `setup.json` only if the team accepts that it changes reviewer cost.
+wins. `init --review-timeout N` (1–7,200 seconds) stores `review_timeout_secs`
+for the same commands; the default 600 is not written. `init --exec-max-turns N`
+(1–100) and `init --exec-timeout N` (1–7,200 seconds) store `exec_max_turns` and
+`exec_timeout_secs` for `run-task --exec`; the defaults 40 and 1,800 are not
+written. Every limit resolves as explicit flag, then project setting, then
+default. Commit `setup.json` only if the team accepts that it changes native
+run cost. `setup.json` is read strictly, so a release that does not know one of
+these keys rejects the whole file: its `init` and hook mining fail, and
+fail-soft settings such as the profile budget use their defaults. Remove the
+keys before moving a project to an older release.
 
 `init` saves project choices and reconciles scaffolding, the code/document index,
 selected client integrations and mining. Unattended runs without a selected

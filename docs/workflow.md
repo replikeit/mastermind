@@ -298,8 +298,8 @@ mastermind review-task run "$TASK_SPEC" --timeout 600 --max-turns 30 --json
 The reviewer requests `Read,Grep,Glob`, no permission prompts, empty MCP, and
 supported native restrictions. It answers through Claude Code's StructuredOutput
 tool against a closed JSON schema (Claude Code 2.1.290 or later) and has 30
-turns by default; `mastermind init --review-max-turns N` sets the project
-default. It injects no personal profile.
+turns and 600 seconds by default. `mastermind init --review-max-turns N` and
+`--review-timeout N` set the project defaults. It injects no personal profile.
 `review-invocation.json` records the attempt separately.
 
 ```bash
@@ -325,6 +325,12 @@ unresolved history and native failures stop even when that flag is enabled.
 | Allowed process time | 1–7,200 s | 1–7,200 s |
 | Default turns | 40 | 30 |
 | Allowed turns | 1–100 | 1–100 |
+
+Each limit resolves as an explicit flag, then the project setting in
+`.mastermind/setup.json`, then the default above. `mastermind init
+--exec-max-turns N`, `--exec-timeout N`, `--review-max-turns N` and
+`--review-timeout N` store the project settings; a default value is never
+written.
 
 Sources: [CLI definitions](../mcp/servers/mmcg/src/main.rs) and
 [runtime contract](reference/task-runtime.md). Preparation has separate bounds.

@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `mastermind init --exec-max-turns N`, `--exec-timeout N` and
+  `--review-timeout N` store the native executor turns, executor timeout and
+  reviewer timeout as project defaults in `.mastermind/setup.json`, like
+  `--review-max-turns`. `run-task --exec`, `review-task run` and
+  `run-task --auto-review` use them when the command line passes no flag; an
+  explicit flag wins, and without a setting the limits stay 40 turns, 1800
+  seconds and 600 seconds.
+
 ### Fixed
 
 - `review-task submit` names the field and rule that reject a report, for
