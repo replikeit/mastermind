@@ -317,6 +317,36 @@ unknown judgments are stored but block completion. Changed evidence or review
 revisions reject submission. Identity, reviewer independence and semantic truth
 remain unverified.
 
+Allowed values: every `status` is `satisfied`, `unsatisfied` or `unknown`;
+`reviewer.kind` is `human` or `llm`; both history decisions are `no_change`,
+`update_required` or `unknown`. The draft leaves `reviewer.kind` (null) and
+`reviewer.name` (empty) for the reviewer to declare.
+
+`submit` names the failing part of a rejected report and never quotes report
+text. A file that cannot be read as a report fails with
+`semantic_review_report_invalid: <kind> at line L column C`, where kind is
+`syntax error`, `invalid field or value` or `unexpected end of input`. The
+position points at an unknown field or a wrong value. For a missing field it
+points at the end of the object that lacks it, so compare that object with the
+draft. A parsed report fails with one of
+`semantic_review_schema_version_unsupported`,
+`semantic_review_target_revision_mismatch`,
+`semantic_review_reviewer_name_invalid` or
+`semantic_review_reviewer_kind_required`. Criteria errors carry a location:
+`criteria[<index>]: semantic_review_unknown_criterion`, and
+`criterion:<id>: semantic_review_duplicate_criterion`,
+`semantic_review_criterion_missing` or
+`semantic_review_required_check_not_cited`. An invalid assessment is reported as
+`<location>: <rule>` for `criterion:<id>`, `verification_quality`,
+`scope_control` or `proportionality`, with the first broken rule among
+`semantic_review_reason_invalid`, `semantic_review_evidence_limit`,
+`semantic_review_evidence_duplicate`, `semantic_review_evidence_required` and
+`semantic_review_evidence_unknown`. An invalid history decision is reported as
+`history.context` or `history.lessons` with one of
+`history_disposition_reason_invalid`, `history_disposition_evidence_limit`,
+`history_disposition_evidence_duplicate`, `history_disposition_evidence_unknown`
+and `history_disposition_source_not_cited`.
+
 `history.context` and `history.lessons` each contain a decision, reason and
 evidence. `no_change` means no further update is needed in the current canonical
 file. `update_required` and `unknown` remain unresolved. Resolved decisions cite

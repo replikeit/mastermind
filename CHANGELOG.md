@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `review-task submit` names the field and rule that reject a report, for
+  example `criterion:<id>: semantic_review_evidence_unknown` or
+  `invalid field or value at line L column C`, without quoting report text.
+  `review-task prepare` lists the allowed statuses, reviewer kinds and history
+  decisions. Accepted and rejected reports are unchanged.
+
 ## [3.4.1] - 2026-10-22
 
 ### Fixed
